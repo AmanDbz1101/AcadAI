@@ -4,3 +4,11 @@ pandas
 pdf2image 
 opencv-python
 groq
+
+# Research Paper Metadata Extractor Dependencies
+unstructured[pdf]
+langchain-groq
+langchain-core
+langgraph
+pydantic>=2.0.0
+python-dotenv
