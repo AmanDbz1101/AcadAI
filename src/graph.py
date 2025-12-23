@@ -65,7 +65,6 @@ class MetadataExtractionGraph:
         workflow.add_node("detect_sections", self._detect_sections_node)
         workflow.add_node("extract_title", self._extract_title_node)
         workflow.add_node("extract_abstract", self._extract_abstract_node)
-        workflow.add_node("normalize_sections", self._normalize_sections_node)
         workflow.add_node("refine_sections", self._refine_sections_node)
         workflow.add_node("llm_inference", self._llm_inference_node)
         workflow.add_node("finalize_metadata", self._finalize_metadata_node)
@@ -75,8 +74,7 @@ class MetadataExtractionGraph:
         workflow.add_edge("extract_text", "detect_sections")
         workflow.add_edge("detect_sections", "extract_title")
         workflow.add_edge("extract_title", "extract_abstract")
-        workflow.add_edge("extract_abstract", "normalize_sections")
-        workflow.add_edge("normalize_sections", "refine_sections")
+        workflow.add_edge("extract_abstract", "refine_sections")
         workflow.add_edge("refine_sections", "llm_inference")
         workflow.add_edge("llm_inference", "finalize_metadata")
         workflow.add_edge("finalize_metadata", END)
@@ -108,21 +106,31 @@ class MetadataExtractionGraph:
             }
     
     def _detect_sections_node(self, state: ExtractionState) -> ExtractionState:
-        """Node: Detect section headings using heuristics.
+        """Node: Detect section headings using heuristics and create section metadata.
         
         Args:
             state: Current state
             
         Returns:
-            Updated state with section_candidates
+            Updated state with section_candidates and sections
         """
         try:
             detector = SectionDetector()
             candidates = detector.detect_sections(state["text_blocks"])
             
+            # Create section metadata
+            sections = []
+            for candidate in candidates:
+                section = SectionMetadata(
+                    original_name=candidate.text,
+                    page_start=candidate.page_number
+                )
+                sections.append(section)
+            
             return {
                 **state,
                 "section_candidates": candidates,
+                "sections": sections,
             }
         except Exception as e:
             return {
@@ -192,40 +200,6 @@ class MetadataExtractionGraph:
                 "error": f"Abstract extraction failed: {str(e)}"
             }
     
-    def _normalize_sections_node(self, state: ExtractionState) -> ExtractionState:
-        """Node: Normalize section names and create section metadata.
-        
-        Args:
-            state: Current state
-            
-        Returns:
-            Updated state with sections
-        """
-        try:
-            normalizer = SectionNormalizer()
-            sections = []
-            
-            for candidate in state["section_candidates"]:
-                normalized_name = normalizer.normalize(candidate.text)
-                
-                section = SectionMetadata(
-                    original_name=candidate.text,
-                    normalized_name=normalized_name,
-                    page_start=candidate.page_number
-                )
-                sections.append(section)
-            
-            return {
-                **state,
-                "sections": sections,
-            }
-        except Exception as e:
-            return {
-                **state,
-                "sections": [],
-                "error": f"Section normalization failed: {str(e)}"
-            }
-    
     def _refine_sections_node(self, state: ExtractionState) -> ExtractionState:
         """Node: Refine sections using LLM to remove false positives.
         
@@ -264,11 +238,8 @@ class MetadataExtractionGraph:
             Updated state with inference
         """
         try:
-            # Get normalized section names for LLM
-            section_names = [
-                s.normalized_name or s.original_name
-                for s in state["sections"]
-            ]
+            # Get section names for LLM
+            section_names = [s.original_name for s in state["sections"]]
             
             # Create inference engine
             engine = PaperInferenceEngine()

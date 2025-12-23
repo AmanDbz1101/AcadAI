@@ -312,13 +312,6 @@ Example output format:
                             refined_sections.append(metadata)
                             break
             
-            # If we lost too many sections, return original
-            # For documents with many false positives, we expect significant reduction
-            min_expected = max(5, len(section_metadata) * 0.15)  # At least 15% or 5 sections
-            if len(refined_sections) < min_expected:
-                print(f"Warning: LLM refinement removed too many sections ({len(refined_sections)} vs {len(section_metadata)}), keeping original")
-                return section_metadata
-            
             print(f"Section refinement: {len(section_metadata)} → {len(refined_sections)} sections")
             
             return refined_sections

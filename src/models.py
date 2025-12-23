@@ -12,14 +12,9 @@ class SectionMetadata(BaseModel):
     
     Attributes:
         original_name: The section name as it appears in the paper
-        normalized_name: Canonical section name (None if no clear mapping)
         page_start: Page number where the section begins (1-indexed)
     """
     original_name: str = Field(description="Section name as it appears in the paper")
-    normalized_name: str | None = Field(
-        default=None,
-        description="Normalized canonical section name"
-    )
     page_start: int = Field(description="Starting page number (1-indexed)")
 
 

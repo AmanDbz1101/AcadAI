@@ -40,7 +40,7 @@ def extract_paper_metadata(pdf_path: str) -> PaperMetadata:
         >>> print(metadata.title)
         >>> print(metadata.inference.paper_type)
         >>> for section in metadata.sections:
-        >>>     print(f"{section.original_name} -> {section.normalized_name}")
+        >>>     print(f"{section.original_name}")
     """
     # Validate PDF path
     pdf_file = Path(pdf_path)
@@ -89,9 +89,7 @@ def extract_and_display(pdf_path: str) -> None:
     
     print("Sections:")
     for i, section in enumerate(metadata.sections, 1):
-        normalized = section.normalized_name or "None"
         print(f"  {i}. {section.original_name}")
-        print(f"     → Normalized: {normalized}")
         print(f"     → Page: {section.page_start}")
     print()
     
