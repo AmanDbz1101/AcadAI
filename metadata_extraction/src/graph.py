@@ -8,12 +8,12 @@ import os
 from typing import TypedDict, Annotated, Sequence
 from dotenv import load_dotenv
 from langgraph.graph import StateGraph, END
-from src.models import SectionMetadata, PaperInference, PaperMetadata
-from src.text_extraction import PDFTextExtractor, TextBlock
-from src.section_detection import SectionDetector, SectionCandidate
-from src.normalization import SectionNormalizer
-from src.abstract_extraction import AbstractExtractor
-from src.llm_inference import PaperInferenceEngine, SectionRefinementEngine
+from metadata_extraction.src.models import SectionMetadata, PaperInference, PaperMetadata
+from metadata_extraction.src.text_extraction import PDFTextExtractor, TextBlock
+from metadata_extraction.src.section_detection import SectionDetector, SectionCandidate
+from metadata_extraction.src.normalization import SectionNormalizer
+from metadata_extraction.src.abstract_extraction import AbstractExtractor
+from metadata_extraction.src.llm_inference import PaperInferenceEngine, SectionRefinementEngine
 
 # Load environment variables from .env file
 load_dotenv()

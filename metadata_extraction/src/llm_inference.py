@@ -11,7 +11,7 @@ from dotenv import load_dotenv
 from langchain_groq import ChatGroq
 from langchain_core.output_parsers import PydanticOutputParser, JsonOutputParser
 from langchain_core.prompts import PromptTemplate
-from src.models import PaperInference, SectionMetadata
+from metadata_extraction.src.models import PaperInference, SectionMetadata
 
 # Load environment variables from .env file
 load_dotenv()

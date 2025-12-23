@@ -5,8 +5,8 @@ This module extracts the abstract section using heuristic rules.
 """
 
 import re
-from src.text_extraction import TextBlock
-from src.section_detection import SectionCandidate
+from metadata_extraction.src.text_extraction import TextBlock
+from metadata_extraction.src.section_detection import SectionCandidate
 
 
 class AbstractExtractor:

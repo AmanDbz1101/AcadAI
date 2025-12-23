@@ -12,8 +12,8 @@ from fastapi import FastAPI, File, UploadFile, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 from pydantic import BaseModel
-from src.extractor import extract_paper_metadata
-from src.models import PaperMetadata, SectionMetadata, PaperInference
+from metadata_extraction.src.extractor import extract_paper_metadata
+from metadata_extraction.src.models import PaperMetadata, SectionMetadata, PaperInference
 from dotenv import load_dotenv
 import config
 

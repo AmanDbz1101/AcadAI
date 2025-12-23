@@ -6,7 +6,7 @@ This module detects section headings using rule-based approaches WITHOUT LLM.
 
 import re
 from dataclasses import dataclass
-from src.text_extraction import TextBlock
+from metadata_extraction.src.text_extraction import TextBlock
 
 
 @dataclass

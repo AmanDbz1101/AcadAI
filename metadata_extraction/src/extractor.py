@@ -7,8 +7,8 @@ This module provides the main function to extract metadata from research papers.
 import os
 from pathlib import Path
 from dotenv import load_dotenv
-from src.models import PaperMetadata
-from src.graph import MetadataExtractionGraph
+from metadata_extraction.src.models import PaperMetadata
+from metadata_extraction.src.graph import MetadataExtractionGraph
 
 # Load environment variables from .env file
 load_dotenv()
