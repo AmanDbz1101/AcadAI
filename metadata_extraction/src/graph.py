@@ -11,9 +11,9 @@ from langgraph.graph import StateGraph, END
 from metadata_extraction.src.models import SectionMetadata, PaperInference, PaperMetadata
 from metadata_extraction.src.text_extraction import PDFTextExtractor, TextBlock
 from metadata_extraction.src.section_detection import SectionDetector, SectionCandidate
-from metadata_extraction.src.normalization import SectionNormalizer
 from metadata_extraction.src.abstract_extraction import AbstractExtractor
 from metadata_extraction.src.llm_inference import PaperInferenceEngine, SectionRefinementEngine
+from metadata_extraction.src.database import DatabaseManager
 
 # Load environment variables from .env file
 load_dotenv()
@@ -47,8 +47,15 @@ class ExtractionState(TypedDict):
 class MetadataExtractionGraph:
     """LangGraph-based orchestration for metadata extraction."""
     
-    def __init__(self):
-        """Initialize the extraction graph."""
+    def __init__(self, db_path: str = "research_papers.db", enable_db: bool = True):
+        """Initialize the extraction graph.
+        
+        Args:
+            db_path: Path to SQLite database file
+            enable_db: Whether to enable database storage (default: True)
+        """
+        self.db_manager = DatabaseManager(db_path) if enable_db else None
+        self.enable_db = enable_db
         self.graph = self._build_graph()
     
     def _build_graph(self) -> StateGraph:
@@ -270,7 +277,7 @@ class MetadataExtractionGraph:
             }
     
     def _finalize_metadata_node(self, state: ExtractionState) -> ExtractionState:
-        """Node: Create final PaperMetadata object.
+        """Node: Create final PaperMetadata object and store in database.
         
         Args:
             state: Current state
@@ -285,6 +292,18 @@ class MetadataExtractionGraph:
                 sections=state["sections"],
                 inference=state["inference"]
             )
+            
+            # Store in database if enabled
+            if self.enable_db and self.db_manager:
+                try:
+                    paper_id = self.db_manager.store_extraction_results(
+                        pdf_path=state["pdf_path"],
+                        metadata=metadata,
+                        text_blocks=state["text_blocks"]
+                    )
+                    print(f"✓ Stored in database with ID: {paper_id}")
+                except Exception as db_error:
+                    print(f"Warning: Database storage failed: {str(db_error)}")
             
             return {
                 **state,

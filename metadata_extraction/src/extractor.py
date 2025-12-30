@@ -14,7 +14,7 @@ from metadata_extraction.src.graph import MetadataExtractionGraph
 load_dotenv()
 
 
-def extract_paper_metadata(pdf_path: str) -> PaperMetadata:
+def extract_paper_metadata(pdf_path: str, db_path: str = "research_papers.db", enable_db: bool = True) -> PaperMetadata:
     """Extract structured metadata from a research paper PDF.
     
     This is the main entry point for the metadata extraction pipeline.
@@ -22,6 +22,8 @@ def extract_paper_metadata(pdf_path: str) -> PaperMetadata:
     
     Args:
         pdf_path: Path to the PDF file
+        db_path: Path to SQLite database file (default: "research_papers.db")
+        enable_db: Whether to store results in database (default: True)
         
     Returns:
         PaperMetadata object containing:
@@ -56,8 +58,8 @@ def extract_paper_metadata(pdf_path: str) -> PaperMetadata:
             "Groq API key not found. Make sure GROQ_API_KEY is set in your .env file."
         )
     
-    # Create extraction graph
-    graph = MetadataExtractionGraph()
+    # Create extraction graph with database configuration
+    graph = MetadataExtractionGraph(db_path=db_path, enable_db=enable_db)
     
     # Run extraction
     metadata = graph.extract(str(pdf_file.absolute()))

@@ -108,12 +108,22 @@ class SectionDetector:
         """
         confidence = 0.0
         
+        # Rule 0: Length constraints (must be at least one word, max one line)
+        # Reject single letters (not a word)
+        if len(text) <= 1:
+            return 0.0
+        
+        # Reject if text is too long (approximately two lines = ~160 chars or 25+ words)
+        word_count = len(text.split())
+        char_count = len(text)
+        if char_count > 160 or word_count > 25:
+            return 0.0
+        
         # Rule 1: Element type is Title
         if block.element_type == 'Title':
             confidence += 0.4
         
         # Rule 2: Short text (section headings are usually concise)
-        word_count = len(text.split())
         if 1 <= word_count <= 8:
             confidence += 0.2
         elif word_count > 20:

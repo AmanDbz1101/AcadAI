@@ -69,10 +69,8 @@ class PDFTextExtractor:
                     1
                 )
                 
-                # Extract metadata
+                # Extract metadata (exclude non-serializable objects like coordinates)
                 metadata = {}
-                if hasattr(element.metadata, 'coordinates'):
-                    metadata['coordinates'] = element.metadata.coordinates
                 if hasattr(element.metadata, 'detection_class_prob'):
                     metadata['confidence'] = element.metadata.detection_class_prob
                 
