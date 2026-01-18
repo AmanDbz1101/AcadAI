@@ -7,6 +7,10 @@ groq
 
 # Research Paper Metadata Extractor Dependencies
 unstructured[pdf]
+langchain-unstructured
+unstructured-client
+python-magic
+langchain-community
 langchain-groq
 langchain-core
 langgraph
@@ -24,3 +28,7 @@ keybert==0.9.0
 sentence-transformers>=3.0.0
 spacy>=3.7.0
 scikit-learn>=1.5.0
+
+# Vector Store Dependencies
+qdrant-client>=1.7.0
+langchain-qdrant>=0.1.0
