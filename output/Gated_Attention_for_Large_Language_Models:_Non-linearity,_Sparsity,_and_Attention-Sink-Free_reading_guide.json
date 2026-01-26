@@ -1,0 +1,225 @@
+{
+  "paper_id": "Gated Attention for Large Language Models",
+  "reading_strategy": "three-pass",
+  "passes": [
+    {
+      "pass_id": "first_pass",
+      "pass_name": "First Pass - Overview",
+      "objective": "Quick overview of the paper",
+      "estimated_time_minutes": 10,
+      "steps": [
+        {
+          "step_id": "FP-1",
+          "name": "Read Title and Abstract",
+          "target_sections": [
+            "Title",
+            "Abstract"
+          ],
+          "instruction": "Read the title and abstract to understand the paper's main topic and contribution",
+          "reading_objective": "Understand the paper's main topic and contribution",
+          "reader_checkpoint": "Can summarize the paper's main topic and contribution"
+        },
+        {
+          "step_id": "FP-2",
+          "name": "Skim Figures and Tables",
+          "target_sections": [
+            "1 Introduction",
+            "2.1 Preliminary: Multi-Head Softmax Attention",
+            "2.2 Augmenting Attention Layer with Gating Mechanisms",
+            "3.2.1 Gated Attention for MoE models",
+            "3.2.2 Gated Attention for Dense Models.",
+            "4.1 Non-linearity Improves the Expressiveness of Low-Rank Mapping in Attention",
+            "4.4 SDPA Output Gating Facilitates Context Length Extension",
+            "A Supplement Experiments"
+          ],
+          "instruction": "Skim all figures and tables to identify key visual results",
+          "reading_objective": "Identify key visual results",
+          "reader_checkpoint": "Can list main findings shown in figures"
+        },
+        {
+          "step_id": "FP-3",
+          "name": "Read Introduction and Conclusion",
+          "target_sections": [
+            "1 Introduction",
+            "6 Conclusion"
+          ],
+          "instruction": "Read the introduction and conclusion to understand the paper's context and main findings",
+          "reading_objective": "Understand the paper's context and main findings",
+          "reader_checkpoint": "Can summarize the paper's context and main findings"
+        },
+        {
+          "step_id": "FP-4",
+          "name": "Browse Section Headings",
+          "target_sections": [
+            "2 Gated-Attention Layer",
+            "3 Experiments",
+            "4 Analysis: Non-Linearity, Sparsity, and Attention-Sink-Free",
+            "5 Related Works"
+          ],
+          "instruction": "Browse section headings to understand the paper's structure and content",
+          "reading_objective": "Understand the paper's structure and content",
+          "reader_checkpoint": "Can describe the paper's structure and content"
+        }
+      ]
+    },
+    {
+      "pass_id": "second_pass",
+      "pass_name": "Second Pass - Detailed Reading",
+      "objective": "Thorough reading without deep details",
+      "estimated_time_minutes": 60,
+      "steps": [
+        {
+          "step_id": "SP-1",
+          "name": "Read Gated-Attention Layer",
+          "target_sections": [
+            "2 Gated-Attention Layer",
+            "2.1 Preliminary: Multi-Head Softmax Attention",
+            "2.2 Augmenting Attention Layer with Gating Mechanisms"
+          ],
+          "instruction": "Read the gated-attention layer section to understand the paper's methodology",
+          "reading_objective": "Understand the paper's methodology",
+          "reader_checkpoint": "Can describe the gated-attention layer"
+        },
+        {
+          "step_id": "SP-2",
+          "name": "Read Experiments Section",
+          "target_sections": [
+            "3 Experiments",
+            "3.1 Experimental Setups",
+            "3.2 Main Results"
+          ],
+          "instruction": "Read the experiments section to understand the paper's experimental design and results",
+          "reading_objective": "Understand the paper's experimental design and results",
+          "reader_checkpoint": "Can describe the paper's experimental design and results"
+        },
+        {
+          "step_id": "SP-3",
+          "name": "Read Analysis Section",
+          "target_sections": [
+            "4 Analysis: Non-Linearity, Sparsity, and Attention-Sink-Free",
+            "4.1 Non-linearity Improves the Expressiveness of Low-Rank Mapping in Attention",
+            "4.2 Gating Introduces Input-Dependent Sparsity",
+            "4.3 SDPA Output Gating Reduces Attention-Sink",
+            "4.4 SDPA Output Gating Facilitates Context Length Extension"
+          ],
+          "instruction": "Read the analysis section to understand the paper's key findings and insights",
+          "reading_objective": "Understand the paper's key findings and insights",
+          "reader_checkpoint": "Can describe the paper's key findings and insights"
+        },
+        {
+          "step_id": "SP-4",
+          "name": "Reference Figures and Tables",
+          "target_sections": [
+            "1 Introduction",
+            "2.1 Preliminary: Multi-Head Softmax Attention",
+            "2.2 Augmenting Attention Layer with Gating Mechanisms",
+            "3.2.1 Gated Attention for MoE models",
+            "3.2.2 Gated Attention for Dense Models.",
+            "4.1 Non-linearity Improves the Expressiveness of Low-Rank Mapping in Attention",
+            "4.4 SDPA Output Gating Facilitates Context Length Extension",
+            "A Supplement Experiments"
+          ],
+          "instruction": "Reference figures and tables when reading sections that contain them",
+          "reading_objective": "Understand the paper's visual content",
+          "reader_checkpoint": "Can describe the paper's visual content"
+        },
+        {
+          "step_id": "SP-5",
+          "name": "Read Related Works",
+          "target_sections": [
+            "5 Related Works",
+            "5.1 Gating in Neural Networks",
+            "5.2 Attention Sink"
+          ],
+          "instruction": "Read the related works section to understand the paper's context and relevance",
+          "reading_objective": "Understand the paper's context and relevance",
+          "reader_checkpoint": "Can describe the paper's context and relevance"
+        },
+        {
+          "step_id": "SP-6",
+          "name": "Read Conclusion and References",
+          "target_sections": [
+            "6 Conclusion",
+            "References"
+          ],
+          "instruction": "Read the conclusion and references to understand the paper's main findings and contributions",
+          "reading_objective": "Understand the paper's main findings and contributions",
+          "reader_checkpoint": "Can summarize the paper's main findings and contributions"
+        }
+      ]
+    },
+    {
+      "pass_id": "third_pass",
+      "pass_name": "Third Pass - Deep Dive",
+      "objective": "Complete understanding and verification",
+      "estimated_time_minutes": 240,
+      "steps": [
+        {
+          "step_id": "TP-1",
+          "name": "Examine Formulas and Derivations",
+          "target_sections": [
+            "2.1 Preliminary: Multi-Head Softmax Attention",
+            "2.2 Augmenting Attention Layer with Gating Mechanisms",
+            "4.1 Non-linearity Improves the Expressiveness of Low-Rank Mapping in Attention"
+          ],
+          "instruction": "Examine all formulas and derivations to understand the paper's mathematical foundations",
+          "reading_objective": "Understand the paper's mathematical foundations",
+          "reader_checkpoint": "Can derive the paper's key equations"
+        },
+        {
+          "step_id": "TP-2",
+          "name": "Analyze Tables and Figures",
+          "target_sections": [
+            "1 Introduction",
+            "2.1 Preliminary: Multi-Head Softmax Attention",
+            "2.2 Augmenting Attention Layer with Gating Mechanisms",
+            "3.2.1 Gated Attention for MoE models",
+            "3.2.2 Gated Attention for Dense Models.",
+            "4.1 Non-linearity Improves the Expressiveness of Low-Rank Mapping in Attention",
+            "4.4 SDPA Output Gating Facilitates Context Length Extension",
+            "A Supplement Experiments"
+          ],
+          "instruction": "Analyze all tables and figures to understand the paper's visual content and results",
+          "reading_objective": "Understand the paper's visual content and results",
+          "reader_checkpoint": "Can describe the paper's visual content and results"
+        },
+        {
+          "step_id": "TP-3",
+          "name": "Verify Experimental Results",
+          "target_sections": [
+            "3 Experiments",
+            "3.1 Experimental Setups",
+            "3.2 Main Results"
+          ],
+          "instruction": "Verify the paper's experimental results to understand the paper's methodology and findings",
+          "reading_objective": "Understand the paper's methodology and findings",
+          "reader_checkpoint": "Can describe the paper's methodology and findings"
+        },
+        {
+          "step_id": "TP-4",
+          "name": "Challenge Assumptions and Verify Mathematical Derivations",
+          "target_sections": [
+            "2.1 Preliminary: Multi-Head Softmax Attention",
+            "2.2 Augmenting Attention Layer with Gating Mechanisms",
+            "4.1 Non-linearity Improves the Expressiveness of Low-Rank Mapping in Attention"
+          ],
+          "instruction": "Challenge assumptions and verify mathematical derivations to understand the paper's mathematical foundations",
+          "reading_objective": "Understand the paper's mathematical foundations",
+          "reader_checkpoint": "Can verify the paper's mathematical derivations"
+        },
+        {
+          "step_id": "TP-5",
+          "name": "Re-Implement the Work",
+          "target_sections": [
+            "2 Gated-Attention Layer",
+            "3 Experiments",
+            "4 Analysis: Non-Linearity, Sparsity, and Attention-Sink-Free"
+          ],
+          "instruction": "Re-implement the work to understand the paper's methodology and findings",
+          "reading_objective": "Understand the paper's methodology and findings",
+          "reader_checkpoint": "Can re-implement the paper's methodology and findings"
+        }
+      ]
+    }
+  ]
+}
