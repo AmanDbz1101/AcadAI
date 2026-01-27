@@ -12,7 +12,7 @@ load_dotenv()
 # Add parent directory to path
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-from api_test import extract_metadata, list_available_documents
+from api_src import extract_metadata, list_available_documents
 
 
 def main():

@@ -55,6 +55,7 @@ class PDFTextExtractor:
                 filename=self.pdf_path,
                 strategy="hi_res",
                 infer_table_structure=True,
+                coordinates = True
             )
             
             self._elements = elements
