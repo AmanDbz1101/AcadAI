@@ -32,3 +32,8 @@ scikit-learn>=1.5.0
 # Vector Store Dependencies
 qdrant-client>=1.7.0
 langchain-qdrant>=0.1.0
+
+# Formula Detection Dependencies
+transformers>=4.37.0
+pillow>=10.0.0
+optimum[onnxruntime]>=1.16.0
