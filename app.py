@@ -13,10 +13,10 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 from pydantic import BaseModel, Field
 # Import both extraction methods
-from metadata_extraction.src.extractor import extract_paper_metadata
-from metadata_extraction.src.models import PaperMetadata as SrcPaperMetadata
-from metadata_extraction.api_src.extractor import extract_metadata
-from metadata_extraction.api_src.models import PaperMetadata as ApiPaperMetadata
+from src.metadata_extraction.src.extractor import extract_paper_metadata
+from src.metadata_extraction.src.models import PaperMetadata as SrcPaperMetadata
+from src.metadata_extraction.api_src.extractor import extract_metadata
+from src.metadata_extraction.api_src.models import PaperMetadata as ApiPaperMetadata
 from dotenv import load_dotenv
 import config
 import io

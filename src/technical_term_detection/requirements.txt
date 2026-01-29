@@ -1,0 +1,8 @@
+keybert==0.8.5
+sentence-transformers==3.0.1
+spacy==3.7.5
+scikit-learn==1.5.1
+
+# For SciSpacy alternative (optional)
+# scispacy==0.5.4
+# https://s3-us-west-2.amazonaws.com/ai2-s2-scispacy/releases/v0.5.4/en_core_sci_sm-0.5.4.tar.gz
