@@ -455,6 +455,31 @@ def minimal_guide_generation():
     return JSONResponse(content=guide)
 
 
+@app.post("/extract_pdf_to_qdrant")
+async def extract_pdf_to_qdrant(file: UploadFile):
+    """
+    Extracts data from an uploaded PDF using Unstructured API and stores it in Qdrant vectorstore.
+    Returns collection info.
+    """
+    import tempfile
+    from src.text_extraction.pdf_to_qdrant import extract_and_store_pdf
+    import shutil
+
+    # Save uploaded file to a temporary location
+    with tempfile.NamedTemporaryFile(delete=False, suffix=".pdf") as tmp:
+        shutil.copyfileobj(file.file, tmp)
+        tmp_path = tmp.name
+
+    try:
+        store = extract_and_store_pdf(tmp_path)
+        info = store.get_collection_info()
+        return {"status": "success", "collection_info": info}
+    except Exception as e:
+        return {"status": "error", "detail": str(e)}
+    finally:
+        os.remove(tmp_path)
+
+
 if __name__ == "__main__":
     import uvicorn
     
