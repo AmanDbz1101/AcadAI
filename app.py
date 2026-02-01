@@ -22,6 +22,9 @@ import config
 import io
 from PIL import Image
 
+# Import agentic RAG router
+from src.agentic_rag.api import router as agentic_router
+
 # Load environment variables
 load_dotenv()
 
@@ -43,6 +46,9 @@ app.add_middleware(
 
 # Create upload directory if it doesn't exist
 config.UPLOAD_DIR.mkdir(exist_ok=True)
+
+# Include agentic RAG router
+app.include_router(agentic_router)
 
 
 class ErrorResponse(BaseModel):

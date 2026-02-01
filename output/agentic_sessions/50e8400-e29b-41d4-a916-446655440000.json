@@ -1,0 +1,517 @@
+{
+  "session_id": "50e8400-e29b-41d4-a916-446655440000",
+  "paper_id": "Gated Attention.pdf",
+  "document_id": "Gated Attention.pdf",
+  "collection_name": "research_papers_main",
+  "guide": {
+    "paper_id": "Gated Attention.pdf",
+    "reading_strategy": "three-pass-agentic",
+    "passes": [
+      {
+        "pass_id": "first_pass",
+        "pass_name": "Quick Overview",
+        "objective": "Understand the paper's structure and main topic",
+        "estimated_time_minutes": 10,
+        "steps": [
+          {
+            "step_id": "FP-1",
+            "name": "Read Title and Abstract",
+            "target_sections": [
+              "Title",
+              "Abstract"
+            ],
+            "focus_type": "overview",
+            "instruction": "Quickly read the title and abstract to understand the paper's main topic",
+            "reading_objective": "Understand the paper's main topic and scope",
+            "retrieval_hints": {
+              "categories": [
+                "NarrativeText"
+              ],
+              "sections": [
+                "Title",
+                "Abstract"
+              ],
+              "element_ids": [],
+              "search_keywords": [
+                "Gated Attention",
+                "Large Language Models"
+              ]
+            },
+            "completed": false
+          },
+          {
+            "step_id": "FP-2",
+            "name": "Skim Section Headings",
+            "target_sections": [
+              "1 Introduction",
+              "2 Gated-Attention Layer",
+              "3 Experiments",
+              "4 Analysis: Non-Linearity, Sparsity, and Attention-Sink-Free",
+              "5 Related Works",
+              "6 Conclusion"
+            ],
+            "focus_type": "overview",
+            "instruction": "Skim the section headings to understand the paper's structure",
+            "reading_objective": "Understand the paper's structure and organization",
+            "retrieval_hints": {
+              "categories": [
+                "NarrativeText"
+              ],
+              "sections": [
+                "1 Introduction",
+                "2 Gated-Attention Layer",
+                "3 Experiments",
+                "4 Analysis: Non-Linearity, Sparsity, and Attention-Sink-Free",
+                "5 Related Works",
+                "6 Conclusion"
+              ],
+              "element_ids": [],
+              "search_keywords": [
+                "Gated Attention",
+                "Large Language Models"
+              ]
+            },
+            "completed": false
+          },
+          {
+            "step_id": "FP-3",
+            "name": "Glance at Figures and Tables",
+            "target_sections": [
+              "1 Introduction",
+              "2 Gated-Attention Layer",
+              "3 Experiments",
+              "4 Analysis: Non-Linearity, Sparsity, and Attention-Sink-Free"
+            ],
+            "focus_type": "figures_tables",
+            "instruction": "Glance at the figures and tables to understand the paper's visual content",
+            "reading_objective": "Understand the paper's visual content and main findings",
+            "retrieval_hints": {
+              "categories": [
+                "FigureCaption",
+                "Table"
+              ],
+              "sections": [
+                "1 Introduction",
+                "2 Gated-Attention Layer",
+                "3 Experiments",
+                "4 Analysis: Non-Linearity, Sparsity, and Attention-Sink-Free"
+              ],
+              "element_ids": [
+                "328003dc6c13213f30f0d9a888a10cb5",
+                "82026911c568959709d6450295738fce",
+                "beaaf57fee55d1d32395d8bdac377c44"
+              ],
+              "search_keywords": [
+                "Gated Attention",
+                "Large Language Models",
+                "Figures",
+                "Tables"
+              ]
+            },
+            "completed": false
+          },
+          {
+            "step_id": "FP-4",
+            "name": "Read Conclusion",
+            "target_sections": [
+              "6 Conclusion"
+            ],
+            "focus_type": "overview",
+            "instruction": "Read the conclusion to understand the paper's main findings and contributions",
+            "reading_objective": "Understand the paper's main findings and contributions",
+            "retrieval_hints": {
+              "categories": [
+                "NarrativeText"
+              ],
+              "sections": [
+                "6 Conclusion"
+              ],
+              "element_ids": [],
+              "search_keywords": [
+                "Gated Attention",
+                "Large Language Models",
+                "Conclusion"
+              ]
+            },
+            "completed": false
+          }
+        ]
+      },
+      {
+        "pass_id": "second_pass",
+        "pass_name": "Careful Reading",
+        "objective": "Understand the paper's main contributions and methodology",
+        "estimated_time_minutes": 60,
+        "steps": [
+          {
+            "step_id": "SP-1",
+            "name": "Read Introduction",
+            "target_sections": [
+              "1 Introduction"
+            ],
+            "focus_type": "methodology",
+            "instruction": "Read the introduction to understand the paper's motivation and background",
+            "reading_objective": "Understand the paper's motivation and background",
+            "retrieval_hints": {
+              "categories": [
+                "NarrativeText"
+              ],
+              "sections": [
+                "1 Introduction"
+              ],
+              "element_ids": [],
+              "search_keywords": [
+                "Gated Attention",
+                "Large Language Models",
+                "Introduction"
+              ]
+            },
+            "completed": false
+          },
+          {
+            "step_id": "SP-2",
+            "name": "Read Gated-Attention Layer",
+            "target_sections": [
+              "2 Gated-Attention Layer"
+            ],
+            "focus_type": "methodology",
+            "instruction": "Read the gated-attention layer section to understand the paper's methodology",
+            "reading_objective": "Understand the paper's methodology and technical approach",
+            "retrieval_hints": {
+              "categories": [
+                "NarrativeText"
+              ],
+              "sections": [
+                "2 Gated-Attention Layer"
+              ],
+              "element_ids": [],
+              "search_keywords": [
+                "Gated Attention",
+                "Large Language Models",
+                "Methodology"
+              ]
+            },
+            "completed": false
+          },
+          {
+            "step_id": "SP-3",
+            "name": "Analyze Key Figures",
+            "target_sections": [
+              "1 Introduction",
+              "2 Gated-Attention Layer",
+              "3 Experiments"
+            ],
+            "focus_type": "figures_tables",
+            "instruction": "Analyze the key figures to understand the paper's main findings and results",
+            "reading_objective": "Understand the paper's main findings and results",
+            "retrieval_hints": {
+              "categories": [
+                "FigureCaption"
+              ],
+              "sections": [
+                "1 Introduction",
+                "2 Gated-Attention Layer",
+                "3 Experiments"
+              ],
+              "element_ids": [
+                "328003dc6c13213f30f0d9a888a10cb5",
+                "82026911c568959709d6450295738fce",
+                "beaaf57fee55d1d32395d8bdac377c44"
+              ],
+              "search_keywords": [
+                "Gated Attention",
+                "Large Language Models",
+                "Figures"
+              ]
+            },
+            "completed": false
+          },
+          {
+            "step_id": "SP-4",
+            "name": "Read Experiments",
+            "target_sections": [
+              "3 Experiments"
+            ],
+            "focus_type": "results",
+            "instruction": "Read the experiments section to understand the paper's results and findings",
+            "reading_objective": "Understand the paper's results and findings",
+            "retrieval_hints": {
+              "categories": [
+                "NarrativeText"
+              ],
+              "sections": [
+                "3 Experiments"
+              ],
+              "element_ids": [],
+              "search_keywords": [
+                "Gated Attention",
+                "Large Language Models",
+                "Experiments"
+              ]
+            },
+            "completed": false
+          },
+          {
+            "step_id": "SP-5",
+            "name": "Read Analysis",
+            "target_sections": [
+              "4 Analysis: Non-Linearity, Sparsity, and Attention-Sink-Free"
+            ],
+            "focus_type": "deep_analysis",
+            "instruction": "Read the analysis section to understand the paper's in-depth analysis and discussion",
+            "reading_objective": "Understand the paper's in-depth analysis and discussion",
+            "retrieval_hints": {
+              "categories": [
+                "NarrativeText"
+              ],
+              "sections": [
+                "4 Analysis: Non-Linearity, Sparsity, and Attention-Sink-Free"
+              ],
+              "element_ids": [],
+              "search_keywords": [
+                "Gated Attention",
+                "Large Language Models",
+                "Analysis"
+              ]
+            },
+            "completed": false
+          },
+          {
+            "step_id": "SP-6",
+            "name": "Read Related Works",
+            "target_sections": [
+              "5 Related Works"
+            ],
+            "focus_type": "overview",
+            "instruction": "Read the related works section to understand the paper's context and background",
+            "reading_objective": "Understand the paper's context and background",
+            "retrieval_hints": {
+              "categories": [
+                "NarrativeText"
+              ],
+              "sections": [
+                "5 Related Works"
+              ],
+              "element_ids": [],
+              "search_keywords": [
+                "Gated Attention",
+                "Large Language Models",
+                "Related Works"
+              ]
+            },
+            "completed": false
+          },
+          {
+            "step_id": "SP-7",
+            "name": "Analyze Formulas",
+            "target_sections": [
+              "2.1 Preliminary: Multi-Head Softmax Attention",
+              "2.2 Augmenting Attention Layer with Gating Mechanisms"
+            ],
+            "focus_type": "formulas",
+            "instruction": "Analyze the formulas to understand the paper's mathematical derivations",
+            "reading_objective": "Understand the paper's mathematical derivations",
+            "retrieval_hints": {
+              "categories": [
+                "Formula"
+              ],
+              "sections": [
+                "2.1 Preliminary: Multi-Head Softmax Attention",
+                "2.2 Augmenting Attention Layer with Gating Mechanisms"
+              ],
+              "element_ids": [
+                "effc309511043e90b2381f64fc5988e1",
+                "0eed73cab6aac48ecd606f595214ff62",
+                "0d4589cc87b2b11394f1c17cbf8d9f60",
+                "6b2e664fc7cc3665d9cf33e61b09e5e2",
+                "3e67a56dd7a7449ddaf432621b27d1db"
+              ],
+              "search_keywords": [
+                "Gated Attention",
+                "Large Language Models",
+                "Formulas"
+              ]
+            },
+            "completed": false
+          }
+        ]
+      },
+      {
+        "pass_id": "third_pass",
+        "pass_name": "Deep Dive",
+        "objective": "Understand the paper's technical details and contributions",
+        "estimated_time_minutes": 240,
+        "steps": [
+          {
+            "step_id": "TP-1",
+            "name": "Re-Implement Gated-Attention Layer",
+            "target_sections": [
+              "2 Gated-Attention Layer"
+            ],
+            "focus_type": "deep_analysis",
+            "instruction": "Re-implement the gated-attention layer to understand the paper's technical details",
+            "reading_objective": "Understand the paper's technical details and contributions",
+            "retrieval_hints": {
+              "categories": [
+                "NarrativeText"
+              ],
+              "sections": [
+                "2 Gated-Attention Layer"
+              ],
+              "element_ids": [],
+              "search_keywords": [
+                "Gated Attention",
+                "Large Language Models",
+                "Re-Implementation"
+              ]
+            },
+            "completed": false
+          },
+          {
+            "step_id": "TP-2",
+            "name": "Analyze Experimental Results",
+            "target_sections": [
+              "3 Experiments"
+            ],
+            "focus_type": "results",
+            "instruction": "Analyze the experimental results to understand the paper's findings and contributions",
+            "reading_objective": "Understand the paper's findings and contributions",
+            "retrieval_hints": {
+              "categories": [
+                "NarrativeText"
+              ],
+              "sections": [
+                "3 Experiments"
+              ],
+              "element_ids": [],
+              "search_keywords": [
+                "Gated Attention",
+                "Large Language Models",
+                "Experimental Results"
+              ]
+            },
+            "completed": false
+          },
+          {
+            "step_id": "TP-3",
+            "name": "Evaluate Gating Mechanisms",
+            "target_sections": [
+              "2.2 Augmenting Attention Layer with Gating Mechanisms"
+            ],
+            "focus_type": "deep_analysis",
+            "instruction": "Evaluate the gating mechanisms to understand their effectiveness and contributions",
+            "reading_objective": "Understand the gating mechanisms' effectiveness and contributions",
+            "retrieval_hints": {
+              "categories": [
+                "NarrativeText"
+              ],
+              "sections": [
+                "2.2 Augmenting Attention Layer with Gating Mechanisms"
+              ],
+              "element_ids": [],
+              "search_keywords": [
+                "Gated Attention",
+                "Large Language Models",
+                "Gating Mechanisms"
+              ]
+            },
+            "completed": false
+          },
+          {
+            "step_id": "TP-4",
+            "name": "Investigate Non-Linearity and Sparsity",
+            "target_sections": [
+              "4.1 Non-linearity Improves the Expressiveness of Low-Rank Mapping in Attention"
+            ],
+            "focus_type": "deep_analysis",
+            "instruction": "Investigate non-linearity and sparsity to understand their impact on the paper's results",
+            "reading_objective": "Understand non-linearity and sparsity's impact on the paper's results",
+            "retrieval_hints": {
+              "categories": [
+                "NarrativeText"
+              ],
+              "sections": [
+                "4.1 Non-linearity Improves the Expressiveness of Low-Rank Mapping in Attention"
+              ],
+              "element_ids": [],
+              "search_keywords": [
+                "Gated Attention",
+                "Large Language Models",
+                "Non-Linearity",
+                "Sparsity"
+              ]
+            },
+            "completed": false
+          },
+          {
+            "step_id": "TP-5",
+            "name": "Examine Attention-Sink and Context Length Extension",
+            "target_sections": [
+              "4.3 SDPA Output Gating Reduces Attention-Sink",
+              "4.4 SDPA Output Gating Facilitates Context Length Extension"
+            ],
+            "focus_type": "deep_analysis",
+            "instruction": "Examine attention-sink and context length extension to understand their impact on the paper's results",
+            "reading_objective": "Understand attention-sink and context length extension's impact on the paper's results",
+            "retrieval_hints": {
+              "categories": [
+                "NarrativeText"
+              ],
+              "sections": [
+                "4.3 SDPA Output Gating Reduces Attention-Sink",
+                "4.4 SDPA Output Gating Facilitates Context Length Extension"
+              ],
+              "element_ids": [],
+              "search_keywords": [
+                "Gated Attention",
+                "Large Language Models",
+                "Attention-Sink",
+                "Context Length Extension"
+              ]
+            },
+            "completed": false
+          },
+          {
+            "step_id": "TP-6",
+            "name": "Reproduce Experimental Results",
+            "target_sections": [
+              "3 Experiments"
+            ],
+            "focus_type": "deep_analysis",
+            "instruction": "Reproduce the experimental results to validate the paper's findings and contributions",
+            "reading_objective": "Validate the paper's findings and contributions",
+            "retrieval_hints": {
+              "categories": [
+                "NarrativeText"
+              ],
+              "sections": [
+                "3 Experiments"
+              ],
+              "element_ids": [],
+              "search_keywords": [
+                "Gated Attention",
+                "Large Language Models",
+                "Experimental Results",
+                "Reproduction"
+              ]
+            },
+            "completed": false
+          }
+        ]
+      }
+    ],
+    "created_at": "2024-09-16"
+  },
+  "memory": {
+    "paper_id": "Gated Attention.pdf",
+    "current_step_id": null,
+    "completed_steps": [],
+    "current_pass": "first_pass",
+    "total_steps": 17,
+    "completed_count": 0,
+    "session_started_at": "2026-02-01T22:00:04.499266",
+    "last_updated_at": "2026-02-01T22:00:04.499270"
+  },
+  "step_outputs": {},
+  "status": "active"
+}

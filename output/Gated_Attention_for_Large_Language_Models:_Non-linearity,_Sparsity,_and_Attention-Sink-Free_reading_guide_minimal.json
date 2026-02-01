@@ -1,0 +1,153 @@
+{
+  "paper_id": "Gated Attention for Large Language Models: Non-linearity, Sparsity, and Attention-Sink-Free",
+  "passes": [
+    {
+      "pass_id": "first_pass",
+      "estimated_time_minutes": 10,
+      "steps": [
+        {
+          "step_id": "FP-1",
+          "name": "Read Title",
+          "target_sections": [
+            "Title"
+          ],
+          "focus_type": "overview"
+        },
+        {
+          "step_id": "FP-2",
+          "name": "Skim Abstract",
+          "target_sections": [
+            "Abstract"
+          ],
+          "focus_type": "overview"
+        },
+        {
+          "step_id": "FP-3",
+          "name": "Browse Intro",
+          "target_sections": [
+            "1 Introduction"
+          ],
+          "focus_type": "overview"
+        },
+        {
+          "step_id": "FP-4",
+          "name": "Glance Conclusion",
+          "target_sections": [
+            "6 Conclusion"
+          ],
+          "focus_type": "overview"
+        }
+      ]
+    },
+    {
+      "pass_id": "second_pass",
+      "estimated_time_minutes": 60,
+      "steps": [
+        {
+          "step_id": "SP-1",
+          "name": "Read Intro",
+          "target_sections": [
+            "1 Introduction"
+          ],
+          "focus_type": "methodology"
+        },
+        {
+          "step_id": "SP-2",
+          "name": "Study Gated-Attention Layer",
+          "target_sections": [
+            "2 Gated-Attention Layer",
+            "2.1 Preliminary: Multi-Head Softmax Attention",
+            "2.2 Augmenting Attention Layer with Gating Mechanisms"
+          ],
+          "focus_type": "methodology"
+        },
+        {
+          "step_id": "SP-3",
+          "name": "Examine Experiments",
+          "target_sections": [
+            "3 Experiments",
+            "3.1 Experimental Setups",
+            "3.2 Main Results"
+          ],
+          "focus_type": "results"
+        },
+        {
+          "step_id": "SP-4",
+          "name": "Analyze Key Results",
+          "target_sections": [
+            "3.2.1 Gated Attention for MoE models",
+            "3.2.2 Gated Attention for Dense Models."
+          ],
+          "focus_type": "results"
+        },
+        {
+          "step_id": "SP-5",
+          "name": "Browse Related Works",
+          "target_sections": [
+            "5 Related Works"
+          ],
+          "focus_type": "overview"
+        },
+        {
+          "step_id": "SP-6",
+          "name": "Read Conclusion",
+          "target_sections": [
+            "6 Conclusion"
+          ],
+          "focus_type": "overview"
+        }
+      ]
+    },
+    {
+      "pass_id": "third_pass",
+      "estimated_time_minutes": 180,
+      "steps": [
+        {
+          "step_id": "TP-1",
+          "name": "Deep Dive Gated-Attention Layer",
+          "target_sections": [
+            "2 Gated-Attention Layer",
+            "2.1 Preliminary: Multi-Head Softmax Attention",
+            "2.2 Augmenting Attention Layer with Gating Mechanisms"
+          ],
+          "focus_type": "deep_analysis"
+        },
+        {
+          "step_id": "TP-2",
+          "name": "Analyze Formulas and Tables",
+          "target_sections": [
+            "4 Analysis: Non-Linearity, Sparsity, and Attention-Sink-Free",
+            "4.1 Non-linearity Improves the Expressiveness of Low-Rank Mapping in Attention",
+            "4.2 Gating Introduces Input-Dependent Sparsity"
+          ],
+          "focus_type": "formulas"
+        },
+        {
+          "step_id": "TP-3",
+          "name": "Study Figures and Tables",
+          "target_sections": [
+            "A Supplement Experiments"
+          ],
+          "focus_type": "figures_tables"
+        },
+        {
+          "step_id": "TP-4",
+          "name": "Examine SDPA Output Gating",
+          "target_sections": [
+            "4.3 SDPA Output Gating Reduces Attention-Sink",
+            "4.4 SDPA Output Gating Facilitates Context Length Extension"
+          ],
+          "focus_type": "deep_analysis"
+        },
+        {
+          "step_id": "TP-5",
+          "name": "Review Key Findings",
+          "target_sections": [
+            "6 Conclusion"
+          ],
+          "focus_type": "overview"
+        }
+      ]
+    }
+  ]
+}

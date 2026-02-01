@@ -112,4 +112,3 @@ Assumptions:
 
 ---
 
-If you need this in a specific format (PDF, DOCX, etc.) or want to add more details, let me know!
