@@ -5,6 +5,9 @@ pdf2image
 opencv-python
 groq
 
+# Fast Extraction Dependencies
+docling>=2.0.0
+
 # Research Paper Metadata Extractor Dependencies
 unstructured[pdf]
 langchain-unstructured
