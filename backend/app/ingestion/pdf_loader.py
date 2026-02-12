@@ -141,7 +141,7 @@ class PDFLoader:
                         }
                     
                     # Extract text
-                    text = self._get_item_text(item)
+                    text = self._get_item_text(item, doc)
                     if text:
                         pages_dict[page_no].append(text)
                     
@@ -174,12 +174,13 @@ class PDFLoader:
         
         return pages
     
-    def _get_item_text(self, item: DocItem) -> str:
+    def _get_item_text(self, item: DocItem, doc: DoclingDocument) -> str:
         """
         Extract text from a document item.
         
         Args:
             item: Document item
+            doc: Parent document (required for export_to_markdown)
             
         Returns:
             Extracted text
@@ -187,7 +188,11 @@ class PDFLoader:
         if hasattr(item, 'text') and item.text:
             return item.text
         elif hasattr(item, 'export_to_markdown'):
-            return item.export_to_markdown()
+            try:
+                return item.export_to_markdown(doc)
+            except Exception:
+                # Fallback if export_to_markdown fails
+                return ""
         return ""
     
     def _extract_metadata(self, doc: DoclingDocument) -> Dict[str, Any]:

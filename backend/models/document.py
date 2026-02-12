@@ -74,7 +74,7 @@ class OCRMetadata(BaseModel):
     ocr_engine: Optional[str] = Field(None, description="OCR engine name (e.g., 'RapidOCR')")
     confidence_score: Optional[float] = Field(None, ge=0, le=1, description="Overall OCR confidence")
     pages_ocr_processed: List[int] = Field(default_factory=list, description="Pages that underwent OCR")
-    text_density_ratio: Optional[float] = Field(None, ge=0, le=1, description="Ratio of text to page area")
+    text_density_ratio: Optional[float] = Field(None, ge=0, description="Average text density (chars per page)")
     processing_time_seconds: Optional[float] = Field(None, ge=0, description="OCR processing duration")
 
 

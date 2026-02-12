@@ -11,7 +11,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 from backend.config.settings import settings
-from backend.api.routes import upload_router
+from backend.api.routes import upload_router, processing_router
 
 
 # Configure logging
@@ -65,6 +65,7 @@ app.add_middleware(
 
 # Include routers
 app.include_router(upload_router)
+app.include_router(processing_router)
 
 
 @app.get("/")

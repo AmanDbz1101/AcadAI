@@ -15,3 +15,6 @@ docling-core>=2.0.0
 
 # Utilities
 python-dotenv>=1.0.0  # Environment variables
+
+# LLM Integration
+groq>=0.9.0  # Groq API client for LLM fallback
