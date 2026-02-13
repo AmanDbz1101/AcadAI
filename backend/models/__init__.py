@@ -12,6 +12,12 @@ from .document import (
     DocumentStatus,
 )
 
+from .section_hierarchy import (
+    SectionNode,
+    SectionHierarchy,
+    SectionDetectionResult,
+)
+
 __all__ = [
     "ValidatedDocument",
     "PageContent",
@@ -20,4 +26,7 @@ __all__ = [
     "FontInfo",
     "OCRMetadata",
     "DocumentStatus",
+    "SectionNode",
+    "SectionHierarchy",
+    "SectionDetectionResult",
 ]
