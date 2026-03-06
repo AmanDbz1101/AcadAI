@@ -1,26 +1,33 @@
 """
-Research Paper Assistant Backend - Version 2.0
+Research Paper Assistant Backend - Unified LangGraph Version
 
-A production-grade backend for processing research papers with:
-- PDF ingestion and validation
-- Text extraction with layout preservation
-- Adaptive OCR for scanned documents
-- Document processing and chunking
-- Hybrid retrieval (dense + sparse)
-- Guide-driven question answering
+A unified backend for processing research papers with:
+- Extraction Module: PDF → Metadata + Hierarchy + Full Text
+- RAG Module: Unified LangGraph workflow with extraction, categorization, Q&A, and summarization
+
+Follows the Chat2Code pattern: simple, elegant, clean.
 """
 
-__version__ = "2.0.0"
+__version__ = "5.0.0"
 __author__ = "Research Paper Assistant Team"
 
-from backend.api.app import app
-from backend.models.document import ValidatedDocument
-from backend.pipelines.ingest_pipeline import IngestPipeline
-from backend.services.ingestion_service import IngestionService
+# Import extraction components (no circular dependency)
+from backend.extraction.extraction import PDFExtractor
+from backend.extraction.models.document import ValidatedDocument
+from backend.extraction.models.metadata import ProcessedDocument
+from backend.extraction.models.section_hierarchy import SectionHierarchy
+
+# Lazy import for PaperAnalysisPipeline to avoid circular imports
+def get_pipeline():
+    """Lazy import of PaperAnalysisPipeline to avoid circular dependencies."""
+    from backend.run import PaperAnalysisPipeline
+    return PaperAnalysisPipeline
 
 __all__ = [
-    "app",
+    "PDFExtractor",
     "ValidatedDocument",
-    "IngestPipeline",
-    "IngestionService",
+    "ProcessedDocument",
+    "SectionHierarchy",
+    "get_pipeline",
 ]
+

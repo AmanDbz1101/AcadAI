@@ -18,3 +18,9 @@ python-dotenv>=1.0.0  # Environment variables
 
 # LLM Integration
 groq>=0.9.0  # Groq API client for LLM fallback
+
+# Embedding and Retrieval
+transformers>=4.36.0  # For SPECTER2 model
+rank-bm25>=0.2.2  # BM25 sparse retrieval
+torch>=2.0.0  # PyTorch for transformers
+sentence-transformers>=2.2.0  # Sentence embeddings utilities
