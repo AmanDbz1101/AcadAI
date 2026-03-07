@@ -65,6 +65,7 @@ class AgentState(BaseModel):
     1. Extraction only: pdf_path → extraction → categorization → END
     2. Q&A: pdf_path → extraction → categorization → retrieval → qa → END
     3. Summarization: pdf_path → extraction → categorization → summarization → END
+    4. Reading Guide (ORIGINAL_RESEARCH): pdf_path → extraction → categorization → original_paper_guide → END
     """
     
     # === Input ===
@@ -97,6 +98,10 @@ class AgentState(BaseModel):
     # === Summarization outputs ===
     summary: Optional[str] = Field(None, description="Generated paper summary")
     key_contributions: Optional[list[str]] = Field(None, description="Main contributions extracted")
+    
+    # === Reading Guide outputs ===
+    reading_guide: Optional[dict[str, Any]] = Field(None, description="Three-Pass Method reading guide (for ORIGINAL_RESEARCH)")
+    guide_file_path: Optional[str] = Field(None, description="Path to saved reading guide JSON file")
     
     # === Control flow ===
     next_step: Optional[str] = Field(None, description="Next node to route to (for conditional edges)")

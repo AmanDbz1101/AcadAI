@@ -11,7 +11,9 @@ import re
 import logging
 from typing import List, Dict, Any, Optional
 
-from docling.document_converter import DocumentConverter
+from docling.document_converter import DocumentConverter, PdfFormatOption
+from docling.datamodel.base_models import InputFormat
+from docling.datamodel.pipeline_options import PdfPipelineOptions, AcceleratorOptions, AcceleratorDevice
 from groq import Groq
 
 from backend.extraction.models.document import ValidatedDocument
@@ -25,6 +27,28 @@ from backend.extraction.models.metadata import (
 
 
 logger = logging.getLogger(__name__)
+
+_MIN_FREE_GPU_GB = 1.5  # minimum free VRAM required to use GPU
+
+
+def _get_accelerator_options(num_threads: int = 4) -> AcceleratorOptions:
+    """Return GPU AcceleratorOptions if enough VRAM is free, else fall back to CPU."""
+    try:
+        import torch
+        if torch.cuda.is_available():
+            free_bytes, _ = torch.cuda.mem_get_info()
+            free_gb = free_bytes / (1024 ** 3)
+            if free_gb >= _MIN_FREE_GPU_GB:
+                logger.info(f"Using GPU for docling (free VRAM: {free_gb:.2f} GB)")
+                return AcceleratorOptions(num_threads=num_threads, device=AcceleratorDevice.CUDA)
+            logger.warning(
+                f"GPU free VRAM too low ({free_gb:.2f} GB < {_MIN_FREE_GPU_GB} GB), falling back to CPU"
+            )
+    except Exception:
+        pass
+    logger.info("Using CPU for docling")
+    return AcceleratorOptions(num_threads=num_threads, device=AcceleratorDevice.CPU)
+
 
 
 class MetadataExtractor:
@@ -128,7 +152,17 @@ Respond in JSON format:
             self.client = Groq(api_key=self.api_key)
         
         self.model = model
-        self.converter = DocumentConverter()
+        _pipeline_options = PdfPipelineOptions(
+            do_ocr=False,
+            accelerator_options=_get_accelerator_options(),
+        )
+        self.converter = DocumentConverter(
+            format_options={
+                InputFormat.PDF: PdfFormatOption(
+                    pipeline_options=_pipeline_options
+                )
+            }
+        )
     
     def extract(self, document: ValidatedDocument) -> ExtractedMetadata:
         """

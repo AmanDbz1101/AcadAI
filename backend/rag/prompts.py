@@ -6,6 +6,8 @@ All LLM prompts consolidated in one place.
 Follows the Chat2Code pattern: simple functions returning formatted strings.
 """
 
+from typing import Optional
+
 
 def categorizer_prompt(title: str, abstract: str) -> str:
     """
@@ -333,3 +335,79 @@ Return the guide in JSON format with structure:
 }}
 
 Generate the reading guide:"""
+
+
+def _flatten_sections(sections: list, level: int = 0) -> list:
+    """Recursively flatten nested section structure."""
+    result = []
+    for section in sections:
+        name = section.get('original_name', section.get('title', 'Untitled'))
+        result.append(name)
+        # Recursively process nested sections
+        if 'sections' in section and section['sections']:
+            result.extend(_flatten_sections(section['sections'], level + 1))
+    return result
+
+
+def original_paper_guide_prompt(
+    title: str,
+    abstract: str,
+    sections: list,
+    num_figures: int = 0,
+    num_tables: int = 0
+) -> str:
+    """
+    Generate a Three-Pass Method reading guide specifically for ORIGINAL RESEARCH papers.
+    
+    This prompt creates a detailed, step-by-step guide that helps students and researchers
+    efficiently read and understand original research papers.
+    
+    Args:
+        title: Paper title
+        abstract: Paper abstract
+        sections: List of section dictionaries with original_name field
+        num_figures: Number of figures in the paper
+        num_tables: Number of tables in the paper
+        
+    Returns:
+        Formatted prompt for generating original paper reading guide
+    """
+    # Flatten nested sections and extract names
+    section_names = _flatten_sections(sections)
+    section_list = "\n".join([f"- {name}" for name in section_names])
+    
+    return f"""You are an expert research assistant helping users read research papers efficiently.
+
+Generate a step-by-step reading guide for this ORIGINAL RESEARCH paper using the Three-Pass Method.
+
+PAPER INFORMATION:
+- Title: {title}
+- Abstract: {abstract}
+- Section Headings:
+{section_list}
+- Number of Figures: {num_figures}
+- Number of Tables: {num_tables}
+
+THREE PASS METHOD:
+
+PASS 1 – Quick Scan (5-10 min): Understand main problem and contribution. Read title, abstract, intro, skim headings/figures, read conclusion.
+
+PASS 2 – Method Understanding (20-40 min): Understand core method and experiments. Read method sections carefully, study key figures, understand evaluation setup and results.
+
+PASS 3 – Deep Analysis (1-2 hrs): Critical technical analysis. Deep dive into equations/algorithms, analyze ablations, identify limitations and future work.
+
+INSTRUCTIONS:
+1. For each pass, create 3-5 sequential steps
+2. Each step specifies: sections to read, objective, questions to answer, expected output
+3. Reference actual sections from the list above (use exact names or closest match)
+4. Mention figures/tables when relevant
+5. Keep instructions clear and actionable
+
+Generate a comprehensive reading guide that helps students efficiently understand this paper.
+
+IMPORTANT EXAMPLE:
+Pass 1 step: Read "1 Introduction" to understand motivation and background
+Pass 2 step: Study "3 Model Architecture" and "Figure 1" to understand the proposed method
+Pass 3 step: Analyze "4.1 Ablation Study" to evaluate which components matter most
+
+Always reference ACTUAL section names from the list above in your guide."""

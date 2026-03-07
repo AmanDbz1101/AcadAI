@@ -12,8 +12,11 @@ Workflow paths:
     2. Q&A (with query):
        START → extraction → categorizer → retriever → qa → END
     
-    3. Summarization (no query):
+    3. Summarization (no query, not ORIGINAL_RESEARCH):
        START → extraction → categorizer → summarizer → END
+    
+    4. Reading Guide (ORIGINAL_RESEARCH, no query):
+       START → extraction → categorizer → original_paper_guide → END
 """
 
 from __future__ import annotations
@@ -36,7 +39,9 @@ from rag.prompts import (
     retriever_prompt,
     qa_prompt,
     summarizer_prompt,
+    original_paper_guide_prompt,
 )
+from rag.guide_models import ReadingGuide
 
 # Import extraction orchestrator
 import sys
@@ -371,25 +376,114 @@ def summarizer_node(state: dict) -> dict:
         }
 
 
+def original_paper_guide_node(state: dict) -> dict:
+    """
+    Generate a Three-Pass Method reading guide for ORIGINAL_RESEARCH papers.
+    
+    This node creates a detailed, step-by-step guide to help students and researchers
+    efficiently read and understand original research papers.
+    
+    Only runs when category is ORIGINAL_RESEARCH.
+    """
+    logger.info("📖 Original Paper Guide node: generating reading guide...")
+    
+    title = state.get("title", "")
+    abstract = state.get("abstract", "")
+    sections = state.get("sections", [])
+    document_id = state.get("document_id", "")
+    
+    if not title or not abstract:
+        return {
+            **state,
+            "errors": [*state.get("errors", []), "Missing title or abstract for guide generation"],
+        }
+    
+    try:
+        # Extract metadata for the guide
+        # Count figures and tables from sections if available
+        num_figures = 0
+        num_tables = 0
+        
+        for section in sections:
+            stats = section.get("stats", {})
+            num_figures += stats.get("figures", 0)
+            num_tables += stats.get("tables", 0)
+        
+        # Use Groq with structured output
+        llm = ChatGroq(model="llama-3.3-70b-versatile", temperature=0.1)
+        structured_llm = llm.with_structured_output(ReadingGuide)
+        
+        prompt = original_paper_guide_prompt(
+            title=title,
+            abstract=abstract,
+            sections=sections,
+            num_figures=num_figures,
+            num_tables=num_tables
+        )
+        
+        # Get structured response as Pydantic model
+        guide_model: ReadingGuide = structured_llm.invoke(prompt)
+        
+        # Convert to dict for storage
+        guide_json = guide_model.model_dump()
+        
+        # Save guide to file
+        output_dir = Path("output")
+        output_dir.mkdir(exist_ok=True)
+        
+        guide_filename = f"{document_id}_guide.json"
+        guide_path = output_dir / guide_filename
+        
+        with open(guide_path, "w", encoding="utf-8") as f:
+            json.dump(guide_json, f, indent=2, ensure_ascii=False)
+        
+        logger.info(f"✅ Reading guide saved to: {guide_path}")
+        
+        return {
+            **state,
+            "reading_guide": guide_json,
+            "guide_file_path": str(guide_path),
+        }
+        
+    except Exception as exc:
+        logger.error(f"Guide generation failed: {exc}")
+        return {
+            **state,
+            "errors": [*state.get("errors", []), f"Guide generation error: {exc}"],
+        }
+
+
+
 # ---------------------------------------------------------------------------
 # Conditional routing
 # ---------------------------------------------------------------------------
 
 def route_after_categorizer(state: dict) -> str:
     """
-    Route after categorization based on whether query exists.
+    Route after categorization based on category and query.
     
+    Routing logic:
+    - If category is ORIGINAL_RESEARCH and no query → original_paper_guide
     - If query exists → retriever (Q&A path)
-    - If no query → summarizer (summary path)
+    - If no query and not ORIGINAL_RESEARCH → summarizer (summary path)
     """
-    query = state.get("query", "").strip()
+    query = state.get("query") or ""
+    query = query.strip() if query else ""
+    category = state.get("category", "")
     
+    # If it's an original research paper and no query, generate reading guide
+    if category == "ORIGINAL_RESEARCH" and not query:
+        logger.info("→ Routing to original_paper_guide (ORIGINAL_RESEARCH + no query)")
+        return "original_paper_guide"
+    
+    # If query exists, go to Q&A path
     if query:
         logger.info("→ Routing to retriever (Q&A path)")
         return "retriever"
-    else:
-        logger.info("→ Routing to summarizer (summary path)")
-        return "summarizer"
+    
+    # Otherwise, generate summary
+    logger.info("→ Routing to summarizer (summary path)")
+    return "summarizer"
 
 
 # ---------------------------------------------------------------------------
@@ -411,6 +505,7 @@ def build_graph():
     builder.add_node("retriever", retriever_node)
     builder.add_node("qa", qa_node)
     builder.add_node("summarizer", summarizer_node)
+    builder.add_node("original_paper_guide", original_paper_guide_node)
     
     # Add edges
     builder.add_edge(START, "extraction")
@@ -423,6 +518,7 @@ def build_graph():
         {
             "retriever": "retriever",
             "summarizer": "summarizer",
+            "original_paper_guide": "original_paper_guide",
         }
     )
     
@@ -432,6 +528,9 @@ def build_graph():
     
     # Summary path
     builder.add_edge("summarizer", END)
+    
+    # Reading guide path (for ORIGINAL_RESEARCH papers)
+    builder.add_edge("original_paper_guide", END)
     
     return builder.compile()
 

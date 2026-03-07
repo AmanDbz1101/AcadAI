@@ -7,13 +7,37 @@ Detects machine-readability and determines if OCR is needed.
 """
 
 import time
+import logging
 from pathlib import Path
 from typing import Optional, List, Dict, Any
 from dataclasses import dataclass
 
 from docling.document_converter import DocumentConverter, PdfFormatOption
 from docling.datamodel.base_models import InputFormat
-from docling.datamodel.pipeline_options import PdfPipelineOptions
+from docling.datamodel.pipeline_options import PdfPipelineOptions, AcceleratorOptions, AcceleratorDevice
+
+_loader_logger = logging.getLogger(__name__)
+
+_MIN_FREE_GPU_GB = 1.5  # minimum free VRAM required to use GPU
+
+
+def _get_accelerator_options(num_threads: int = 4) -> AcceleratorOptions:
+    """Return GPU AcceleratorOptions if enough VRAM is free, else fall back to CPU."""
+    try:
+        import torch
+        if torch.cuda.is_available():
+            free_bytes, _ = torch.cuda.mem_get_info()
+            free_gb = free_bytes / (1024 ** 3)
+            if free_gb >= _MIN_FREE_GPU_GB:
+                _loader_logger.info(f"Using GPU for docling (free VRAM: {free_gb:.2f} GB)")
+                return AcceleratorOptions(num_threads=num_threads, device=AcceleratorDevice.CUDA)
+            _loader_logger.warning(
+                f"GPU free VRAM too low ({free_gb:.2f} GB < {_MIN_FREE_GPU_GB} GB), falling back to CPU"
+            )
+    except Exception:
+        pass
+    _loader_logger.info("Using CPU for docling")
+    return AcceleratorOptions(num_threads=num_threads, device=AcceleratorDevice.CPU)
 from docling_core.types.doc import DoclingDocument, DocItem
 
 from backend.extraction.models.document import (
@@ -68,6 +92,7 @@ class PDFLoader:
             generate_page_images=self.config.generate_page_images,
             generate_picture_images=self.config.generate_picture_images,
             # do_formula_enrichment=True,
+            accelerator_options=_get_accelerator_options(),
         )
         
         # Create converter with options
