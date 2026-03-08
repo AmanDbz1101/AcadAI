@@ -19,7 +19,7 @@ from __future__ import annotations
 import logging
 from typing import Optional
 
-from rag.retrieval.config import RERANKER_MODEL, RERANKER_TOP_N
+from rag.retrieval.config import RERANKER_MODEL, RERANKER_TOP_N, MODEL_CACHE_DIR
 
 logger = logging.getLogger(__name__)
 
@@ -53,7 +53,9 @@ class FlashRankReranker:
         try:
             from flashrank import Ranker  # type: ignore
 
-            self._ranker = Ranker(model_name=self.model_name, cache_dir="/tmp/flashrank")
+            flashrank_cache = MODEL_CACHE_DIR / "flashrank"
+            flashrank_cache.mkdir(parents=True, exist_ok=True)
+            self._ranker = Ranker(model_name=self.model_name, cache_dir=str(flashrank_cache))
             logger.info("FlashRankReranker: loaded model %s", self.model_name)
         except ImportError:
             logger.error(

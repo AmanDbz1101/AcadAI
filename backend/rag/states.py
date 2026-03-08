@@ -95,6 +95,7 @@ class AgentState(BaseModel):
     # === Q&A outputs ===
     answer: Optional[str] = Field(None, description="Answer to user query with citations")
     answer_confidence: Optional[Confidence] = Field(None, description="Confidence in the answer")
+    qa_results: Optional[list[dict]] = Field(None, description="Per-question Q&A results [{question, answer, confidence}]")
     
     # === Summarization outputs ===
     summary: Optional[str] = Field(None, description="Generated paper summary")

@@ -25,6 +25,10 @@ except ImportError:
     QDRANT_API_KEY = os.getenv("QDRANT_API_KEY")
     QDRANT_COLLECTION_NAME = os.getenv("QDRANT_COLLECTION_NAME", "research_papers")
 
+# ── Model cache (persistent, offline-capable) ───────────────────────────────
+MODEL_CACHE_DIR: Path = Path(os.getenv("MODEL_CACHE_DIR", str(_ROOT / "models")))
+MODEL_CACHE_DIR.mkdir(parents=True, exist_ok=True)
+
 # ── Dense embedding ─────────────────────────────────────────────────────────
 DENSE_MODEL: str = os.getenv("DENSE_MODEL", "BAAI/bge-small-en-v1.5")
 DENSE_VECTOR_SIZE: int = 384          # bge-small-en-v1.5 output dim

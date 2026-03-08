@@ -23,7 +23,7 @@ from typing import Optional
 import numpy as np
 from langchain_core.embeddings import Embeddings
 
-from rag.retrieval.config import DENSE_MODEL
+from rag.retrieval.config import DENSE_MODEL, MODEL_CACHE_DIR
 
 logger = logging.getLogger(__name__)
 
@@ -74,7 +74,9 @@ class DenseEncoder(Embeddings):
 
         logger.info("DenseEncoder: loading model %s …", self.model_name)
         t0 = time.time()
-        kwargs: dict = {}
+        cache_dir = MODEL_CACHE_DIR / "sentence_transformers"
+        cache_dir.mkdir(parents=True, exist_ok=True)
+        kwargs: dict = {"cache_folder": str(cache_dir)}
         if self._device is not None:
             kwargs["device"] = self._device
         self._model = SentenceTransformer(self.model_name, **kwargs)

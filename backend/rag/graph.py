@@ -388,9 +388,22 @@ def retriever_node(state: dict) -> dict:
             len(per_question_results),
         )
 
+        # Flatten and deduplicate chunks across all questions, keep top 2 for QA
+        seen_keys: set = set()
+        flat_chunks: list[dict] = []
+        for qr in per_question_results:
+            for chunk in qr.get("chunks", []):
+                key = (chunk.get("content") or "")[:120]
+                if key not in seen_keys:
+                    seen_keys.add(key)
+                    flat_chunks.append(chunk)
+        top_2_chunks = flat_chunks[:2]
+        logger.info("Top 2 chunks selected for QA (from %d total)", len(flat_chunks))
+
         return {
             **state,
             "per_question_results": per_question_results,
+            "retrieval_results": top_2_chunks,
         }
 
     except Exception as exc:
@@ -403,69 +416,75 @@ def retriever_node(state: dict) -> dict:
 
 def qa_node(state: dict) -> dict:
     """
-    Answer user's question using retrieved context.
-    
-    Follows retriever_node in the Q&A workflow path.
+    Answer guide questions using retrieved context.
+
+    Iterates over the first 4 entries in ``per_question_results`` (each
+    carrying its own top-2 chunks) and generates an answer for every
+    question.  Results are stored in ``qa_results``.
     """
-    logger.info("💬 Q&A node: generating answer...")
-    
-    query = state.get("query", "")
-    retrieval_results = state.get("retrieval_results", [])
-    
-    if not query:
+    logger.info("💬 Q&A node: answering guide questions…")
+
+    per_question_results = state.get("per_question_results") or []
+
+    if not per_question_results:
         return {
             **state,
-            "errors": [*state.get("errors", []), "No query provided for Q&A"],
+            "errors": [*state.get("errors", []), "No per-question results available for Q&A"],
         }
-    
-    if not retrieval_results:
-        return {
-            **state,
-            "errors": [*state.get("errors", []), "No retrieval results for Q&A"],
-            "answer": "I couldn't find relevant information to answer your question.",
-            "answer_confidence": "LOW",
-        }
-    
-    try:
-        # Build context from retrieval results
+
+    metadata = {
+        "paper_title": state.get("title", ""),
+        "category": state.get("category", ""),
+    }
+    llm = ChatGroq(model="llama-3.3-70b-versatile", temperature=0.3)
+
+    qa_results: list[dict] = []
+    questions_to_answer = per_question_results[:4]   # first 4 only
+    logger.info(
+        "Answering %d questions (of %d total)",
+        len(questions_to_answer),
+        len(per_question_results),
+    )
+
+    for idx, qr in enumerate(questions_to_answer, 1):
+        question = qr.get("question", "")
+        top_2_chunks = (qr.get("chunks") or [])[:2]
+
+        logger.info("  [%d/%d] Q: %s…", idx, len(questions_to_answer), question[:80])
+
+        if not top_2_chunks:
+            logger.warning("    No chunks for question %d — skipping LLM call", idx)
+            qa_results.append({
+                "question": question,
+                "answer": "No relevant content found.",
+                "confidence": "LOW",
+            })
+            continue
+
         context_parts = []
-        for i, result in enumerate(retrieval_results[:5], 1):
-            content = result.get("content", "")
-            score = result.get("score", 0.0)
+        for i, chunk in enumerate(top_2_chunks, 1):
+            content = chunk.get("content", "")
+            score = chunk.get("score", 0.0)
             context_parts.append(f"[{i}] (relevance: {score:.2f})\n{content}")
-        
         context = "\n\n".join(context_parts)
-        
-        # Prepare metadata
-        metadata = {
-            "paper_title": state.get("title", ""),
-            "category": state.get("category", ""),
-        }
-        
-        # Generate answer
-        llm = ChatGroq(model="llama-3.3-70b-versatile", temperature=0.3)
-        prompt = qa_prompt(query=query, context=context, metadata=metadata)
-        response = llm.invoke([HumanMessage(content=prompt)])
-        
-        answer = response.content.strip()
-        
-        # Simple confidence heuristic based on answer length and completeness
-        answer_confidence = "HIGH" if len(answer) > 100 else "MEDIUM"
-        
-        return {
-            **state,
-            "answer": answer,
-            "answer_confidence": answer_confidence,
-        }
-        
-    except Exception as exc:
-        logger.error(f"Q&A failed: {exc}")
-        return {
-            **state,
-            "errors": [*state.get("errors", []), f"Q&A error: {exc}"],
-            "answer": "An error occurred while generating the answer.",
-            "answer_confidence": "LOW",
-        }
+
+        try:
+            prompt = qa_prompt(query=question, context=context, metadata=metadata)
+            response = llm.invoke([HumanMessage(content=prompt)])
+            answer = response.content.strip()
+            confidence = "HIGH" if len(answer) > 100 else "MEDIUM"
+        except Exception as exc:
+            logger.error("    LLM call failed for question %d: %s", idx, exc)
+            answer = "An error occurred while generating the answer."
+            confidence = "LOW"
+
+        qa_results.append({"question": question, "answer": answer, "confidence": confidence})
+
+    logger.info("Q&A complete: %d answers generated", len(qa_results))
+    return {
+        **state,
+        "qa_results": qa_results,
+    }
 
 
 def summarizer_node(state: dict) -> dict:
@@ -679,16 +698,15 @@ def route_after_categorizer(state: dict) -> str:
     - THEORETICAL        → theoretical_guide
     - BENCHMARK_DATASET  → benchmark_dataset_guide
 
-    If a user query is provided directly (bypassing the guide flow) → summarizer.
+    If a user query is provided directly → retriever (skip guide generation).
     """
     query = (state.get("query") or "").strip()
     category = state.get("category", "")
 
-    # If user provided a direct query without wanting a guide, go to summarizer
-    # (The guide nodes will route to retriever themselves via their own edge)
+    # If user provided a direct query, go straight to retriever then QA
     if query:
-        logger.info("→ Routing to summarizer (direct query path — no guide generation)")
-        return "summarizer"
+        logger.info("→ Routing to retriever (direct query path — skip guide, go to QA)")
+        return "retriever"
 
     # Route to the appropriate category-specific guide node
     guide_node = _CATEGORY_GUIDE_NODE.get(category)
@@ -711,8 +729,14 @@ def build_graph():
 
     Workflow paths
     --------------
-    Extraction + Categorization only (no query):
-        START → extraction → categorizer → <category_guide> → retriever → END
+    Guide path (no user query — default):
+        START → extraction → categorizer → <category_guide> → retriever → qa → END
+
+    Direct query path (user provides a query, guide skipped):
+        START → extraction → categorizer → retriever → qa → END
+
+    Summarizer fallback (unknown category):
+        START → extraction → categorizer → summarizer → END
 
     Guide nodes (one per category):
         original_paper_guide  (ORIGINAL_RESEARCH)
@@ -720,13 +744,6 @@ def build_graph():
         system_engineering_guide (SYSTEM_ENGINEERING)
         theoretical_guide     (THEORETICAL)
         benchmark_dataset_guide (BENCHMARK_DATASET)
-
-    Each guide node extracts questions_to_answer + sections_to_read, then
-    flows into the retriever.  The retriever returns the chunks as output
-    (no LLM QA step for now).
-
-    Direct query path (query provided by user):
-        START → extraction → categorizer → summarizer → END
 
     Returns:
         A compiled LangGraph CompiledGraph ready for invocation.
@@ -753,7 +770,7 @@ def build_graph():
     builder.add_edge(START, "extraction")
     builder.add_edge("extraction", "categorizer")
 
-    # Conditional routing: categorizer → one of the 5 guide nodes (or summarizer)
+    # Conditional routing: categorizer → one of the 5 guide nodes, retriever, or summarizer
     builder.add_conditional_edges(
         "categorizer",
         route_after_categorizer,
@@ -763,6 +780,7 @@ def build_graph():
             "system_engineering_guide": "system_engineering_guide",
             "theoretical_guide": "theoretical_guide",
             "benchmark_dataset_guide": "benchmark_dataset_guide",
+            "retriever": "retriever",
             "summarizer": "summarizer",
         },
     )
@@ -771,8 +789,8 @@ def build_graph():
     for guide_node in _CATEGORY_GUIDE_NODE.values():
         builder.add_edge(guide_node, "retriever")
 
-    # Retriever → END  (chunks returned as output; no LLM QA step for now)
-    builder.add_edge("retriever", END)
+    # Retriever always flows into QA (guide questions are always present)
+    builder.add_edge("retriever", "qa")
 
     # Summarizer and QA paths
     builder.add_edge("summarizer", END)
