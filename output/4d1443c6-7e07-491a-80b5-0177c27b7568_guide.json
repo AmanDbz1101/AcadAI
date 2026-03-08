@@ -1,0 +1,179 @@
+{
+  "paper_title": "Attention Is All You Need",
+  "reading_strategy": {
+    "method": "three_pass_method",
+    "paper_type": "original_research",
+    "estimated_total_time": "2-3 hours"
+  },
+  "pass1_quick_scan": {
+    "goal": "Understand main problem and contribution",
+    "estimated_time": "5-10 minutes",
+    "steps": [
+      {
+        "step_number": 1,
+        "section_to_read": [
+          "Title",
+          "Abstract"
+        ],
+        "objective": "Understand the main problem and contribution",
+        "questions_to_answer": [
+          "What is the main problem addressed in the paper?",
+          "What is the proposed solution?"
+        ],
+        "expected_output": "Understand the main problem and contribution"
+      },
+      {
+        "step_number": 2,
+        "section_to_read": [
+          "1 Introduction"
+        ],
+        "objective": "Understand motivation and background",
+        "questions_to_answer": [
+          "What motivates the research?",
+          "What background information is relevant?"
+        ],
+        "expected_output": "Understand motivation and background"
+      },
+      {
+        "step_number": 3,
+        "section_to_read": [
+          "Section Headings"
+        ],
+        "objective": "Skim headings and figures",
+        "questions_to_answer": [
+          "What are the main sections of the paper?",
+          "What figures and tables are included?"
+        ],
+        "expected_output": "Skim headings and figures"
+      },
+      {
+        "step_number": 4,
+        "section_to_read": [
+          "7 Conclusion"
+        ],
+        "objective": "Read conclusion",
+        "questions_to_answer": [
+          "What are the main conclusions of the paper?",
+          "What future work is suggested?"
+        ],
+        "expected_output": "Read conclusion"
+      }
+    ]
+  },
+  "pass2_method_understanding": {
+    "goal": "Understand core method and experiments",
+    "estimated_time": "20-40 minutes",
+    "steps": [
+      {
+        "step_number": 1,
+        "section_to_read": [
+          "3 Model Architecture"
+        ],
+        "objective": "Understand the proposed method",
+        "questions_to_answer": [
+          "What is the proposed model architecture?",
+          "How does it work?"
+        ],
+        "expected_output": "Understand the proposed method"
+      },
+      {
+        "step_number": 2,
+        "section_to_read": [
+          "3.2 Attention"
+        ],
+        "objective": "Understand attention mechanisms",
+        "questions_to_answer": [
+          "What is attention?",
+          "How is it used in the model?"
+        ],
+        "expected_output": "Understand attention mechanisms"
+      },
+      {
+        "step_number": 3,
+        "section_to_read": [
+          "5 Training"
+        ],
+        "objective": "Understand evaluation setup and results",
+        "questions_to_answer": [
+          "How was the model trained?",
+          "What results were achieved?"
+        ],
+        "expected_output": "Understand evaluation setup and results"
+      },
+      {
+        "step_number": 4,
+        "section_to_read": [
+          "6 Results"
+        ],
+        "objective": "Study key results",
+        "questions_to_answer": [
+          "What are the main results of the paper?",
+          "What do they mean?"
+        ],
+        "expected_output": "Study key results"
+      }
+    ]
+  },
+  "pass3_deep_analysis": {
+    "goal": "Critical technical analysis",
+    "estimated_time": "1-2 hours",
+    "steps": [
+      {
+        "step_number": 1,
+        "section_to_read": [
+          "3.2.1 Scaled Dot-Product Attention"
+        ],
+        "objective": "Deep dive into equations/algorithms",
+        "questions_to_answer": [
+          "How does scaled dot-product attention work?",
+          "What are its advantages?"
+        ],
+        "expected_output": "Deep dive into equations/algorithms"
+      },
+      {
+        "step_number": 2,
+        "section_to_read": [
+          "4 Why Self-Attention"
+        ],
+        "objective": "Analyze ablations",
+        "questions_to_answer": [
+          "Why was self-attention chosen?",
+          "What are its benefits?"
+        ],
+        "expected_output": "Analyze ablations"
+      },
+      {
+        "step_number": 3,
+        "section_to_read": [
+          "6.1 Machine Translation"
+        ],
+        "objective": "Evaluate results and identify limitations",
+        "questions_to_answer": [
+          "What are the results of the machine translation task?",
+          "What limitations are there?"
+        ],
+        "expected_output": "Evaluate results and identify limitations"
+      },
+      {
+        "step_number": 4,
+        "section_to_read": [
+          "6.3 English Constituency Parsing"
+        ],
+        "objective": "Identify future work",
+        "questions_to_answer": [
+          "What future work is suggested?",
+          "What are the potential applications?"
+        ],
+        "expected_output": "Identify future work"
+      }
+    ]
+  },
+  "final_user_task": {
+    "summary_task": "Summarize the main contributions and results of the paper",
+    "reflection_questions": [
+      "What are the main contributions of the paper?",
+      "What are the implications of the results?",
+      "What future work is suggested?"
+    ]
+  }
+}

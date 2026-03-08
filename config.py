@@ -47,6 +47,10 @@ QDRANT_EMBEDDING_MODEL = os.getenv(
 if not QDRANT_URL or not QDRANT_API_KEY:
     print("WARNING: QDRANT_URL or QDRANT_API_KEY not set in environment variables!")
 
+# Model cache — all HuggingFace / FlashRank weights stored here (offline-capable)
+MODEL_CACHE_DIR = Path(os.getenv("MODEL_CACHE_DIR", str(Path(__file__).parent / "models")))
+MODEL_CACHE_DIR.mkdir(parents=True, exist_ok=True)
+
 # Hybrid Retrieval Configuration
 # Dense encoder (BGE-small-en-v1.5 — 384-dim, better quality than MiniLM at same size)
 DENSE_MODEL = os.getenv("DENSE_MODEL", "BAAI/bge-small-en-v1.5")

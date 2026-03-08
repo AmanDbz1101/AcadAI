@@ -1,6 +1,7 @@
 .env
 env_research
 .venv
+models/
 # API and Frontend
 uploads/
 logs/
