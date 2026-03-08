@@ -1,11 +1,12 @@
 .env
 env_research
-
+.venv
 # API and Frontend
 uploads/
 logs/
 *.log
-
+Research Papers/
+plans/
 # Python
 __pycache__/
 *.pyc

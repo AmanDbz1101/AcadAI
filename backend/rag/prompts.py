@@ -102,7 +102,7 @@ Abstract: {abstract}
 """
 
 
-def retriever_prompt(query: str, category: str) -> str:
+def retriever_prompt(query: str, category: str, sections_to_read: list = None) -> str:
     """
     Generate a retrieval query optimization prompt.
     
@@ -111,22 +111,31 @@ def retriever_prompt(query: str, category: str) -> str:
     Args:
         query: Original user query
         category: Paper category (helps tailor query expansion)
+        sections_to_read: Priority sections from the reading guide (for section-aware expansion)
         
     Returns:
         Formatted prompt for query expansion
     """
+    section_hint = ""
+    if sections_to_read:
+        section_list = ", ".join(f'"{s}"' for s in sections_to_read[:6])
+        section_hint = f"""
+Priority Sections: {section_list}
+When expanding the query, incorporate terminology and concepts likely to appear in these sections.
+"""
+
     return f"""You are a semantic search query optimizer for academic papers.
 
 Your task is to expand and enrich the user's query to improve retrieval from a vector database of research paper content.
 
-Paper Category: {category}
-
+Paper Category: {category}{section_hint}
 User Query: {query}
 
 Instructions:
 - Identify key technical terms and concepts
 - Add relevant synonyms and related terminology
 - Consider section-specific language (e.g., "method", "results", "conclusion")
+- If priority sections are listed, bias the expansion towards content found in those sections
 - Keep the expanded query concise (1-3 sentences)
 - Focus on semantic relevance, not keyword stuffing
 
@@ -411,3 +420,192 @@ Pass 2 step: Study "3 Model Architecture" and "Figure 1" to understand the propo
 Pass 3 step: Analyze "4.1 Ablation Study" to evaluate which components matter most
 
 Always reference ACTUAL section names from the list above in your guide."""
+
+
+# ---------------------------------------------------------------------------
+# Category-specific guide prompts (Survey/Review, System Engineering, Theoretical, Benchmark)
+# ---------------------------------------------------------------------------
+
+def survey_review_guide_prompt(
+    title: str,
+    abstract: str,
+    sections: list,
+    num_figures: int = 0,
+    num_tables: int = 0,
+) -> str:
+    """
+    Generate a Three-Pass reading guide for SURVEY / REVIEW papers.
+    Produces output matching the SurveyReadingGuide Pydantic model.
+    """
+    section_names = _flatten_sections(sections)
+    section_list = "\n".join([f"- {name}" for name in section_names])
+
+    return f"""You are an expert research assistant helping users read academic survey and review papers efficiently.
+
+Generate a step-by-step reading guide for this SURVEY/REVIEW paper using the Three-Pass Method.
+
+PAPER INFORMATION:
+- Title: {title}
+- Abstract: {abstract}
+- Section Headings:
+{section_list}
+- Number of Figures: {num_figures}
+- Number of Tables: {num_tables}
+
+THREE PASS METHOD FOR SURVEYS:
+
+PASS 1 – Field Overview (10-15 min): Grasp the survey's scope, the problem domain, and the taxonomy or categorization scheme introduced.
+
+PASS 2 – Taxonomy & Method Categories (30-60 min): Study each major method category, understand how prior work is organized, note key comparisons and tables.
+
+PASS 3 – Research Landscape Analysis (1-2 hrs): Identify research gaps, future directions, critical analysis of coverage, and evaluate the survey's completeness.
+
+INSTRUCTIONS:
+1. For each pass, create 3-5 sequential steps
+2. Each step specifies: sections to read, objective, questions to answer, expected output
+3. Reference actual sections from the list above (use exact names or closest match)
+4. Highlight any taxonomy figures or comparison tables when relevant
+5. Keep instructions clear and actionable
+
+Generate a comprehensive reading guide for students and researchers approaching this survey paper.
+
+Always reference ACTUAL section names from the list above."""
+
+
+def system_engineering_guide_prompt(
+    title: str,
+    abstract: str,
+    sections: list,
+    num_figures: int = 0,
+    num_tables: int = 0,
+) -> str:
+    """
+    Generate a Three-Pass reading guide for SYSTEM ENGINEERING papers.
+    Produces output matching the SystemEngineeringReadingGuide Pydantic model.
+    """
+    section_names = _flatten_sections(sections)
+    section_list = "\n".join([f"- {name}" for name in section_names])
+
+    return f"""You are an expert research assistant helping users read system engineering and infrastructure papers efficiently.
+
+Generate a step-by-step reading guide for this SYSTEM ENGINEERING paper using the Three-Pass Method.
+
+PAPER INFORMATION:
+- Title: {title}
+- Abstract: {abstract}
+- Section Headings:
+{section_list}
+- Number of Figures: {num_figures}
+- Number of Tables: {num_tables}
+
+THREE PASS METHOD FOR SYSTEM PAPERS:
+
+PASS 1 – System Overview (5-10 min): Understand the system's purpose, the problem it solves, and the high-level architecture. Read abstract, intro, and skim architecture diagrams.
+
+PASS 2 – Architecture Deep Dive (30-50 min): Study individual components, data flow, key design decisions, APIs, and implementation trade-offs in detail.
+
+PASS 3 – Engineering Evaluation (1-1.5 hrs): Critically evaluate performance benchmarks, scalability results, failure modes, deployment lessons, and compare design choices to alternatives.
+
+INSTRUCTIONS:
+1. For each pass, create 3-5 sequential steps
+2. Each step specifies: sections to read, objective, questions to answer, expected output
+3. Reference actual sections from the list above (use exact names or closest match)
+4. Highlight architecture diagrams and performance tables when relevant
+5. Keep instructions clear and actionable
+
+Generate a comprehensive reading guide for engineers and researchers studying this system paper.
+
+Always reference ACTUAL section names from the list above."""
+
+
+def theoretical_guide_prompt(
+    title: str,
+    abstract: str,
+    sections: list,
+    num_figures: int = 0,
+    num_tables: int = 0,
+) -> str:
+    """
+    Generate a Three-Pass reading guide for THEORETICAL papers.
+    Produces output matching the TheoreticalReadingGuide Pydantic model.
+    """
+    section_names = _flatten_sections(sections)
+    section_list = "\n".join([f"- {name}" for name in section_names])
+
+    return f"""You are an expert research assistant helping users read theoretical and mathematical computer science papers efficiently.
+
+Generate a step-by-step reading guide for this THEORETICAL paper using the Three-Pass Method.
+
+PAPER INFORMATION:
+- Title: {title}
+- Abstract: {abstract}
+- Section Headings:
+{section_list}
+- Number of Figures: {num_figures}
+- Number of Tables: {num_tables}
+
+THREE PASS METHOD FOR THEORETICAL PAPERS:
+
+PASS 1 – Results Overview (10-15 min): Understand what theorems or results are proved, why they matter, and what problem they solve — without diving into proofs yet.
+
+PASS 2 – Proof Strategy (30-60 min): Follow the main mathematical argument: identify key lemmas, understand the proof structure, and trace how lemmas combine into the main result.
+
+PASS 3 – Deep Mathematical Analysis (1-3 hrs): Rigorously verify individual proofs, assess assumptions and conditions, identify subtle steps, and connect the results to broader algorithmic or theoretical implications.
+
+INSTRUCTIONS:
+1. For each pass, create 3-5 sequential steps
+2. Each step specifies: sections to read, objective, questions to answer, expected output
+3. Reference actual sections from the list above (use exact names or closest match)
+4. Flag specific theorem / lemma / corollary names when mentioned in the section headings
+5. Keep instructions clear and actionable
+
+Generate a comprehensive reading guide for students and researchers working through this theoretical paper.
+
+Always reference ACTUAL section names from the list above."""
+
+
+def benchmark_dataset_guide_prompt(
+    title: str,
+    abstract: str,
+    sections: list,
+    num_figures: int = 0,
+    num_tables: int = 0,
+) -> str:
+    """
+    Generate a Three-Pass reading guide for BENCHMARK / DATASET papers.
+    Produces output matching the BenchmarkDatasetReadingGuide Pydantic model.
+    """
+    section_names = _flatten_sections(sections)
+    section_list = "\n".join([f"- {name}" for name in section_names])
+
+    return f"""You are an expert research assistant helping users read benchmark and dataset papers efficiently.
+
+Generate a step-by-step reading guide for this BENCHMARK/DATASET paper using the Three-Pass Method.
+
+PAPER INFORMATION:
+- Title: {title}
+- Abstract: {abstract}
+- Section Headings:
+{section_list}
+- Number of Figures: {num_figures}
+- Number of Tables: {num_tables}
+
+THREE PASS METHOD FOR BENCHMARK/DATASET PAPERS:
+
+PASS 1 – Dataset Overview (5-10 min): Understand what dataset or benchmark is introduced, its intended use cases, scale, and the gap it fills compared to existing resources.
+
+PASS 2 – Methodology & Tasks (30-50 min): Study data collection and annotation methodology, benchmark tasks, evaluation metrics, and the instructions/interfaces provided to annotators or models.
+
+PASS 3 – Benchmark Analysis (1-1.5 hrs): Critically evaluate baseline model results, inter-annotator agreement or data quality metrics, dataset limitations, potential biases, and future research directions.
+
+INSTRUCTIONS:
+1. For each pass, create 3-5 sequential steps
+2. Each step specifies: sections to read, objective, questions to answer, expected output
+3. Reference actual sections from the list above (use exact names or closest match)
+4. Highlight statistics tables, leaderboard tables, and annotation pipeline figures when relevant
+5. Keep instructions clear and actionable
+
+Generate a comprehensive reading guide for researchers wanting to understand, use, or build on this dataset/benchmark.
+
+Always reference ACTUAL section names from the list above."""
+

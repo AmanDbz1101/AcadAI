@@ -89,7 +89,8 @@ class AgentState(BaseModel):
     
     # === Retrieval outputs ===
     retrieval_results: Optional[list[RetrievalResult]] = Field(None, description="Vector search results")
-    retrieval_query: Optional[str] = Field(None, description="Generated query for vector search")
+    retrieval_query: Optional[str] = Field(None, description="First expanded query (backward compat)")
+    retrieval_queries: Optional[list[str]] = Field(None, description="One expanded query per guide question")
     
     # === Q&A outputs ===
     answer: Optional[str] = Field(None, description="Answer to user query with citations")
@@ -100,8 +101,13 @@ class AgentState(BaseModel):
     key_contributions: Optional[list[str]] = Field(None, description="Main contributions extracted")
     
     # === Reading Guide outputs ===
-    reading_guide: Optional[dict[str, Any]] = Field(None, description="Three-Pass Method reading guide (for ORIGINAL_RESEARCH)")
+    reading_guide: Optional[dict[str, Any]] = Field(None, description="Three-Pass Method reading guide (category-specific)")
     guide_file_path: Optional[str] = Field(None, description="Path to saved reading guide JSON file")
+    # Extracted from reading guide steps for downstream use
+    questions_to_answer: Optional[list[str]] = Field(None, description="Questions extracted from all guide steps (used as retrieval query)")
+    sections_to_read: Optional[list[str]] = Field(None, description="Priority sections extracted from all guide steps (used for section-aware retrieval)")
+    question_section_pairs: Optional[list[dict]] = Field(None, description="Per-step (question, sections) pairs from guide — each question carries only its own step's sections")
+    per_question_results: Optional[list[dict]] = Field(None, description="Per-question retrieval results (question, sections, expanded_query, chunks) — not merged")
     
     # === Control flow ===
     next_step: Optional[str] = Field(None, description="Next node to route to (for conditional edges)")

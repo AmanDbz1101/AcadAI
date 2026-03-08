@@ -481,7 +481,7 @@
     "total_sections": 22
   },
   "inference": {
-    "paper_type": "System",
+    "paper_type": "Empirical",
     "difficulty": "medium",
     "math_heavy": false
   }

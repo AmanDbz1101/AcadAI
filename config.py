@@ -47,6 +47,30 @@ QDRANT_EMBEDDING_MODEL = os.getenv(
 if not QDRANT_URL or not QDRANT_API_KEY:
     print("WARNING: QDRANT_URL or QDRANT_API_KEY not set in environment variables!")
 
+# Hybrid Retrieval Configuration
+# Dense encoder (BGE-small-en-v1.5 — 384-dim, better quality than MiniLM at same size)
+DENSE_MODEL = os.getenv("DENSE_MODEL", "BAAI/bge-small-en-v1.5")
+DENSE_VECTOR_SIZE = int(os.getenv("DENSE_VECTOR_SIZE", 384))
+
+# Chunking
+CHUNK_SIZE = int(os.getenv("CHUNK_SIZE", 512))       # tokens per chunk
+CHUNK_OVERLAP = int(os.getenv("CHUNK_OVERLAP", 64))  # overlap between consecutive chunks
+CHUNK_MIN_CHARS = int(os.getenv("CHUNK_MIN_CHARS", 80))  # discard chunks shorter than this
+
+# Retrieval
+RETRIEVER_TOP_K = int(os.getenv("RETRIEVER_TOP_K", 20))  # candidates before reranking
+RERANKER_TOP_N = int(os.getenv("RERANKER_TOP_N", 5))     # final results after reranking
+RERANKER_MODEL = os.getenv("RERANKER_MODEL", "ms-marco-MiniLM-L-12-v2")
+
+# LangSmith Configuration (for LangGraph tracing and observability)
+LANGCHAIN_TRACING_V2 = os.getenv("LANGCHAIN_TRACING_V2", "false").lower() == "true"
+LANGCHAIN_API_KEY = os.getenv("LANGCHAIN_API_KEY")
+LANGCHAIN_PROJECT = os.getenv("LANGCHAIN_PROJECT", "ResearchPaperAssistant")
+LANGCHAIN_ENDPOINT = os.getenv("LANGCHAIN_ENDPOINT", "https://api.smith.langchain.com")
+
+if LANGCHAIN_TRACING_V2 and not LANGCHAIN_API_KEY:
+    print("WARNING: LANGCHAIN_TRACING_V2 is enabled but LANGCHAIN_API_KEY not set!")
+
 # Feature Flags
 ENABLE_CLEANUP_ENDPOINT = os.getenv("ENABLE_CLEANUP_ENDPOINT", "true").lower() == "true"
 ENABLE_DETAILED_ERRORS = os.getenv("ENABLE_DETAILED_ERRORS", "true").lower() == "true"
@@ -65,3 +89,4 @@ print(f"  - Max File Size: {MAX_FILE_SIZE_MB} MB")
 print(f"  - Groq API Configured: {GROQ_API_KEY is not None}")
 print(f"  - Qdrant Configured: {QDRANT_URL is not None and QDRANT_API_KEY is not None}")
 print(f"  - Qdrant Collection: {QDRANT_COLLECTION_NAME}")
+print(f"  - LangSmith Tracing: {'Enabled' if LANGCHAIN_TRACING_V2 else 'Disabled'}")

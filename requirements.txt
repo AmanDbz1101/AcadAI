@@ -36,6 +36,9 @@ scikit-learn>=1.5.0
 qdrant-client>=1.7.0
 langchain-qdrant>=0.1.0
 
+# Reranking
+flashrank>=0.2.0
+
 # Formula Detection Dependencies
 transformers>=4.37.0
 pillow>=10.0.0

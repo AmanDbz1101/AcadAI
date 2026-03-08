@@ -36,12 +36,93 @@ from langchain_core.messages import HumanMessage
 from rag.states import AgentState, RetrievalResult
 from rag.prompts import (
     categorizer_prompt,
-    retriever_prompt,
     qa_prompt,
     summarizer_prompt,
     original_paper_guide_prompt,
+    survey_review_guide_prompt,
+    system_engineering_guide_prompt,
+    theoretical_guide_prompt,
+    benchmark_dataset_guide_prompt,
 )
-from rag.guide_models import ReadingGuide
+from rag.guide_models import (
+    ReadingGuide,
+    SurveyReadingGuide,
+    SystemEngineeringReadingGuide,
+    TheoreticalReadingGuide,
+    BenchmarkDatasetReadingGuide,
+)
+
+# ---------------------------------------------------------------------------
+# Guide helper: extract questions_to_answer and sections_to_read from any guide
+# ---------------------------------------------------------------------------
+
+def _extract_guide_retrieval_info(guide_json: dict) -> list[dict]:
+    """
+    Walk all ReadingPass objects inside a guide dict and return a flat list of
+    per-question entries, each carrying **only the sections from that step**.
+
+    Return format::
+
+        [
+            {"question": "...", "sections": ["Abstract", "1 Introduction"]},
+            {"question": "...", "sections": ["3 Model Architecture"]},
+            ...
+        ]
+
+    Multiple questions that belong to the same step share the same sections list
+    (the exact sections listed for that step only — not accumulating across steps).
+
+    Works for all five guide shapes (original_research, survey, system, theoretical, benchmark).
+    """
+    pairs: list[dict] = []
+    seen_questions: set[str] = set()
+
+    # All known pass keys across the five guide models
+    pass_keys = [
+        "pass1_quick_scan",
+        "pass2_method_understanding",
+        "pass3_deep_analysis",
+        "pass1_field_overview",
+        "pass2_taxonomy_understanding",
+        "pass3_research_landscape_analysis",
+        "pass1_system_overview",
+        "pass2_architecture_deep_dive",
+        "pass3_engineering_evaluation",
+        "pass1_results_overview",
+        "pass2_proof_strategy",
+        "pass3_deep_mathematical_analysis",
+        "pass1_dataset_overview",
+        "pass2_methodology_and_tasks",
+        "pass3_benchmark_analysis",
+    ]
+
+    for key in pass_keys:
+        reading_pass = guide_json.get(key)
+        if not reading_pass:
+            continue
+        for step in reading_pass.get("steps", []):
+            # Sections are scoped to this step only
+            step_sections = [s for s in step.get("section_to_read", []) if s]
+            for q in step.get("questions_to_answer", []):
+                if q and q not in seen_questions:
+                    seen_questions.add(q)
+                    pairs.append({"question": q, "sections": step_sections})
+
+    return pairs
+
+
+# Retrieval pipeline (lazy singleton — imported here to keep graph.py clean)
+_retrieval_pipeline = None
+
+
+def _get_retrieval_pipeline():
+    """Return a process-wide RetrievalPipeline singleton."""
+    global _retrieval_pipeline
+    if _retrieval_pipeline is None:
+        from rag.retrieval import RetrievalPipeline
+
+        _retrieval_pipeline = RetrievalPipeline()
+    return _retrieval_pipeline
 
 # Import extraction orchestrator
 import sys
@@ -201,56 +282,119 @@ def categorizer_node(state: dict) -> dict:
 
 def retriever_node(state: dict) -> dict:
     """
-    Retrieve relevant content from vector store.
-    
-    Only runs when user provides a query.
+    Retrieve relevant content using hybrid vector search (dense + sparse BM25).
+
+    Steps
+    -----
+    1. Use ``question_section_pairs`` from the guide (preferred) or fall back to
+       a single user query.  Each pair carries the question **and the sections
+       that belong only to that step** — no cross-step accumulation.
+    2. Lazy-index the document into Qdrant once before the loop.
+    3. Per-question hybrid retrieval (BGE dense + BM25 sparse, RRF fusion)
+       with section boosting scoped to that step's sections.
+    4. Results are stored **per question** in ``per_question_results`` — no merging.
     """
-    logger.info("🔎 Retriever node: searching vector store...")
-    
-    query = state.get("query", "").strip()
+    logger.info("🔎 Retriever node: hybrid search …")
+
+    question_section_pairs = state.get("question_section_pairs") or []
+    user_query = (state.get("query") or "").strip()
     category = state.get("category", "ORIGINAL_RESEARCH")
-    
-    if not query:
+    document_id = state.get("document_id", "")
+
+    # Build the list of (question, sections) pairs to process
+    if question_section_pairs:
+        pairs = question_section_pairs  # each: {"question": str, "sections": list[str]}
+        logger.info("Using %d per-step guide (question, sections) pairs", len(pairs))
+    elif user_query:
+        pairs = [{"question": user_query, "sections": []}]
+        logger.info("Using user query for retrieval: %s…", user_query[:80])
+    else:
         return {
             **state,
             "errors": [*state.get("errors", []), "No query provided for retrieval"],
         }
-    
+
     try:
-        # First, optimize the query using LLM
-        llm = ChatGroq(model="llama-3.1-8b-instant", temperature=0)
-        prompt = retriever_prompt(query=query, category=category)
-        response = llm.invoke([HumanMessage(content=prompt)])
-        optimized_query = response.content.strip()
-        
-        logger.info(f"Optimized query: {optimized_query}")
-        
-        # TODO: Implement actual Qdrant search
-        # For now, return placeholder (will be implemented when Qdrant is integrated)
-        # from qdrant_client import QdrantClient
-        # client = QdrantClient(url=QDRANT_URL, api_key=QDRANT_API_KEY)
-        # results = client.search(...)
-        
-        # Placeholder: use sections from extraction as pseudo-retrieval
-        sections = state.get("sections", [])
-        retrieval_results = []
-        for i, section in enumerate(sections[:3]):  # Top 3 sections as placeholder
-            retrieval_results.append(
-                RetrievalResult(
-                    content=section.get("title", ""),
-                    score=1.0 - (i * 0.1),
-                    metadata={"section_index": i, "source": "extraction"}
-                ).model_dump()
+        # ── Lazy indexing (once before the query loop) ────────────────────────
+        pipeline = _get_retrieval_pipeline()
+
+        if document_id:
+            hierarchy_path = Path("output") / f"{document_id}_hierarchy.json"
+            if hierarchy_path.exists():
+                index_result = pipeline.index(
+                    hierarchy_json_path=hierarchy_path,
+                    output_dir=Path("output"),
+                )
+                if not index_result.skipped:
+                    logger.info(
+                        "Indexed %d chunks for document %s",
+                        index_result.total_chunks,
+                        document_id,
+                    )
+            else:
+                logger.warning(
+                    "Hierarchy file not found for document %s; skipping indexing",
+                    document_id,
+                )
+
+        # ── Per-question expand + retrieve (results kept separate) ────────────
+        per_question_results: list[dict] = []
+
+        for i, pair in enumerate(pairs, 1):
+            raw_q = pair["question"]
+            # Only this step's sections — not any other step's
+            step_sections: list[str] = pair.get("sections") or []
+
+            logger.info(
+                "  [%d/%d] Q: %s…  step_sections=%s",
+                i, len(pairs), raw_q[:70], step_sections,
             )
-        
+
+            # Section-boosted passes using *this step's* sections only,
+            # then one unrestricted pass for broader coverage
+            step_hits: list = []
+            seen_content: set = set()
+
+            if step_sections:
+                for section in step_sections:
+                    sec_hits = pipeline.query(
+                        query=raw_q,
+                        document_id=document_id or None,
+                        section_title_contains=section,
+                    )
+                    for r in sec_hits:
+                        key = r.content[:120] if hasattr(r, "content") else str(r)
+                        if key not in seen_content:
+                            seen_content.add(key)
+                            step_hits.append(r)
+
+            # Unrestricted pass
+            for r in pipeline.query(query=raw_q, document_id=document_id or None):
+                key = r.content[:120] if hasattr(r, "content") else str(r)
+                if key not in seen_content:
+                    seen_content.add(key)
+                    step_hits.append(r)
+
+            logger.info("      → %d chunks retrieved", len(step_hits))
+
+            per_question_results.append({
+                "question": raw_q,
+                "sections": step_sections,
+                "chunks": [r.model_dump() for r in step_hits],
+            })
+
+        logger.info(
+            "Retrieval complete: %d questions, results stored separately",
+            len(per_question_results),
+        )
+
         return {
             **state,
-            "retrieval_query": optimized_query,
-            "retrieval_results": retrieval_results,
+            "per_question_results": per_question_results,
         }
-        
+
     except Exception as exc:
-        logger.error(f"Retrieval failed: {exc}")
+        logger.error("Retrieval failed: %s", exc, exc_info=True)
         return {
             **state,
             "errors": [*state.get("errors", []), f"Retrieval error: {exc}"],
@@ -376,81 +520,137 @@ def summarizer_node(state: dict) -> dict:
         }
 
 
-def original_paper_guide_node(state: dict) -> dict:
+def _run_guide_node(
+    state: dict,
+    label: str,
+    guide_model_cls,
+    prompt_fn,
+) -> dict:
     """
-    Generate a Three-Pass Method reading guide for ORIGINAL_RESEARCH papers.
-    
-    This node creates a detailed, step-by-step guide to help students and researchers
-    efficiently read and understand original research papers.
-    
-    Only runs when category is ORIGINAL_RESEARCH.
+    Generic helper called by all five guide nodes.
+
+    Parameters
+    ----------
+    state         : current workflow state
+    label         : human-readable label for logging (e.g. "ORIGINAL_RESEARCH")
+    guide_model_cls : Pydantic model class for structured output
+    prompt_fn     : function(title, abstract, sections, num_figures, num_tables) → str
     """
-    logger.info("📖 Original Paper Guide node: generating reading guide...")
-    
+    logger.info("📖 Guide node [%s]: generating reading guide…", label)
+
     title = state.get("title", "")
     abstract = state.get("abstract", "")
     sections = state.get("sections", [])
     document_id = state.get("document_id", "")
-    
+
     if not title or not abstract:
         return {
             **state,
-            "errors": [*state.get("errors", []), "Missing title or abstract for guide generation"],
+            "errors": [*state.get("errors", []), f"Missing title or abstract for {label} guide"],
         }
-    
+
     try:
-        # Extract metadata for the guide
-        # Count figures and tables from sections if available
-        num_figures = 0
-        num_tables = 0
-        
-        for section in sections:
-            stats = section.get("stats", {})
-            num_figures += stats.get("figures", 0)
-            num_tables += stats.get("tables", 0)
-        
-        # Use Groq with structured output
+        num_figures = sum(s.get("stats", {}).get("figures", 0) for s in sections)
+        num_tables = sum(s.get("stats", {}).get("tables", 0) for s in sections)
+
         llm = ChatGroq(model="llama-3.3-70b-versatile", temperature=0.1)
-        structured_llm = llm.with_structured_output(ReadingGuide)
-        
-        prompt = original_paper_guide_prompt(
+        structured_llm = llm.with_structured_output(guide_model_cls)
+
+        prompt = prompt_fn(
             title=title,
             abstract=abstract,
             sections=sections,
             num_figures=num_figures,
-            num_tables=num_tables
+            num_tables=num_tables,
         )
-        
-        # Get structured response as Pydantic model
-        guide_model: ReadingGuide = structured_llm.invoke(prompt)
-        
-        # Convert to dict for storage
+
+        guide_model = structured_llm.invoke(prompt)
         guide_json = guide_model.model_dump()
-        
-        # Save guide to file
+
+        # Extract per-question (question, step_sections) pairs from the guide
+        question_section_pairs = _extract_guide_retrieval_info(guide_json)
+        # Flat lists kept for display / backward compat
+        questions = [p["question"] for p in question_section_pairs]
+        all_sections = list(dict.fromkeys(s for p in question_section_pairs for s in p["sections"]))
+        logger.info(
+            "Guide [%s]: extracted %d questions across %d unique sections for retrieval",
+            label, len(questions), len(all_sections),
+        )
+
+        # Persist guide to disk
         output_dir = Path("output")
         output_dir.mkdir(exist_ok=True)
-        
-        guide_filename = f"{document_id}_guide.json"
-        guide_path = output_dir / guide_filename
-        
+        guide_path = output_dir / f"{document_id}_guide.json"
         with open(guide_path, "w", encoding="utf-8") as f:
             json.dump(guide_json, f, indent=2, ensure_ascii=False)
-        
-        logger.info(f"✅ Reading guide saved to: {guide_path}")
-        
+        logger.info("✅ Reading guide saved to: %s", guide_path)
+
         return {
             **state,
             "reading_guide": guide_json,
             "guide_file_path": str(guide_path),
+            "question_section_pairs": question_section_pairs,
+            # Flat versions kept for display
+            "questions_to_answer": questions,
+            "sections_to_read": all_sections,
         }
-        
+
     except Exception as exc:
-        logger.error(f"Guide generation failed: {exc}")
+        logger.error("Guide generation [%s] failed: %s", label, exc)
         return {
             **state,
-            "errors": [*state.get("errors", []), f"Guide generation error: {exc}"],
+            "errors": [*state.get("errors", []), f"Guide generation error [{label}]: {exc}"],
         }
+
+
+def original_paper_guide_node(state: dict) -> dict:
+    """Generate a Three-Pass reading guide for ORIGINAL_RESEARCH papers."""
+    return _run_guide_node(
+        state,
+        label="ORIGINAL_RESEARCH",
+        guide_model_cls=ReadingGuide,
+        prompt_fn=original_paper_guide_prompt,
+    )
+
+
+def survey_review_guide_node(state: dict) -> dict:
+    """Generate a Three-Pass reading guide for SURVEY_REVIEW papers."""
+    return _run_guide_node(
+        state,
+        label="SURVEY_REVIEW",
+        guide_model_cls=SurveyReadingGuide,
+        prompt_fn=survey_review_guide_prompt,
+    )
+
+
+def system_engineering_guide_node(state: dict) -> dict:
+    """Generate a Three-Pass reading guide for SYSTEM_ENGINEERING papers."""
+    return _run_guide_node(
+        state,
+        label="SYSTEM_ENGINEERING",
+        guide_model_cls=SystemEngineeringReadingGuide,
+        prompt_fn=system_engineering_guide_prompt,
+    )
+
+
+def theoretical_guide_node(state: dict) -> dict:
+    """Generate a Three-Pass reading guide for THEORETICAL papers."""
+    return _run_guide_node(
+        state,
+        label="THEORETICAL",
+        guide_model_cls=TheoreticalReadingGuide,
+        prompt_fn=theoretical_guide_prompt,
+    )
+
+
+def benchmark_dataset_guide_node(state: dict) -> dict:
+    """Generate a Three-Pass reading guide for BENCHMARK_DATASET papers."""
+    return _run_guide_node(
+        state,
+        label="BENCHMARK_DATASET",
+        guide_model_cls=BenchmarkDatasetReadingGuide,
+        prompt_fn=benchmark_dataset_guide_prompt,
+    )
 
 
 
@@ -458,31 +658,46 @@ def original_paper_guide_node(state: dict) -> dict:
 # Conditional routing
 # ---------------------------------------------------------------------------
 
+# Category → guide node name mapping (used in routing and graph wiring)
+_CATEGORY_GUIDE_NODE = {
+    "ORIGINAL_RESEARCH": "original_paper_guide",
+    "SURVEY_REVIEW": "survey_review_guide",
+    "SYSTEM_ENGINEERING": "system_engineering_guide",
+    "THEORETICAL": "theoretical_guide",
+    "BENCHMARK_DATASET": "benchmark_dataset_guide",
+}
+
+
 def route_after_categorizer(state: dict) -> str:
     """
-    Route after categorization based on category and query.
-    
-    Routing logic:
-    - If category is ORIGINAL_RESEARCH and no query → original_paper_guide
-    - If query exists → retriever (Q&A path)
-    - If no query and not ORIGINAL_RESEARCH → summarizer (summary path)
+    Route after categorization.
+
+    Routing logic (no query path — generate reading guide based on category):
+    - ORIGINAL_RESEARCH  → original_paper_guide
+    - SURVEY_REVIEW      → survey_review_guide
+    - SYSTEM_ENGINEERING → system_engineering_guide
+    - THEORETICAL        → theoretical_guide
+    - BENCHMARK_DATASET  → benchmark_dataset_guide
+
+    If a user query is provided directly (bypassing the guide flow) → summarizer.
     """
-    query = state.get("query") or ""
-    query = query.strip() if query else ""
+    query = (state.get("query") or "").strip()
     category = state.get("category", "")
-    
-    # If it's an original research paper and no query, generate reading guide
-    if category == "ORIGINAL_RESEARCH" and not query:
-        logger.info("→ Routing to original_paper_guide (ORIGINAL_RESEARCH + no query)")
-        return "original_paper_guide"
-    
-    # If query exists, go to Q&A path
+
+    # If user provided a direct query without wanting a guide, go to summarizer
+    # (The guide nodes will route to retriever themselves via their own edge)
     if query:
-        logger.info("→ Routing to retriever (Q&A path)")
-        return "retriever"
-    
-    # Otherwise, generate summary
-    logger.info("→ Routing to summarizer (summary path)")
+        logger.info("→ Routing to summarizer (direct query path — no guide generation)")
+        return "summarizer"
+
+    # Route to the appropriate category-specific guide node
+    guide_node = _CATEGORY_GUIDE_NODE.get(category)
+    if guide_node:
+        logger.info("→ Routing to %s (category=%s)", guide_node, category)
+        return guide_node
+
+    # Fallback: summarize if category unknown
+    logger.info("→ Routing to summarizer (fallback: unknown category %s)", category)
     return "summarizer"
 
 
@@ -493,45 +708,76 @@ def route_after_categorizer(state: dict) -> str:
 def build_graph():
     """
     Build and compile the LangGraph pipeline.
-    
+
+    Workflow paths
+    --------------
+    Extraction + Categorization only (no query):
+        START → extraction → categorizer → <category_guide> → retriever → END
+
+    Guide nodes (one per category):
+        original_paper_guide  (ORIGINAL_RESEARCH)
+        survey_review_guide   (SURVEY_REVIEW)
+        system_engineering_guide (SYSTEM_ENGINEERING)
+        theoretical_guide     (THEORETICAL)
+        benchmark_dataset_guide (BENCHMARK_DATASET)
+
+    Each guide node extracts questions_to_answer + sections_to_read, then
+    flows into the retriever.  The retriever returns the chunks as output
+    (no LLM QA step for now).
+
+    Direct query path (query provided by user):
+        START → extraction → categorizer → summarizer → END
+
     Returns:
         A compiled LangGraph CompiledGraph ready for invocation.
     """
     builder = StateGraph(dict)
-    
-    # Add nodes
+
+    # ── Nodes ──────────────────────────────────────────────────────────────
     builder.add_node("extraction", extraction_node)
     builder.add_node("categorizer", categorizer_node)
-    builder.add_node("retriever", retriever_node)
-    builder.add_node("qa", qa_node)
-    builder.add_node("summarizer", summarizer_node)
+
+    # Five category-specific guide nodes
     builder.add_node("original_paper_guide", original_paper_guide_node)
-    
-    # Add edges
+    builder.add_node("survey_review_guide", survey_review_guide_node)
+    builder.add_node("system_engineering_guide", system_engineering_guide_node)
+    builder.add_node("theoretical_guide", theoretical_guide_node)
+    builder.add_node("benchmark_dataset_guide", benchmark_dataset_guide_node)
+
+    # Shared downstream nodes
+    builder.add_node("retriever", retriever_node)
+    builder.add_node("summarizer", summarizer_node)
+    builder.add_node("qa", qa_node)  # kept for future use
+
+    # ── Edges ──────────────────────────────────────────────────────────────
     builder.add_edge(START, "extraction")
     builder.add_edge("extraction", "categorizer")
-    
-    # Conditional routing after categorizer
+
+    # Conditional routing: categorizer → one of the 5 guide nodes (or summarizer)
     builder.add_conditional_edges(
         "categorizer",
         route_after_categorizer,
         {
-            "retriever": "retriever",
-            "summarizer": "summarizer",
             "original_paper_guide": "original_paper_guide",
-        }
+            "survey_review_guide": "survey_review_guide",
+            "system_engineering_guide": "system_engineering_guide",
+            "theoretical_guide": "theoretical_guide",
+            "benchmark_dataset_guide": "benchmark_dataset_guide",
+            "summarizer": "summarizer",
+        },
     )
-    
-    # Q&A path
-    builder.add_edge("retriever", "qa")
-    builder.add_edge("qa", END)
-    
-    # Summary path
+
+    # All five guide nodes flow into the shared retriever
+    for guide_node in _CATEGORY_GUIDE_NODE.values():
+        builder.add_edge(guide_node, "retriever")
+
+    # Retriever → END  (chunks returned as output; no LLM QA step for now)
+    builder.add_edge("retriever", END)
+
+    # Summarizer and QA paths
     builder.add_edge("summarizer", END)
-    
-    # Reading guide path (for ORIGINAL_RESEARCH papers)
-    builder.add_edge("original_paper_guide", END)
-    
+    builder.add_edge("qa", END)
+
     return builder.compile()
 
 

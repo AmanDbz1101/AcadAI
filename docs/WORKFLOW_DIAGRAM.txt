@@ -1,0 +1,135 @@
+```
+RESEARCH PAPER ASSISTANT - WORKFLOW WITH ORIGINAL PAPER GUIDE
+================================================================
+
+                              START
+                                |
+                                v
+                        +---------------+
+                        |  PDF Input    |
+                        +---------------+
+                                |
+                                v
+                        +---------------+
+                        |  Extraction   |
+                        |  Node         |
+                        +---------------+
+                                |
+                                v
+                   Extract: title, abstract,
+                   sections, figures, tables
+                                |
+                                v
+                        +---------------+
+                        |  Categorizer  |
+                        |  Node         |
+                        +---------------+
+                                |
+                                v
+                        Classify into:
+                        - ORIGINAL_RESEARCH
+                        - SURVEY_REVIEW
+                        - SYSTEM_ENGINEERING
+                        - THEORETICAL
+                        - BENCHMARK_DATASET
+                                |
+                                v
+                        +---------------+
+                        |   ROUTING     |
+                        |   DECISION    |
+                        +---------------+
+                        /       |       \
+                       /        |        \
+                      /         |         \
+                     v          v          v
+         +------------------+  +------------------+  +------------------+
+         | Query Exists?    |  | ORIGINAL_       |  | Other            |
+         | → Retriever      |  | RESEARCH &      |  | Categories       |
+         |   → Q&A          |  | No Query        |  | → Summarizer     |
+         +------------------+  | → Original      |  +------------------+
+                               | Paper Guide     |
+                               +------------------+
+                                        |
+                                        v
+                             +-----------------------+
+                             | Original Paper Guide  |
+                             | Node                  |
+                             +-----------------------+
+                             | Uses: qwen-2.5-32b    |
+                             | Generates:            |
+                             | - Pass 1 steps        |
+                             | - Pass 2 steps        |
+                             | - Pass 3 steps        |
+                             | - Final tasks         |
+                             +-----------------------+
+                                        |
+                                        v
+                             +-----------------------+
+                             | Save to JSON file:    |
+                             | output/<doc_id>_      |
+                             | guide.json            |
+                             +-----------------------+
+                                        |
+                                        v
+                                      END
+
+
+THREE-PASS METHOD STRUCTURE
+=============================
+
+Pass 1: Quick Scan (5-10 min)
+├── Step 1: Title & Abstract → Identify problem
+├── Step 2: Introduction → Understand motivation
+├── Step 3: Section headings & Figures → Paper structure
+└── Step 4: Conclusion → Main claims
+
+Pass 2: Method Understanding (20-40 min)
+├── Step 1: Method section → Core approach
+├── Step 2: Architecture figures → System design
+├── Step 3: Experiments → Evaluation setup
+└── Step 4: Results & Tables → Performance
+
+Pass 3: Deep Analysis (1-2 hours)
+├── Step 1: Equations & Algorithms → Technical details
+├── Step 2: Ablation studies → Component importance
+└── Step 3: Limitations & Discussion → Critical evaluation
+
+Final Tasks
+├── Summary: Write 5-sentence summary from memory
+└── Reflection: Answer deep understanding questions
+
+
+ROUTING LOGIC
+==============
+
+if category == "ORIGINAL_RESEARCH" and query is None:
+    → Generate Three-Pass Reading Guide
+    → Save to output/<document_id>_guide.json
+    
+elif query is not None:
+    → Retriever (optimize query)
+    → Q&A (answer with citations)
+    
+else:
+    → Summarizer (category-specific summary)
+
+
+OUTPUT FILES
+=============
+
+output/
+├── <document_id>_metadata.json      (extraction metadata)
+├── <document_id>_hierarchy.json     (section hierarchy)
+├── <document_id>_fulltext.txt       (full text)
+├── <document_id>_complete.json      (all data)
+└── <document_id>_guide.json         (NEW! reading guide)
+
+
+MODEL CONFIGURATION
+====================
+
+Node: original_paper_guide_node
+Model: qwen/qwen-2.5-32b-instruct (Groq)
+Temperature: 0.1
+Output: Structured JSON with Three-Pass steps
+```
