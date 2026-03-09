@@ -38,17 +38,17 @@ Given an input X ∈ R n × d model , where n is the sequence length and d model
 
 QKV Linear Projections: The input X is linearly transformed into queries Q , keys K , and values V using learned weight matrices W Q , W K , W V ∈ R d model × d k and Q , K , V ∈ R n × d k :
 
-$$Q = X W _ { Q } , \quad K = X W _ { K } , \quad V = X V _ { V } .$$
+<!-- formula-not-decoded -->
 
 Scaled Product Dot-Product Attention (SDPA): computes attention scores between queries and keys, followed by a softmax normalization. The output is a weighted sum of the values:
 
-$$\text {Attention} ( Q ; K , V ) = \text {softmax} \left ( \frac { Q K ^ { T } } { \sqrt { d _ { k } } } \right ) V ,$$
+<!-- formula-not-decoded -->
 
 where QK T √ d k ∈ R n × n represents the scaled dot-product similarity matrix, and softmax ( · ) ensures the attention weights are no-negative and sum to 1 across each row.
 
 Multi-Head Concatenation: In multi-head attention, the above process is repeated in parallel for h heads, with each head having its projection matrices W i q , W i k , W i v . All heads' outputs are concatenated:
 
-$$M u t i { I } { \text {Head} } ( \mathcal { L } , K , V ) = \text {Concat} ( \text {head} _ { 1 } , \dots , \text {head} _ { h } ) ,$$
+<!-- formula-not-decoded -->
 
 where head i = Attention ( QW i Q , KW i K , V W i V ) .
 
@@ -56,13 +56,13 @@ Figure 2: Left : Proportion of attention allocated to the initial token per laye
 
 <!-- image -->
 
-$$\text {Final Output Layer} \colon \text { The concatenated SDPA output is passed through an output layer V } _ { o } \in \mathbb { R } ^ { h d _ { k } \times d _ { \text {model} } } \colon \\ O = \text {MultiHeaed} ( Q , K , V ) W _ { o } .$$
+<!-- formula-not-decoded -->
 
 ## 2.2 Augmenting Attention Layer with Gating Mechanisms
 
 The gating mechanism is formalized as:
 
-$$Y ^ { \prime } = g ( Y , X , W _ { \theta } , \sigma ) = Y \odot \sigma ( X W _ { \theta } ) ,$$
+<!-- formula-not-decoded -->
 
 where Y is the input to be modulated, X is another input used to compute the gating scores 1 , W θ refers to the learnable parameters of gate, σ is an activation function (e.g., sigmoid), and Y ′ is the gated output. The gating score, σ ( XW θ ) , effectively acts as a dynamic filter, controlling the information flow from Y by selectively preserving or erasing its features.
 
@@ -166,15 +166,15 @@ Inspired by prior works that utilize group norm for the SDPA output (Sun et al.,
 
 In multi-head attention, the output of the i -th token, corresponding to the k -th head, can be expressed as:
 
-$$o _ { i } ^ { k } = ( \sum _ { j = 0 } ^ { i } S _ { i j } ^ { k } \cdot X _ { j } W _ { V } ^ { k } ) W _ { O } ^ { k } = \sum _ { j = 0 } ^ { i } S _ { j j } ^ { k } \cdot X _ { j } ( W _ { V } ^ { k } W _ { O } ^ { k } ) ,$$
+<!-- formula-not-decoded -->
 
 where W k O is the parameters of the output layer W O corresponding to the k -th head 2 . Here, S k ij denotes the attention score of the i -th token attending to the j -th token in the k -th head, X j is the input to the attention for token j , and X j W k V represents the value output of token j in the k -th head. From Equ. 6, we can merge W k V W k O into one low-rank linear mapping applied over all X j as d k &lt; d model . With GQA, W V is shared among heads within the same group, further diminishing the expressiveness.
 
 Given that adding non-linearity between two linear mappings can improve their expensiveness (Montufar et al., 2014), we have two modifications to mitigate the low-rank problem:
 
-$$o _ { i } ^ { k } = \left ( \sum _ { j = 0 } ^ { i } S _ { i j } ^ { k } \cdot \text {Non-Linearity-Map} ( X _ { j } W _ { V } ^ { k } ) \right ) W _ { O } ^ { k } ,$$
+<!-- formula-not-decoded -->
 
-$$o _ { i } ^ { k } = \text {Non-Linearity-Map} \left ( \sum \nolimits _ { j = 0 } ^ { i } S _ { i j } ^ { k } \cdot X _ { j } W _ { V } ^ { k } \right ) W _ { O } ^ { k } .$$
+<!-- formula-not-decoded -->
 
 Notably, adding gating at the G 2 (Tab. 3 row 3) position corresponds to the first modification (Equ. 7), while adding gating (row 4) or group normalization (row 5) at the G 1 position corresponds to the second (Equ. 8). This also explains why adding gating or normalization at the G 5 position after W O has no effect (Tab. 1 row 9) - it does not address the lack of non-linearity between W V and W O .
 
@@ -212,7 +212,7 @@ We analyze the gating scores (Tab. 1, 'Gate Score' column) of models with gating
 - (iii) Query-Dependency Matters. The scores for value gating ( G 2 ) are higher than those for SDPA output gating ( G 1 ), and the performance is inferior. This suggests that gating score sparsity is more effective when query-dependent rather than determined by the key and value. Specifically, SDPA output gating scores are derived from the hidden states corresponding to the current query (e.g. the Non-Linearity-Map in Eq 8 depends on X i ), whereas value gating scores are derived from hidden states associated with past keys and values (e.g. the Non-Linearity-Map in Eq 7 depends on each X j ). This implies that gating score sparsity may filter out irrelevant contextual information for the query . To further validate the importance of query-dependency, we introduce input-independent gating by zero-initializing learnable parameters ( q × d k ), applying a sigmoid function, and multiplying it with the SDPA output. As shown in row (6), input-independent gating improves upon the baseline, likely due to the introduction of non-linearity. Moreover, the high gating scores reinforce that effective sparsity should be input-dependent.
 - (iv) Less Sparse Gating is Worse. To further validate the importance of gating score sparsity, we reduce sparsity from the gating formulation. Specifically, we replace the sigmoid function with a modified Non-Sparse (NS) version:
 
-$$N S \text {-sigmoid} ( x ) = 0 . 5 + 0 . 5 \cdot \text {sigmoid} ( x ) ,$$
+<!-- formula-not-decoded -->
 
 which constrains the gating scores between [0.5, 1.0]. This ensures introducing non-linearity while removing gating score sparsity. As shown in Tab. 4 row (7), the gains of NS-sigmoid gating are inferior to those of SDPA output sigmoid gating. In Appendix A.2, we provide a more detailed discussion on how sparse gating scores affect the sparsity (the proportion of values below the threshold) in SDPA hidden states. We will discuss the impact of different sparsity levels on model behavior, including reducing the 'attention sink', in the next section.
 

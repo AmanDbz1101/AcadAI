@@ -1693,7 +1693,7 @@
         }
       ],
       "orig": "Q = XW Q , K = XW K , V = XW V . (1)",
-      "text": "Q = X W _ { Q } , \\quad K = X W _ { K } , \\quad V = X V _ { V } .",
+      "text": "",
       "formatting": null,
       "hyperlink": null
     },
@@ -1753,7 +1753,7 @@
         }
       ],
       "orig": "Attention ( Q , K , V ) = softmax ( QK T √ d k ) V , (2)",
-      "text": "\\text {Attention} ( Q ; K , V ) = \\text {softmax} \\left ( \\frac { Q K ^ { T } } { \\sqrt { d _ { k } } } \\right ) V ,",
+      "text": "",
       "formatting": null,
       "hyperlink": null
     },
@@ -1843,7 +1843,7 @@
         }
       ],
       "orig": "MultiHead ( Q , K , V ) = Concat ( head 1 , . . . , head h ) , (3)",
-      "text": "M u t i { I } { \\text {Head} } ( \\mathcal { L } , K , V ) = \\text {Concat} ( \\text {head} _ { 1 } , \\dots , \\text {head} _ { h } ) ,",
+      "text": "",
       "formatting": null,
       "hyperlink": null
     },
@@ -4543,7 +4543,7 @@
         }
       ],
       "orig": "Final Output Layer: The concatenated SDPA output is passed through an output layer W o ∈ R hd k × d model : O = MultiHead ( Q , K , V ) W o . (4)",
-      "text": "\\text {Final Output Layer} \\colon \\text { The concatenated SDPA output is passed through an output layer V } _ { o } \\in \\mathbb { R } ^ { h d _ { k } \\times d _ { \\text {model} } } \\colon \\\\ O = \\text {MultiHeaed} ( Q , K , V ) W _ { o } .",
+      "text": "",
       "formatting": null,
       "hyperlink": null
     },
@@ -4634,7 +4634,7 @@
         }
       ],
       "orig": "Y ′ = g ( Y , X , W θ , σ ) = Y /circledot σ ( XW θ ) , (5)",
-      "text": "Y ^ { \\prime } = g ( Y , X , W _ { \\theta } , \\sigma ) = Y \\odot \\sigma ( X W _ { \\theta } ) ,",
+      "text": "",
       "formatting": null,
       "hyperlink": null
     },
@@ -5541,7 +5541,7 @@
         }
       ],
       "orig": "o k i = ( ∑ i j = 0 S k ij · X j W k V ) W k O = ∑ i j = 0 S k ij · X j ( W k V W k O ) , (6)",
-      "text": "o _ { i } ^ { k } = ( \\sum _ { j = 0 } ^ { i } S _ { i j } ^ { k } \\cdot X _ { j } W _ { V } ^ { k } ) W _ { O } ^ { k } = \\sum _ { j = 0 } ^ { i } S _ { j j } ^ { k } \\cdot X _ { j } ( W _ { V } ^ { k } W _ { O } ^ { k } ) ,",
+      "text": "",
       "formatting": null,
       "hyperlink": null
     },
@@ -5631,7 +5631,7 @@
         }
       ],
       "orig": "o k i = ( ∑ i j = 0 S k ij · Non-Linearity-Map ( X j W k V ) ) W k O , (7)",
-      "text": "o _ { i } ^ { k } = \\left ( \\sum _ { j = 0 } ^ { i } S _ { i j } ^ { k } \\cdot \\text {Non-Linearity-Map} ( X _ { j } W _ { V } ^ { k } ) \\right ) W _ { O } ^ { k } ,",
+      "text": "",
       "formatting": null,
       "hyperlink": null
     },
@@ -5661,7 +5661,7 @@
         }
       ],
       "orig": "o k i = Non-Linearity-Map ( ∑ i j = 0 S k ij · X j W k V ) W k O . (8)",
-      "text": "o _ { i } ^ { k } = \\text {Non-Linearity-Map} \\left ( \\sum \\nolimits _ { j = 0 } ^ { i } S _ { i j } ^ { k } \\cdot X _ { j } W _ { V } ^ { k } \\right ) W _ { O } ^ { k } .",
+      "text": "",
       "formatting": null,
       "hyperlink": null
     },
@@ -7858,7 +7858,7 @@
         }
       ],
       "orig": "NS-sigmoid ( x ) = 0.5 + 0.5 · sigmoid ( x ) ,",
-      "text": "N S \\text {-sigmoid} ( x ) = 0 . 5 + 0 . 5 \\cdot \\text {sigmoid} ( x ) ,",
+      "text": "",
       "formatting": null,
       "hyperlink": null
     },
@@ -20447,10 +20447,10 @@
         {
           "page_no": 1,
           "bbox": {
-            "l": 70.82571411132812,
-            "t": 819.9862079620361,
-            "r": 119.59065246582031,
-            "b": 799.6130905151367,
+            "l": 70.82572937011719,
+            "t": 819.9862022399902,
+            "r": 119.59066009521484,
+            "b": 799.6130828857422,
             "coord_origin": "BOTTOMLEFT"
           },
           "charspan": [
@@ -20523,10 +20523,10 @@
         {
           "page_no": 2,
           "bbox": {
-            "l": 68.46939086914062,
+            "l": 68.46942901611328,
             "t": 795.3133583068848,
             "r": 523.8549194335938,
-            "b": 610.3518829345703,
+            "b": 610.3518981933594,
             "coord_origin": "BOTTOMLEFT"
           },
           "charspan": [
@@ -20829,7 +20829,7 @@
           "page_no": 3,
           "bbox": {
             "l": 72.35395050048828,
-            "t": 793.6828231811523,
+            "t": 793.6828346252441,
             "r": 522.375732421875,
             "b": 536.4698791503906,
             "coord_origin": "BOTTOMLEFT"
@@ -20935,8 +20935,8 @@
         {
           "page_no": 7,
           "bbox": {
-            "l": 71.48308563232422,
-            "t": 655.6752014160156,
+            "l": 71.48307037353516,
+            "t": 655.6751861572266,
             "r": 217.19674682617188,
             "b": 550.0948181152344,
             "coord_origin": "BOTTOMLEFT"
@@ -21039,10 +21039,10 @@
         {
           "page_no": 7,
           "bbox": {
-            "l": 223.44090270996094,
-            "t": 656.3600921630859,
+            "l": 223.44091796875,
+            "t": 656.3601379394531,
             "r": 370.0413513183594,
-            "b": 549.8401794433594,
+            "b": 549.8402404785156,
             "coord_origin": "BOTTOMLEFT"
           },
           "charspan": [
@@ -21231,9 +21231,9 @@
           "page_no": 14,
           "bbox": {
             "l": 186.5827178955078,
-            "t": 771.4175720214844,
+            "t": 771.4175796508789,
             "r": 408.0364990234375,
-            "b": 608.6400909423828,
+            "b": 608.6401214599609,
             "coord_origin": "BOTTOMLEFT"
           },
           "charspan": [
@@ -21376,9 +21376,9 @@
         {
           "page_no": 14,
           "bbox": {
-            "l": 92.86370086669922,
+            "l": 92.86368560791016,
             "t": 577.2031860351562,
-            "r": 500.2522888183594,
+            "r": 500.25225830078125,
             "b": 430.0853576660156,
             "coord_origin": "BOTTOMLEFT"
           },
@@ -21957,9 +21957,9 @@
         {
           "page_no": 16,
           "bbox": {
-            "l": 129.59828186035156,
+            "l": 129.5982666015625,
             "t": 763.5382461547852,
-            "r": 465.7852478027344,
+            "r": 465.7852783203125,
             "b": 132.821044921875,
             "coord_origin": "BOTTOMLEFT"
           },
@@ -22216,10 +22216,10 @@
         {
           "page_no": 17,
           "bbox": {
-            "l": 94.57796478271484,
-            "t": 575.2344055175781,
-            "r": 501.39654541015625,
-            "b": 276.79425048828125,
+            "l": 94.57792663574219,
+            "t": 575.2344360351562,
+            "r": 501.3965148925781,
+            "b": 276.794189453125,
             "coord_origin": "BOTTOMLEFT"
           },
           "charspan": [
@@ -22266,9 +22266,9 @@
           "page_no": 4,
           "bbox": {
             "l": 71.36345672607422,
-            "t": 744.9104766845703,
+            "t": 744.9104614257812,
             "r": 523.0567626953125,
-            "b": 502.021728515625,
+            "b": 502.0217590332031,
             "coord_origin": "BOTTOMLEFT"
           },
           "charspan": [
@@ -28540,8 +28540,8 @@
         {
           "page_no": 5,
           "bbox": {
-            "l": 71.56204223632812,
-            "t": 742.6416625976562,
+            "l": 71.5619888305664,
+            "t": 742.6416168212891,
             "r": 522.831787109375,
             "b": 530.6439208984375,
             "coord_origin": "BOTTOMLEFT"
@@ -33610,9 +33610,9 @@
           "page_no": 6,
           "bbox": {
             "l": 105.7505874633789,
-            "t": 776.1696166992188,
+            "t": 776.1696395874023,
             "r": 488.74224853515625,
-            "b": 693.43115234375,
+            "b": 693.4311676025391,
             "coord_origin": "BOTTOMLEFT"
           },
           "charspan": [
@@ -35913,9 +35913,9 @@
           "page_no": 7,
           "bbox": {
             "l": 71.20618438720703,
-            "t": 746.2828369140625,
+            "t": 746.282829284668,
             "r": 523.16064453125,
-            "b": 659.4859161376953,
+            "b": 659.4859313964844,
             "coord_origin": "BOTTOMLEFT"
           },
           "charspan": [
@@ -38855,7 +38855,7 @@
         {
           "page_no": 8,
           "bbox": {
-            "l": 207.55490112304688,
+            "l": 207.55487060546875,
             "t": 392.88702392578125,
             "r": 523.53515625,
             "b": 320.388916015625,
@@ -40475,9 +40475,9 @@
           "page_no": 13,
           "bbox": {
             "l": 117.14947509765625,
-            "t": 422.0575866699219,
+            "t": 422.0576171875,
             "r": 477.6124572753906,
-            "b": 349.4075012207031,
+            "b": 349.4075622558594,
             "coord_origin": "BOTTOMLEFT"
           },
           "charspan": [
