@@ -10,13 +10,13 @@ Workflow paths:
        START → extraction → categorizer → END
     
     2. Q&A (with query):
-       START → extraction → categorizer → retriever → qa → END
+       START → extraction → categorizer → retrieve_and_qa → END
     
     3. Summarization (no query, not ORIGINAL_RESEARCH):
        START → extraction → categorizer → summarizer → END
     
     4. Reading Guide (ORIGINAL_RESEARCH, no query):
-       START → extraction → categorizer → original_paper_guide → END
+       START → extraction → categorizer → original_paper_guide → retrieve_and_qa → END
 """
 
 from __future__ import annotations
@@ -280,42 +280,81 @@ def categorizer_node(state: dict) -> dict:
         }
 
 
-def retriever_node(state: dict) -> dict:
+def _retrieve_for_question(
+    pipeline,
+    question: str,
+    step_sections: list[str],
+    document_id: str,
+) -> list:
     """
-    Retrieve relevant content using hybrid vector search (dense + sparse BM25).
+    Run hybrid retrieval for a single question and return its top chunk list.
+    Section-boosted passes are performed first (scoped to *this* step's sections),
+    followed by one unrestricted pass for broader coverage.
+    """
+    step_hits: list = []
+    seen_content: set = set()
 
-    Steps
-    -----
-    1. Use ``question_section_pairs`` from the guide (preferred) or fall back to
-       a single user query.  Each pair carries the question **and the sections
-       that belong only to that step** — no cross-step accumulation.
-    2. Lazy-index the document into Qdrant once before the loop.
-    3. Per-question hybrid retrieval (BGE dense + BM25 sparse, RRF fusion)
-       with section boosting scoped to that step's sections.
-    4. Results are stored **per question** in ``per_question_results`` — no merging.
+    if step_sections:
+        for section in step_sections:
+            for r in pipeline.query(
+                query=question,
+                document_id=document_id or None,
+                section_title_contains=section,
+            ):
+                key = r.content[:120] if hasattr(r, "content") else str(r)
+                if key not in seen_content:
+                    seen_content.add(key)
+                    step_hits.append(r)
+
+    # Unrestricted pass
+    for r in pipeline.query(query=question, document_id=document_id or None):
+        key = r.content[:120] if hasattr(r, "content") else str(r)
+        if key not in seen_content:
+            seen_content.add(key)
+            step_hits.append(r)
+
+    return step_hits
+
+
+def retrieve_and_qa_node(state: dict) -> dict:
     """
-    logger.info("🔎 Retriever node: hybrid search …")
+    Sequential retrieve-then-answer loop for the first 4 guide questions.
+
+    For each question (up to 4):
+      1. Retrieve the top-2 chunks most relevant to that question.
+      2. Immediately generate an answer using those chunks.
+      3. Move on to the next question.
+
+    This keeps retrieval context tight (each answer is grounded only in
+    the chunks retrieved for *that* question) and avoids pulling all 23
+    questions' results into memory before any answering begins.
+    """
+    logger.info("🔎💬 Retrieve-and-QA node: sequential retrieve → answer loop…")
 
     question_section_pairs = state.get("question_section_pairs") or []
     user_query = (state.get("query") or "").strip()
-    category = state.get("category", "ORIGINAL_RESEARCH")
     document_id = state.get("document_id", "")
 
-    # Build the list of (question, sections) pairs to process
+    # Build candidate pairs (guide questions preferred, direct query as fallback)
     if question_section_pairs:
-        pairs = question_section_pairs  # each: {"question": str, "sections": list[str]}
-        logger.info("Using %d per-step guide (question, sections) pairs", len(pairs))
+        all_pairs = question_section_pairs
     elif user_query:
-        pairs = [{"question": user_query, "sections": []}]
-        logger.info("Using user query for retrieval: %s…", user_query[:80])
+        all_pairs = [{"question": user_query, "sections": []}]
     else:
         return {
             **state,
             "errors": [*state.get("errors", []), "No query provided for retrieval"],
         }
 
+    # Only process the first 4 questions
+    pairs = all_pairs[:4]
+    logger.info(
+        "Processing %d question(s) (of %d total) — sequential retrieve→answer",
+        len(pairs), len(all_pairs),
+    )
+
     try:
-        # ── Lazy indexing (once before the query loop) ────────────────────────
+        # ── Index document once before the loop ──────────────────────────────
         pipeline = _get_retrieval_pipeline()
 
         if document_id:
@@ -337,154 +376,83 @@ def retriever_node(state: dict) -> dict:
                     document_id,
                 )
 
-        # ── Per-question expand + retrieve (results kept separate) ────────────
-        per_question_results: list[dict] = []
+        # ── Sequential: retrieve → answer per question ────────────────────────
+        metadata = {
+            "paper_title": state.get("title", ""),
+            "category": state.get("category", ""),
+        }
+        llm = ChatGroq(model="llama-3.3-70b-versatile", temperature=0.3)
 
-        for i, pair in enumerate(pairs, 1):
-            raw_q = pair["question"]
-            # Only this step's sections — not any other step's
+        qa_results: list[dict] = []
+        per_question_results: list[dict] = []  # kept for downstream display
+
+        for idx, pair in enumerate(pairs, 1):
+            question = pair["question"]
             step_sections: list[str] = pair.get("sections") or []
 
             logger.info(
-                "  [%d/%d] Q: %s…  step_sections=%s",
-                i, len(pairs), raw_q[:70], step_sections,
+                "  [%d/%d] Retrieving for: %s…  sections=%s",
+                idx, len(pairs), question[:70], step_sections,
             )
 
-            # Section-boosted passes using *this step's* sections only,
-            # then one unrestricted pass for broader coverage
-            step_hits: list = []
-            seen_content: set = set()
-
-            if step_sections:
-                for section in step_sections:
-                    sec_hits = pipeline.query(
-                        query=raw_q,
-                        document_id=document_id or None,
-                        section_title_contains=section,
-                    )
-                    for r in sec_hits:
-                        key = r.content[:120] if hasattr(r, "content") else str(r)
-                        if key not in seen_content:
-                            seen_content.add(key)
-                            step_hits.append(r)
-
-            # Unrestricted pass
-            for r in pipeline.query(query=raw_q, document_id=document_id or None):
-                key = r.content[:120] if hasattr(r, "content") else str(r)
-                if key not in seen_content:
-                    seen_content.add(key)
-                    step_hits.append(r)
-
-            logger.info("      → %d chunks retrieved", len(step_hits))
+            # Step 1 — Retrieve
+            hits = _retrieve_for_question(
+                pipeline, question, step_sections, document_id
+            )
+            top_2 = hits[:2]
+            logger.info("      → %d chunks retrieved, using top %d", len(hits), len(top_2))
 
             per_question_results.append({
-                "question": raw_q,
+                "question": question,
                 "sections": step_sections,
-                "chunks": [r.model_dump() for r in step_hits],
+                "chunks": [r.model_dump() for r in hits],
             })
 
-        logger.info(
-            "Retrieval complete: %d questions, results stored separately",
-            len(per_question_results),
-        )
+            # Step 2 — Answer
+            if not top_2:
+                logger.warning("    No chunks for Q%d — skipping LLM call", idx)
+                qa_results.append({
+                    "question": question,
+                    "answer": "No relevant content found.",
+                    "confidence": "LOW",
+                })
+                continue
 
-        # Flatten and deduplicate chunks across all questions, keep top 2 for QA
-        seen_keys: set = set()
-        flat_chunks: list[dict] = []
-        for qr in per_question_results:
-            for chunk in qr.get("chunks", []):
-                key = (chunk.get("content") or "")[:120]
-                if key not in seen_keys:
-                    seen_keys.add(key)
-                    flat_chunks.append(chunk)
-        top_2_chunks = flat_chunks[:2]
-        logger.info("Top 2 chunks selected for QA (from %d total)", len(flat_chunks))
+            context_parts = []
+            for i, r in enumerate(top_2, 1):
+                content = r.content if hasattr(r, "content") else r.get("content", "")
+                score = r.score if hasattr(r, "score") else r.get("score", 0.0)
+                context_parts.append(f"[{i}] (relevance: {score:.2f})\n{content}")
+            context = "\n\n".join(context_parts)
 
+            logger.info("      → Generating answer for Q%d…", idx)
+            try:
+                prompt = qa_prompt(query=question, context=context, metadata=metadata)
+                response = llm.invoke([HumanMessage(content=prompt)])
+                answer = response.content.strip()
+                confidence = "HIGH" if len(answer) > 100 else "MEDIUM"
+            except Exception as exc:
+                logger.error("    LLM call failed for Q%d: %s", idx, exc)
+                answer = "An error occurred while generating the answer."
+                confidence = "LOW"
+
+            qa_results.append({"question": question, "answer": answer, "confidence": confidence})
+            logger.info("      ✓ Q%d answered (confidence=%s)", idx, confidence)
+
+        logger.info("Retrieve-and-QA complete: %d answers generated", len(qa_results))
         return {
             **state,
             "per_question_results": per_question_results,
-            "retrieval_results": top_2_chunks,
+            "retrieval_results": [c for qr in per_question_results for c in qr["chunks"][:2]],
+            "qa_results": qa_results,
         }
 
     except Exception as exc:
-        logger.error("Retrieval failed: %s", exc, exc_info=True)
+        logger.error("Retrieve-and-QA failed: %s", exc, exc_info=True)
         return {
             **state,
-            "errors": [*state.get("errors", []), f"Retrieval error: {exc}"],
+            "errors": [*state.get("errors", []), f"Retrieve-and-QA error: {exc}"],
         }
-
-
-def qa_node(state: dict) -> dict:
-    """
-    Answer guide questions using retrieved context.
-
-    Iterates over the first 4 entries in ``per_question_results`` (each
-    carrying its own top-2 chunks) and generates an answer for every
-    question.  Results are stored in ``qa_results``.
-    """
-    logger.info("💬 Q&A node: answering guide questions…")
-
-    per_question_results = state.get("per_question_results") or []
-
-    if not per_question_results:
-        return {
-            **state,
-            "errors": [*state.get("errors", []), "No per-question results available for Q&A"],
-        }
-
-    metadata = {
-        "paper_title": state.get("title", ""),
-        "category": state.get("category", ""),
-    }
-    llm = ChatGroq(model="llama-3.3-70b-versatile", temperature=0.3)
-
-    qa_results: list[dict] = []
-    questions_to_answer = per_question_results[:4]   # first 4 only
-    logger.info(
-        "Answering %d questions (of %d total)",
-        len(questions_to_answer),
-        len(per_question_results),
-    )
-
-    for idx, qr in enumerate(questions_to_answer, 1):
-        question = qr.get("question", "")
-        top_2_chunks = (qr.get("chunks") or [])[:2]
-
-        logger.info("  [%d/%d] Q: %s…", idx, len(questions_to_answer), question[:80])
-
-        if not top_2_chunks:
-            logger.warning("    No chunks for question %d — skipping LLM call", idx)
-            qa_results.append({
-                "question": question,
-                "answer": "No relevant content found.",
-                "confidence": "LOW",
-            })
-            continue
-
-        context_parts = []
-        for i, chunk in enumerate(top_2_chunks, 1):
-            content = chunk.get("content", "")
-            score = chunk.get("score", 0.0)
-            context_parts.append(f"[{i}] (relevance: {score:.2f})\n{content}")
-        context = "\n\n".join(context_parts)
-
-        try:
-            prompt = qa_prompt(query=question, context=context, metadata=metadata)
-            response = llm.invoke([HumanMessage(content=prompt)])
-            answer = response.content.strip()
-            confidence = "HIGH" if len(answer) > 100 else "MEDIUM"
-        except Exception as exc:
-            logger.error("    LLM call failed for question %d: %s", idx, exc)
-            answer = "An error occurred while generating the answer."
-            confidence = "LOW"
-
-        qa_results.append({"question": question, "answer": answer, "confidence": confidence})
-
-    logger.info("Q&A complete: %d answers generated", len(qa_results))
-    return {
-        **state,
-        "qa_results": qa_results,
-    }
 
 
 def summarizer_node(state: dict) -> dict:
@@ -698,15 +666,15 @@ def route_after_categorizer(state: dict) -> str:
     - THEORETICAL        → theoretical_guide
     - BENCHMARK_DATASET  → benchmark_dataset_guide
 
-    If a user query is provided directly → retriever (skip guide generation).
+    If a user query is provided directly → retrieve_and_qa (skip guide generation).
     """
     query = (state.get("query") or "").strip()
     category = state.get("category", "")
 
-    # If user provided a direct query, go straight to retriever then QA
+    # If user provided a direct query, go straight to retrieve_and_qa (skip guide)
     if query:
-        logger.info("→ Routing to retriever (direct query path — skip guide, go to QA)")
-        return "retriever"
+        logger.info("→ Routing to retrieve_and_qa (direct query path — skip guide)")
+        return "retrieve_and_qa"
 
     # Route to the appropriate category-specific guide node
     guide_node = _CATEGORY_GUIDE_NODE.get(category)
@@ -730,10 +698,10 @@ def build_graph():
     Workflow paths
     --------------
     Guide path (no user query — default):
-        START → extraction → categorizer → <category_guide> → retriever → qa → END
+        START → extraction → categorizer → <category_guide> → retrieve_and_qa → END
 
     Direct query path (user provides a query, guide skipped):
-        START → extraction → categorizer → retriever → qa → END
+        START → extraction → categorizer → retrieve_and_qa → END
 
     Summarizer fallback (unknown category):
         START → extraction → categorizer → summarizer → END
@@ -762,15 +730,14 @@ def build_graph():
     builder.add_node("benchmark_dataset_guide", benchmark_dataset_guide_node)
 
     # Shared downstream nodes
-    builder.add_node("retriever", retriever_node)
+    builder.add_node("retrieve_and_qa", retrieve_and_qa_node)
     builder.add_node("summarizer", summarizer_node)
-    builder.add_node("qa", qa_node)  # kept for future use
 
     # ── Edges ──────────────────────────────────────────────────────────────
     builder.add_edge(START, "extraction")
     builder.add_edge("extraction", "categorizer")
 
-    # Conditional routing: categorizer → one of the 5 guide nodes, retriever, or summarizer
+    # Conditional routing: categorizer → one of the 5 guide nodes, retrieve_and_qa, or summarizer
     builder.add_conditional_edges(
         "categorizer",
         route_after_categorizer,
@@ -780,21 +747,18 @@ def build_graph():
             "system_engineering_guide": "system_engineering_guide",
             "theoretical_guide": "theoretical_guide",
             "benchmark_dataset_guide": "benchmark_dataset_guide",
-            "retriever": "retriever",
+            "retrieve_and_qa": "retrieve_and_qa",
             "summarizer": "summarizer",
         },
     )
 
-    # All five guide nodes flow into the shared retriever
+    # All five guide nodes flow into the combined retrieve-and-QA node
     for guide_node in _CATEGORY_GUIDE_NODE.values():
-        builder.add_edge(guide_node, "retriever")
+        builder.add_edge(guide_node, "retrieve_and_qa")
 
-    # Retriever always flows into QA (guide questions are always present)
-    builder.add_edge("retriever", "qa")
-
-    # Summarizer and QA paths
+    # Summarizer and retrieve-and-QA paths both terminate
     builder.add_edge("summarizer", END)
-    builder.add_edge("qa", END)
+    builder.add_edge("retrieve_and_qa", END)
 
     return builder.compile()
 

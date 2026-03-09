@@ -91,9 +91,22 @@ class PaperAnalysisPipeline:
     groq_api_key:
         Groq API key used for LLM calls. Falls back to the value in ``config.py``
         (which reads ``$GROQ_API_KEY`` from the environment).
+    enable_db:
+        When *True*, persist rich Docling-extracted data (text blocks with
+        bounding boxes, section hierarchy, tables, figures, formulas) to the
+        local PostgreSQL database after each pipeline run.  Defaults to *False*
+        so existing behaviour is unchanged.
+    database_url:
+        Explicit PostgreSQL DSN.  Falls back to the ``DATABASE_URL`` env var,
+        then individual ``PG_*`` env vars, then ``localhost/research_papers``.
     """
 
-    def __init__(self, groq_api_key: Optional[str] = None) -> None:
+    def __init__(
+        self,
+        groq_api_key: Optional[str] = None,
+        enable_db: bool = False,
+        database_url: Optional[str] = None,
+    ) -> None:
         self.groq_api_key = groq_api_key or GROQ_API_KEY
         
         # Set API key in environment for graph nodes to use
@@ -103,6 +116,19 @@ class PaperAnalysisPipeline:
 
         logger.info("Initializing unified workflow graph...")
         self._graph = get_agent()
+
+        # Optional DB ingestion
+        self._db_pipeline = None
+        if enable_db:
+            try:
+                from backend.extraction.pipelines.db_ingestion_pipeline import DBIngestionPipeline
+                from backend.database.connection import DatabaseConnection
+                db_conn = DatabaseConnection(database_url) if database_url else DatabaseConnection()
+                self._db_pipeline = DBIngestionPipeline(db_connection=db_conn)
+                logger.info("DB ingestion pipeline ready.")
+            except Exception as exc:
+                logger.warning("DB ingestion pipeline could not be initialised: %s", exc)
+
         logger.info("PaperAnalysisPipeline ready.")
 
     # ------------------------------------------------------------------
@@ -115,6 +141,7 @@ class PaperAnalysisPipeline:
         force_ocr: bool = False,
         query: Optional[str] = None,
         summarize: bool = False,
+        store_in_db: bool = False,
     ) -> Dict[str, Any]:
         """
         Run the full pipeline on a single PDF.
@@ -131,6 +158,10 @@ class PaperAnalysisPipeline:
         summarize:
             If True and no query provided, generate a structured summary.
             Default behavior when neither query nor summarize is specified.
+        store_in_db:
+            If *True*, persist rich Docling data (text blocks, sections,
+            tables, figures, formulas with bounding boxes) to PostgreSQL.
+            Requires ``enable_db=True`` when constructing the pipeline.
 
         Returns
         -------
@@ -145,6 +176,7 @@ class PaperAnalysisPipeline:
         ``answer``              – (if query provided) Answer to query
         ``summary``             – (if summarize mode) Paper summary
         ``errors``              – List of any errors encountered
+        ``db_document_id``      – (if store_in_db) ID of the DB record
         """
         pdf_path = Path(pdf_path)
         if not pdf_path.exists():
@@ -185,6 +217,26 @@ class PaperAnalysisPipeline:
         if result.get("errors"):
             logger.warning(f"Errors encountered: {result['errors']}")
 
+        # --- Optional DB ingestion ---
+        if store_in_db:
+            document_id = result.get("document_id")
+            if self._db_pipeline is None:
+                logger.warning(
+                    "store_in_db=True but DB pipeline not initialised. "
+                    "Construct PaperAnalysisPipeline with enable_db=True."
+                )
+            elif document_id:
+                try:
+                    db_doc_id = self._db_pipeline.ingest(
+                        pdf_path=pdf_path,
+                        document_id=document_id,
+                    )
+                    result["db_document_id"] = db_doc_id
+                    logger.info("Document stored in DB: %s", db_doc_id)
+                except Exception as exc:
+                    logger.error("DB ingestion failed: %s", exc)
+                    result.setdefault("errors", []).append(f"DB ingestion failed: {exc}")
+
         return result
 
 
@@ -221,6 +273,21 @@ def _build_arg_parser() -> argparse.ArgumentParser:
         help="Groq API key. Falls back to $GROQ_API_KEY environment variable.",
     )
     parser.add_argument(
+        "--store-in-db",
+        action="store_true",
+        help=(
+            "Persist rich Docling data (text blocks with bounding boxes, sections, "
+            "tables, figures, formulas) to local PostgreSQL after extraction. "
+            "Set DATABASE_URL or PG_* env vars for connection details."
+        ),
+    )
+    parser.add_argument(
+        "--database-url",
+        default=None,
+        metavar="DSN",
+        help="PostgreSQL DSN (overrides DATABASE_URL env var).",
+    )
+    parser.add_argument(
         "--no-full-text",
         action="store_true",
         help="Omit the full_text field from printed output (can be very long).",
@@ -237,13 +304,18 @@ def main() -> None:
     parser = _build_arg_parser()
     args = parser.parse_args()
 
-    pipeline = PaperAnalysisPipeline(groq_api_key=args.groq_api_key)
+    pipeline = PaperAnalysisPipeline(
+        groq_api_key=args.groq_api_key,
+        enable_db=args.store_in_db,
+        database_url=args.database_url if hasattr(args, "database_url") else None,
+    )
 
     result = pipeline.run(
         pdf_path=args.pdf_path,
         force_ocr=args.force_ocr,
         query=args.query,
         summarize=args.summarize,
+        store_in_db=args.store_in_db,
     )
 
     print("\n" + "=" * 70)
