@@ -12,11 +12,11 @@ Workflow paths:
     2. Q&A (with query):
        START → extraction → categorizer → retrieve_and_qa → END
     
-    3. Summarization (no query, not ORIGINAL_RESEARCH):
+    3. Summarization (no query, unknown category):
        START → extraction → categorizer → summarizer → END
     
-    4. Reading Guide (ORIGINAL_RESEARCH, no query):
-       START → extraction → categorizer → original_paper_guide → retrieve_and_qa → END
+    4. Reading Guide (no query):
+       START → extraction → categorizer → <category_guide> → retrieve_and_qa → END
 """
 
 from __future__ import annotations
@@ -38,18 +38,14 @@ from rag.prompts import (
     categorizer_prompt,
     qa_prompt,
     summarizer_prompt,
-    original_paper_guide_prompt,
-    survey_review_guide_prompt,
-    system_engineering_guide_prompt,
+    applied_guide_prompt,
     theoretical_guide_prompt,
-    benchmark_dataset_guide_prompt,
+    survey_guide_prompt,
 )
 from rag.guide_models import (
-    ReadingGuide,
-    SurveyReadingGuide,
-    SystemEngineeringReadingGuide,
+    AppliedReadingGuide,
     TheoreticalReadingGuide,
-    BenchmarkDatasetReadingGuide,
+    SurveyReadingGuide,
 )
 
 # ---------------------------------------------------------------------------
@@ -72,12 +68,12 @@ def _extract_guide_retrieval_info(guide_json: dict) -> list[dict]:
     Multiple questions that belong to the same step share the same sections list
     (the exact sections listed for that step only — not accumulating across steps).
 
-    Works for all five guide shapes (original_research, survey, system, theoretical, benchmark).
+    Works for all three guide shapes (applied, theoretical, survey).
     """
     pairs: list[dict] = []
     seen_questions: set[str] = set()
 
-    # All known pass keys across the five guide models
+    # All known pass keys across the three guide models
     pass_keys = [
         "pass1_quick_scan",
         "pass2_method_understanding",
@@ -85,15 +81,8 @@ def _extract_guide_retrieval_info(guide_json: dict) -> list[dict]:
         "pass1_field_overview",
         "pass2_taxonomy_understanding",
         "pass3_research_landscape_analysis",
-        "pass1_system_overview",
-        "pass2_architecture_deep_dive",
-        "pass3_engineering_evaluation",
-        "pass1_results_overview",
         "pass2_proof_strategy",
         "pass3_deep_mathematical_analysis",
-        "pass1_dataset_overview",
-        "pass2_methodology_and_tasks",
-        "pass3_benchmark_analysis",
     ]
 
     for key in pass_keys:
@@ -249,11 +238,9 @@ def categorizer_node(state: dict) -> dict:
         
         # Validate category
         valid_categories = {
-            "ORIGINAL_RESEARCH",
-            "SURVEY_REVIEW",
-            "SYSTEM_ENGINEERING",
+            "APPLIED",
             "THEORETICAL",
-            "BENCHMARK_DATASET",
+            "SURVEY",
         }
         if category not in valid_categories:
             logger.warning(f"Invalid category: {category}")
@@ -466,7 +453,7 @@ def summarizer_node(state: dict) -> dict:
     title = state.get("title", "")
     abstract = state.get("abstract", "")
     sections = state.get("sections", [])
-    category = state.get("category", "ORIGINAL_RESEARCH")
+    category = state.get("category", "APPLIED")
     
     if not title or not abstract:
         return {
@@ -514,12 +501,12 @@ def _run_guide_node(
     prompt_fn,
 ) -> dict:
     """
-    Generic helper called by all five guide nodes.
+    Generic helper called by all three guide nodes.
 
     Parameters
     ----------
     state         : current workflow state
-    label         : human-readable label for logging (e.g. "ORIGINAL_RESEARCH")
+    label         : human-readable label for logging (e.g. "APPLIED")
     guide_model_cls : Pydantic model class for structured output
     prompt_fn     : function(title, abstract, sections, num_figures, num_tables) → str
     """
@@ -590,33 +577,13 @@ def _run_guide_node(
         }
 
 
-def original_paper_guide_node(state: dict) -> dict:
-    """Generate a Three-Pass reading guide for ORIGINAL_RESEARCH papers."""
+def applied_guide_node(state: dict) -> dict:
+    """Generate a Three-Pass reading guide for APPLIED papers."""
     return _run_guide_node(
         state,
-        label="ORIGINAL_RESEARCH",
-        guide_model_cls=ReadingGuide,
-        prompt_fn=original_paper_guide_prompt,
-    )
-
-
-def survey_review_guide_node(state: dict) -> dict:
-    """Generate a Three-Pass reading guide for SURVEY_REVIEW papers."""
-    return _run_guide_node(
-        state,
-        label="SURVEY_REVIEW",
-        guide_model_cls=SurveyReadingGuide,
-        prompt_fn=survey_review_guide_prompt,
-    )
-
-
-def system_engineering_guide_node(state: dict) -> dict:
-    """Generate a Three-Pass reading guide for SYSTEM_ENGINEERING papers."""
-    return _run_guide_node(
-        state,
-        label="SYSTEM_ENGINEERING",
-        guide_model_cls=SystemEngineeringReadingGuide,
-        prompt_fn=system_engineering_guide_prompt,
+        label="APPLIED",
+        guide_model_cls=AppliedReadingGuide,
+        prompt_fn=applied_guide_prompt,
     )
 
 
@@ -630,13 +597,13 @@ def theoretical_guide_node(state: dict) -> dict:
     )
 
 
-def benchmark_dataset_guide_node(state: dict) -> dict:
-    """Generate a Three-Pass reading guide for BENCHMARK_DATASET papers."""
+def survey_guide_node(state: dict) -> dict:
+    """Generate a Three-Pass reading guide for SURVEY papers."""
     return _run_guide_node(
         state,
-        label="BENCHMARK_DATASET",
-        guide_model_cls=BenchmarkDatasetReadingGuide,
-        prompt_fn=benchmark_dataset_guide_prompt,
+        label="SURVEY",
+        guide_model_cls=SurveyReadingGuide,
+        prompt_fn=survey_guide_prompt,
     )
 
 
@@ -647,11 +614,9 @@ def benchmark_dataset_guide_node(state: dict) -> dict:
 
 # Category → guide node name mapping (used in routing and graph wiring)
 _CATEGORY_GUIDE_NODE = {
-    "ORIGINAL_RESEARCH": "original_paper_guide",
-    "SURVEY_REVIEW": "survey_review_guide",
-    "SYSTEM_ENGINEERING": "system_engineering_guide",
+    "APPLIED": "applied_guide",
     "THEORETICAL": "theoretical_guide",
-    "BENCHMARK_DATASET": "benchmark_dataset_guide",
+    "SURVEY": "survey_guide",
 }
 
 
@@ -660,11 +625,9 @@ def route_after_categorizer(state: dict) -> str:
     Route after categorization.
 
     Routing logic (no query path — generate reading guide based on category):
-    - ORIGINAL_RESEARCH  → original_paper_guide
-    - SURVEY_REVIEW      → survey_review_guide
-    - SYSTEM_ENGINEERING → system_engineering_guide
-    - THEORETICAL        → theoretical_guide
-    - BENCHMARK_DATASET  → benchmark_dataset_guide
+    - APPLIED      → applied_guide
+    - THEORETICAL  → theoretical_guide
+    - SURVEY       → survey_guide
 
     If a user query is provided directly → retrieve_and_qa (skip guide generation).
     """
@@ -707,11 +670,9 @@ def build_graph():
         START → extraction → categorizer → summarizer → END
 
     Guide nodes (one per category):
-        original_paper_guide  (ORIGINAL_RESEARCH)
-        survey_review_guide   (SURVEY_REVIEW)
-        system_engineering_guide (SYSTEM_ENGINEERING)
-        theoretical_guide     (THEORETICAL)
-        benchmark_dataset_guide (BENCHMARK_DATASET)
+        applied_guide     (APPLIED)
+        theoretical_guide (THEORETICAL)
+        survey_guide      (SURVEY)
 
     Returns:
         A compiled LangGraph CompiledGraph ready for invocation.
@@ -722,12 +683,10 @@ def build_graph():
     builder.add_node("extraction", extraction_node)
     builder.add_node("categorizer", categorizer_node)
 
-    # Five category-specific guide nodes
-    builder.add_node("original_paper_guide", original_paper_guide_node)
-    builder.add_node("survey_review_guide", survey_review_guide_node)
-    builder.add_node("system_engineering_guide", system_engineering_guide_node)
+    # Three category-specific guide nodes
+    builder.add_node("applied_guide", applied_guide_node)
     builder.add_node("theoretical_guide", theoretical_guide_node)
-    builder.add_node("benchmark_dataset_guide", benchmark_dataset_guide_node)
+    builder.add_node("survey_guide", survey_guide_node)
 
     # Shared downstream nodes
     builder.add_node("retrieve_and_qa", retrieve_and_qa_node)
@@ -737,22 +696,20 @@ def build_graph():
     builder.add_edge(START, "extraction")
     builder.add_edge("extraction", "categorizer")
 
-    # Conditional routing: categorizer → one of the 5 guide nodes, retrieve_and_qa, or summarizer
+    # Conditional routing: categorizer → one of the 3 guide nodes, retrieve_and_qa, or summarizer
     builder.add_conditional_edges(
         "categorizer",
         route_after_categorizer,
         {
-            "original_paper_guide": "original_paper_guide",
-            "survey_review_guide": "survey_review_guide",
-            "system_engineering_guide": "system_engineering_guide",
+            "applied_guide": "applied_guide",
             "theoretical_guide": "theoretical_guide",
-            "benchmark_dataset_guide": "benchmark_dataset_guide",
+            "survey_guide": "survey_guide",
             "retrieve_and_qa": "retrieve_and_qa",
             "summarizer": "summarizer",
         },
     )
 
-    # All five guide nodes flow into the combined retrieve-and-QA node
+    # All three guide nodes flow into the combined retrieve-and-QA node
     for guide_node in _CATEGORY_GUIDE_NODE.values():
         builder.add_edge(guide_node, "retrieve_and_qa")
 

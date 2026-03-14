@@ -2,12 +2,12 @@
 Original Paper Guide Example - Research Paper Assistant
 =======================================================
 Demonstrates how to generate a Three-Pass Method reading guide
-for ORIGINAL_RESEARCH papers.
+for research papers (APPLIED, THEORETICAL, SURVEY categories).
 
-When you run this on an original research paper, it will:
+When you run this on a research paper, it will:
 1. Extract metadata from the PDF
-2. Categorize the paper
-3. Generate a detailed reading guide (if category is ORIGINAL_RESEARCH)
+2. Categorize the paper (APPLIED, THEORETICAL, or SURVEY)
+3. Generate a detailed reading guide
 4. Save the guide to output/<document_id>_guide.json
 
 Usage:
@@ -34,10 +34,10 @@ from backend.run import PaperAnalysisPipeline
 
 def example_original_paper_guide():
     """
-    Example: Generate a reading guide for an original research paper.
-    
-    The guide will only be generated if:
-    - The paper is categorized as ORIGINAL_RESEARCH
+    Example: Generate a reading guide for a research paper.
+
+    The guide will be generated for any categorized paper when:
+    - The paper category is APPLIED, THEORETICAL, or SURVEY
     - No query is provided (guide mode, not Q&A mode)
     """
     print("\n" + "=" * 70)
@@ -57,11 +57,11 @@ def example_original_paper_guide():
     # Create pipeline
     pipeline = PaperAnalysisPipeline()
     
-    # Run pipeline without query (this triggers guide generation for ORIGINAL_RESEARCH papers)
+    # Run pipeline without query (this triggers guide generation for all recognized categories)
     result = pipeline.run(
         pdf_path=pdf_path,
         force_ocr=False,
-        query=None,  # No query = guide mode (if ORIGINAL_RESEARCH)
+        query=None,  # No query = guide mode
         summarize=False
     )
     
@@ -109,10 +109,10 @@ def example_original_paper_guide():
         print(f"\n✅ Guide saved to: {result.get('guide_file_path')}")
         print(f"\n💡 Tip: Open the JSON file to see the complete step-by-step guide!")
         
-    elif result.get('category') != 'ORIGINAL_RESEARCH':
+    elif result.get('category') not in ('APPLIED', 'THEORETICAL', 'SURVEY'):
         print(f"\n⚠️  Reading guide not generated.")
-        print(f"   Reason: Paper category is '{result.get('category')}', not 'ORIGINAL_RESEARCH'")
-        print(f"   The guide is only generated for ORIGINAL_RESEARCH papers.")
+        print(f"   Reason: Paper category is '{result.get('category')}', which is not a known category.")
+        print(f"   Guide generation is supported for APPLIED, THEORETICAL, and SURVEY papers.")
         
         if result.get('summary'):
             print(f"\n📝 Summary generated instead:")
@@ -135,9 +135,9 @@ def example_original_paper_guide():
 def example_with_existing_paper():
     """
     Example using an existing paper from the output folder.
-    
-    This demonstrates that the guide is only generated when:
-    - Category is ORIGINAL_RESEARCH
+
+    This demonstrates that the guide is generated when:
+    - Category is APPLIED, THEORETICAL, or SURVEY
     - No query is provided
     """
     print("\n" + "=" * 70)

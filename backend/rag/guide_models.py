@@ -25,7 +25,7 @@ class ReadingPass(BaseModel):
 class ReadingStrategy(BaseModel):
     """Overall reading strategy metadata."""
     method: str = Field(default="three_pass_method", description="Reading method being used")
-    paper_type: str = Field(default="original_research", description="Type of paper")
+    paper_type: str = Field(default="applied", description="Type of paper")
     estimated_total_time: str = Field(description="Total estimated time for all passes")
 
 
@@ -35,84 +35,56 @@ class FinalTask(BaseModel):
     reflection_questions: List[str] = Field(description="Questions for critical reflection")
 
 
-class ReadingGuide(BaseModel):
-    """Complete Three-Pass Method reading guide for a research paper."""
+class AppliedReadingGuide(BaseModel):
+    """Complete Three-Pass Method reading guide for an APPLIED paper.
+
+    Covers original research, system engineering, benchmark/dataset papers,
+    and experimental papers — anything where authors built, implemented, or
+    experimentally validated something.
+    """
     paper_title: str = Field(description="Title of the research paper")
     reading_strategy: ReadingStrategy = Field(description="Overall strategy information")
-    pass1_quick_scan: ReadingPass = Field(description="First pass: quick scan")
-    pass2_method_understanding: ReadingPass = Field(description="Second pass: method understanding")
-    pass3_deep_analysis: ReadingPass = Field(description="Third pass: deep analysis")
-    final_user_task: FinalTask = Field(description="Final consolidation tasks")
-
-
-class SurveyReadingGuide(BaseModel):
-    """Complete Three-Pass Method reading guide for a SURVEY or REVIEW paper."""
-    paper_title: str = Field(description="Title of the survey/review paper")
-    reading_strategy: ReadingStrategy = Field(description="Overall strategy information")
-    pass1_field_overview: ReadingPass = Field(description="First pass: field overview and scope")
-    pass2_taxonomy_understanding: ReadingPass = Field(description="Second pass: taxonomy and method categories")
-    pass3_research_landscape_analysis: ReadingPass = Field(description="Third pass: research landscape, gaps, and future directions")
-    final_user_task: FinalTask = Field(description="Final consolidation tasks")
-
-
-class SystemEngineeringReadingGuide(BaseModel):
-    """
-    Three-Pass reading guide for SYSTEM_ENGINEERING papers.
-
-    Tailored for papers describing the design and implementation of real-world
-    systems — focused on architecture, engineering trade-offs, and deployment.
-    """
-    paper_title: str = Field(description="Title of the system engineering paper")
-    reading_strategy: ReadingStrategy = Field(description="Overall strategy information")
-    pass1_system_overview: ReadingPass = Field(
-        description="First pass: understand the system's purpose, problem, and high-level design"
-    )
-    pass2_architecture_deep_dive: ReadingPass = Field(
-        description="Second pass: understand system components, data flow, and key design decisions"
-    )
-    pass3_engineering_evaluation: ReadingPass = Field(
-        description="Third pass: critically evaluate trade-offs, performance results, and deployment lessons"
-    )
+    pass1_quick_scan: ReadingPass = Field(description="First pass: quick scan — abstract, conclusion, figures, introduction")
+    pass2_method_understanding: ReadingPass = Field(description="Second pass: methodology, key figures, evaluation/results setup")
+    pass3_deep_analysis: ReadingPass = Field(description="Third pass: equations/algorithms, ablations, limitations")
     final_user_task: FinalTask = Field(description="Final consolidation tasks")
 
 
 class TheoreticalReadingGuide(BaseModel):
-    """
-    Three-Pass reading guide for THEORETICAL papers.
+    """Complete Three-Pass Method reading guide for a THEORETICAL paper.
 
-    Tailored for papers presenting mathematical proofs, formal analysis,
-    algorithm complexity, or theoretical frameworks.
+    Covers papers that formally prove or derive something: proofs, theorems,
+    lemmas, complexity analysis, convergence analysis, formal methods, and
+    mathematical derivations.
     """
     paper_title: str = Field(description="Title of the theoretical paper")
     reading_strategy: ReadingStrategy = Field(description="Overall strategy information")
-    pass1_results_overview: ReadingPass = Field(
-        description="First pass: understand what is being proved/analyzed and why it matters"
+    pass1_quick_scan: ReadingPass = Field(
+        description="First pass: abstract, introduction, theorem/lemma statements only — skip all proofs"
     )
     pass2_proof_strategy: ReadingPass = Field(
-        description="Second pass: follow the mathematical argument, key lemmas, and proof techniques"
+        description="Second pass: definitions and assumptions, theorem statements with implications, applications/examples"
     )
     pass3_deep_mathematical_analysis: ReadingPass = Field(
-        description="Third pass: verify proofs rigorously, assess assumptions, and connect to broader implications"
+        description="Third pass: proof details, complexity analysis, connection to related theoretical work"
     )
     final_user_task: FinalTask = Field(description="Final consolidation tasks")
 
 
-class BenchmarkDatasetReadingGuide(BaseModel):
-    """
-    Three-Pass reading guide for BENCHMARK_DATASET papers.
+class SurveyReadingGuide(BaseModel):
+    """Complete Three-Pass Method reading guide for a SURVEY paper.
 
-    Tailored for papers introducing a dataset, evaluation framework, or
-    benchmark — focused on data quality, methodology, tasks, and baselines.
+    Covers surveys, reviews, literature reviews, meta-analyses, and overview papers.
     """
-    paper_title: str = Field(description="Title of the benchmark/dataset paper")
+    paper_title: str = Field(description="Title of the survey/review paper")
     reading_strategy: ReadingStrategy = Field(description="Overall strategy information")
-    pass1_dataset_overview: ReadingPass = Field(
-        description="First pass: understand what dataset is introduced, its scope, and intended use cases"
+    pass1_field_overview: ReadingPass = Field(
+        description="First pass: abstract, introduction, taxonomy/categorization headings, research gaps/future directions"
     )
-    pass2_methodology_and_tasks: ReadingPass = Field(
-        description="Second pass: understand collection process, annotation, benchmark tasks, and metrics"
+    pass2_taxonomy_understanding: ReadingPass = Field(
+        description="Second pass: taxonomy section in full, key findings per category, comparison tables"
     )
-    pass3_benchmark_analysis: ReadingPass = Field(
-        description="Third pass: critically evaluate baseline results, dataset quality, limitations, and gaps"
+    pass3_research_landscape_analysis: ReadingPass = Field(
+        description="Third pass: individual paper summaries for relevant topics, reference list as curated reading list"
     )
     final_user_task: FinalTask = Field(description="Final consolidation tasks")

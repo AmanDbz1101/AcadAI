@@ -16,11 +16,9 @@ from pydantic import BaseModel, Field, ConfigDict
 # Category literals
 # ---------------------------------------------------------------------------
 PaperCategory = Literal[
-    "ORIGINAL_RESEARCH",
-    "SURVEY_REVIEW",
-    "SYSTEM_ENGINEERING",
+    "APPLIED",
     "THEORETICAL",
-    "BENCHMARK_DATASET",
+    "SURVEY",
 ]
 
 Confidence = Literal["HIGH", "MEDIUM", "LOW"]
@@ -65,7 +63,7 @@ class AgentState(BaseModel):
     1. Extraction only: pdf_path → extraction → categorization → END
     2. Q&A: pdf_path → extraction → categorization → retrieval → qa → END
     3. Summarization: pdf_path → extraction → categorization → summarization → END
-    4. Reading Guide (ORIGINAL_RESEARCH): pdf_path → extraction → categorization → original_paper_guide → END
+    4. Reading Guide: pdf_path → extraction → categorization → <category_guide> → END
     """
     
     # === Input ===
