@@ -10,76 +10,76 @@ from src.metadata_extraction.src.models import PaperMetadata
 from src.metadata_extraction.src.text_extraction import TextBlock
 
 
-def get_database(db_path: str = "research_papers.db") -> DatabaseManager:
+def get_database(db_url: Optional[str] = None) -> DatabaseManager:
     """Get database manager instance.
     
     Args:
-        db_path: Path to SQLite database file
+        db_url: PostgreSQL DSN/URL
         
     Returns:
         DatabaseManager instance
     """
-    return DatabaseManager(db_path)
+    return DatabaseManager(db_url)
 
 
-def list_all_papers(db_path: str = "research_papers.db", limit: Optional[int] = None) -> List[Dict[str, Any]]:
+def list_all_papers(db_url: Optional[str] = None, limit: Optional[int] = None) -> List[Dict[str, Any]]:
     """List all papers in database.
     
     Args:
-        db_path: Path to SQLite database file
+        db_url: PostgreSQL DSN/URL
         limit: Optional limit on number of papers
         
     Returns:
         List of paper dictionaries
     """
-    db = get_database(db_path)
+    db = get_database(db_url)
     return db.get_all_papers(limit=limit)
 
 
-def find_paper(pdf_path: str, db_path: str = "research_papers.db") -> Optional[Dict[str, Any]]:
+def find_paper(pdf_path: str, db_url: Optional[str] = None) -> Optional[Dict[str, Any]]:
     """Find a paper by PDF path.
     
     Args:
         pdf_path: Path to PDF file
-        db_path: Path to SQLite database file
+        db_url: PostgreSQL DSN/URL
         
     Returns:
         Paper dictionary or None
     """
-    db = get_database(db_path)
+    db = get_database(db_url)
     return db.get_paper_by_path(pdf_path)
 
 
-def search_papers(query: str, db_path: str = "research_papers.db") -> List[Dict[str, Any]]:
+def search_papers(query: str, db_url: Optional[str] = None) -> List[Dict[str, Any]]:
     """Search papers by text query.
     
     Args:
         query: Search query string
-        db_path: Path to SQLite database file
+        db_url: PostgreSQL DSN/URL
         
     Returns:
         List of matching papers
     """
-    db = get_database(db_path)
+    db = get_database(db_url)
     return db.search_papers(query)
 
 
 def get_paper_content(
     paper_id: int,
-    db_path: str = "research_papers.db",
+    db_url: Optional[str] = None,
     include_text_blocks: bool = True
 ) -> Optional[Dict[str, Any]]:
     """Get complete paper content including metadata and text blocks.
     
     Args:
         paper_id: Database ID of the paper
-        db_path: Path to SQLite database file
+        db_url: PostgreSQL DSN/URL
         include_text_blocks: Whether to include text blocks (default: True)
         
     Returns:
         Dictionary with paper data or None
     """
-    db = get_database(db_path)
+    db = get_database(db_url)
     
     paper = db.get_paper_by_id(paper_id)
     if not paper:
@@ -99,37 +99,37 @@ def get_paper_content(
 def get_paper_text_by_page(
     paper_id: int,
     page_number: int,
-    db_path: str = "research_papers.db"
+    db_url: Optional[str] = None
 ) -> List[str]:
     """Get all text from a specific page.
     
     Args:
         paper_id: Database ID of the paper
         page_number: Page number to retrieve
-        db_path: Path to SQLite database file
+        db_url: PostgreSQL DSN/URL
         
     Returns:
         List of text strings from the page
     """
-    db = get_database(db_path)
+    db = get_database(db_url)
     blocks = db.get_text_blocks(paper_id, page_number=page_number)
     return [block['text'] for block in blocks]
 
 
 def reconstruct_paper_objects(
     paper_id: int,
-    db_path: str = "research_papers.db"
+    db_url: Optional[str] = None
 ) -> Optional[tuple[PaperMetadata, List[TextBlock]]]:
     """Reconstruct PaperMetadata and TextBlock objects from database.
     
     Args:
         paper_id: Database ID of the paper
-        db_path: Path to SQLite database file
+        db_url: PostgreSQL DSN/URL
         
     Returns:
         Tuple of (PaperMetadata, List[TextBlock]) or None if not found
     """
-    db = get_database(db_path)
+    db = get_database(db_url)
     
     metadata = db.reconstruct_metadata(paper_id)
     text_blocks = db.reconstruct_text_blocks(paper_id)
@@ -139,13 +139,13 @@ def reconstruct_paper_objects(
     return None
 
 
-def show_database_stats(db_path: str = "research_papers.db") -> None:
+def show_database_stats(db_url: Optional[str] = None) -> None:
     """Print database statistics.
     
     Args:
-        db_path: Path to SQLite database file
+        db_url: PostgreSQL DSN/URL
     """
-    db = get_database(db_path)
+    db = get_database(db_url)
     stats = db.get_paper_statistics()
     
     print("=" * 60)
@@ -172,19 +172,19 @@ def show_database_stats(db_path: str = "research_papers.db") -> None:
 def export_paper_to_text(
     paper_id: int,
     output_path: str,
-    db_path: str = "research_papers.db"
+    db_url: Optional[str] = None
 ) -> bool:
     """Export all paper text to a text file.
     
     Args:
         paper_id: Database ID of the paper
         output_path: Path to output text file
-        db_path: Path to SQLite database file
+        db_url: PostgreSQL DSN/URL
         
     Returns:
         True if successful, False otherwise
     """
-    db = get_database(db_path)
+    db = get_database(db_url)
     
     paper = db.get_paper_by_id(paper_id)
     if not paper:
@@ -234,17 +234,17 @@ def export_paper_to_text(
     return True
 
 
-def delete_paper_from_db(paper_id: int, db_path: str = "research_papers.db") -> bool:
+def delete_paper_from_db(paper_id: int, db_url: Optional[str] = None) -> bool:
     """Delete a paper from the database.
     
     Args:
         paper_id: Database ID of the paper
-        db_path: Path to SQLite database file
+        db_url: PostgreSQL DSN/URL
         
     Returns:
         True if deleted, False if not found
     """
-    db = get_database(db_path)
+    db = get_database(db_url)
     return db.delete_paper(paper_id)
 
 

@@ -22,7 +22,7 @@ class FastExtractionPipeline:
     
     def __init__(
         self,
-        db_path: str = "fast_extraction_docs.db",
+        db_url: Optional[str] = None,
         output_dir: str = "output",
         model_name: Optional[str] = None
     ):
@@ -30,11 +30,11 @@ class FastExtractionPipeline:
         Initialize pipeline
         
         Args:
-            db_path: Path to deduplication database
+            db_url: PostgreSQL DSN/URL for deduplication storage
             output_dir: Directory to save metadata JSON files
             model_name: Groq model name (optional)
         """
-        self.db = DeduplicationDatabase(db_path)
+        self.db = DeduplicationDatabase(db_url)
         self.metadata_extractor = SimpleMetadataExtractor(model_name)
         self.output_dir = Path(output_dir)
         self.output_dir.mkdir(exist_ok=True)

@@ -6,6 +6,7 @@ This module provides the main function to extract metadata from research papers.
 
 import os
 from pathlib import Path
+from typing import Optional
 from dotenv import load_dotenv
 from src.metadata_extraction.src.models import PaperMetadata
 from src.metadata_extraction.src.graph import MetadataExtractionGraph
@@ -14,7 +15,11 @@ from src.metadata_extraction.src.graph import MetadataExtractionGraph
 load_dotenv()
 
 
-def extract_paper_metadata(pdf_path: str, db_path: str = "research_papers.db", enable_db: bool = True) -> PaperMetadata:
+def extract_paper_metadata(
+    pdf_path: str,
+    db_url: Optional[str] = None,
+    enable_db: bool = True,
+) -> PaperMetadata:
     """Extract structured metadata from a research paper PDF.
     
     This is the main entry point for the metadata extraction pipeline.
@@ -22,7 +27,7 @@ def extract_paper_metadata(pdf_path: str, db_path: str = "research_papers.db", e
     
     Args:
         pdf_path: Path to the PDF file
-        db_path: Path to SQLite database file (default: "research_papers.db")
+        db_url: PostgreSQL DSN/URL (default: POSTGRES_DSN env fallback)
         enable_db: Whether to store results in database (default: True)
         
     Returns:
@@ -59,7 +64,7 @@ def extract_paper_metadata(pdf_path: str, db_path: str = "research_papers.db", e
         )
     
     # Create extraction graph with database configuration
-    graph = MetadataExtractionGraph(db_path=db_path, enable_db=enable_db)
+    graph = MetadataExtractionGraph(db_url=db_url, enable_db=enable_db)
     
     # Run extraction
     metadata = graph.extract(str(pdf_file.absolute()))

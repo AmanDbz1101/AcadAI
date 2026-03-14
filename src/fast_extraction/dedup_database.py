@@ -2,13 +2,14 @@
 SQL database for document deduplication and tracking
 """
 
-import sqlite3
+import os
 import hashlib
 import uuid
-from pathlib import Path
 from typing import Optional, Dict, Any, List
-from datetime import datetime
 from contextlib import contextmanager
+
+import psycopg2
+from psycopg2.extras import RealDictCursor
 
 from .models import DocumentRecord, DocumentStatus
 
@@ -16,52 +17,57 @@ from .models import DocumentRecord, DocumentStatus
 class DeduplicationDatabase:
     """Manages document deduplication and status tracking"""
     
-    def __init__(self, db_path: str = "fast_extraction_docs.db"):
-        self.db_path = db_path
+    def __init__(self, db_url: Optional[str] = None):
+        self.db_url = db_url or os.getenv(
+            "FAST_EXTRACTION_DB_URL",
+            os.getenv("POSTGRES_DSN", "postgresql://postgres:postgres@localhost:5432/research_agent"),
+        )
         self._init_database()
     
     def _init_database(self):
         """Initialize database schema"""
         with self._get_connection() as conn:
-            conn.execute("""
-                CREATE TABLE IF NOT EXISTS documents (
-                    id INTEGER PRIMARY KEY AUTOINCREMENT,
-                    document_id TEXT UNIQUE NOT NULL,
-                    pdf_hash TEXT NOT NULL,
-                    title TEXT NOT NULL,
-                    status TEXT NOT NULL,
-                    docling_metadata_path TEXT,
-                    api_metadata_path TEXT,
-                    vectorstore_collection TEXT,
-                    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-                )
-            """)
-            
-            # Create indexes for fast lookups
-            conn.execute("""
-                CREATE INDEX IF NOT EXISTS idx_pdf_hash 
-                ON documents(pdf_hash)
-            """)
-            
-            conn.execute("""
-                CREATE INDEX IF NOT EXISTS idx_document_id 
-                ON documents(document_id)
-            """)
-            
-            conn.execute("""
-                CREATE INDEX IF NOT EXISTS idx_status 
-                ON documents(status)
-            """)
-            
-            conn.commit()
+            with conn.cursor() as cursor:
+                cursor.execute("""
+                    CREATE TABLE IF NOT EXISTS documents (
+                        id BIGSERIAL PRIMARY KEY,
+                        document_id TEXT UNIQUE NOT NULL,
+                        pdf_hash TEXT NOT NULL,
+                        title TEXT NOT NULL,
+                        status TEXT NOT NULL,
+                        docling_metadata_path TEXT,
+                        api_metadata_path TEXT,
+                        vectorstore_collection TEXT,
+                        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+                    )
+                """)
+
+                # Create indexes for fast lookups
+                cursor.execute("""
+                    CREATE INDEX IF NOT EXISTS idx_pdf_hash 
+                    ON documents(pdf_hash)
+                """)
+
+                cursor.execute("""
+                    CREATE INDEX IF NOT EXISTS idx_document_id 
+                    ON documents(document_id)
+                """)
+
+                cursor.execute("""
+                    CREATE INDEX IF NOT EXISTS idx_status 
+                    ON documents(status)
+                """)
     
     @contextmanager
     def _get_connection(self):
         """Context manager for database connections"""
-        conn = sqlite3.connect(self.db_path)
-        conn.row_factory = sqlite3.Row
+        conn = psycopg2.connect(self.db_url)
         try:
             yield conn
+            conn.commit()
+        except Exception:
+            conn.rollback()
+            raise
         finally:
             conn.close()
     
@@ -93,9 +99,13 @@ class DeduplicationDatabase:
             DocumentRecord if exists, None otherwise
         """
         with self._get_connection() as conn:
-            cursor = conn.execute("""
-                SELECT * FROM documents WHERE pdf_hash = ?
-            """, (pdf_hash,))
+            with conn.cursor(cursor_factory=RealDictCursor) as cursor:
+                cursor.execute(
+                    """
+                    SELECT * FROM documents WHERE pdf_hash = %s
+                    """,
+                    (pdf_hash,),
+                )
             
             row = cursor.fetchone()
             if row:
@@ -113,9 +123,13 @@ class DeduplicationDatabase:
             DocumentRecord if exists, None otherwise
         """
         with self._get_connection() as conn:
-            cursor = conn.execute("""
-                SELECT * FROM documents WHERE document_id = ?
-            """, (document_id,))
+            with conn.cursor(cursor_factory=RealDictCursor) as cursor:
+                cursor.execute(
+                    """
+                    SELECT * FROM documents WHERE document_id = %s
+                    """,
+                    (document_id,),
+                )
             
             row = cursor.fetchone()
             if row:
@@ -145,12 +159,15 @@ class DeduplicationDatabase:
             document_id = str(uuid.uuid4())
         
         with self._get_connection() as conn:
-            conn.execute("""
-                INSERT INTO documents (
-                    document_id, pdf_hash, title, status
-                ) VALUES (?, ?, ?, ?)
-            """, (document_id, pdf_hash, title, status.value))
-            conn.commit()
+            with conn.cursor() as cursor:
+                cursor.execute(
+                    """
+                    INSERT INTO documents (
+                        document_id, pdf_hash, title, status
+                    ) VALUES (%s, %s, %s, %s)
+                    """,
+                    (document_id, pdf_hash, title, status.value),
+                )
         
         return document_id
     
@@ -198,14 +215,18 @@ class DeduplicationDatabase:
                 params.append(vectorstore_collection)
             
             params.append(document_id)
-            
-            cursor = conn.execute(f"""
-                UPDATE documents 
-                SET {', '.join(updates)}
-                WHERE document_id = ?
-            """, params)
-            
-            conn.commit()
+
+            updates = [u.replace("?", "%s") for u in updates]
+
+            with conn.cursor() as cursor:
+                cursor.execute(
+                    f"""
+                    UPDATE documents 
+                    SET {', '.join(updates)}
+                    WHERE document_id = %s
+                    """,
+                    params,
+                )
             return cursor.rowcount > 0
     
     def get_all_documents(
@@ -228,17 +249,18 @@ class DeduplicationDatabase:
             params = []
             
             if status:
-                query += " WHERE status = ?"
+                query += " WHERE status = %s"
                 params.append(status.value)
             
             query += " ORDER BY created_at DESC"
             
             if limit:
-                query += " LIMIT ?"
+                query += " LIMIT %s"
                 params.append(limit)
-            
-            cursor = conn.execute(query, params)
-            rows = cursor.fetchall()
+
+            with conn.cursor(cursor_factory=RealDictCursor) as cursor:
+                cursor.execute(query, params)
+                rows = cursor.fetchall()
             
             return [self._row_to_record(row) for row in rows]
     
@@ -253,10 +275,13 @@ class DeduplicationDatabase:
             True if deleted, False if not found
         """
         with self._get_connection() as conn:
-            cursor = conn.execute("""
-                DELETE FROM documents WHERE document_id = ?
-            """, (document_id,))
-            conn.commit()
+            with conn.cursor() as cursor:
+                cursor.execute(
+                    """
+                    DELETE FROM documents WHERE document_id = %s
+                    """,
+                    (document_id,),
+                )
             return cursor.rowcount > 0
     
     def get_statistics(self) -> Dict[str, Any]:
@@ -267,20 +292,24 @@ class DeduplicationDatabase:
             Dict with counts by status
         """
         with self._get_connection() as conn:
-            cursor = conn.execute("""
-                SELECT 
-                    COUNT(*) as total,
-                    SUM(CASE WHEN status = ? THEN 1 ELSE 0 END) as processing,
-                    SUM(CASE WHEN status = ? THEN 1 ELSE 0 END) as docling_ready,
-                    SUM(CASE WHEN status = ? THEN 1 ELSE 0 END) as api_complete,
-                    SUM(CASE WHEN status = ? THEN 1 ELSE 0 END) as failed
-                FROM documents
-            """, (
-                DocumentStatus.PROCESSING.value,
-                DocumentStatus.DOCLING_READY.value,
-                DocumentStatus.API_COMPLETE.value,
-                DocumentStatus.FAILED.value
-            ))
+            with conn.cursor(cursor_factory=RealDictCursor) as cursor:
+                cursor.execute(
+                    """
+                    SELECT 
+                        COUNT(*) as total,
+                        SUM(CASE WHEN status = %s THEN 1 ELSE 0 END) as processing,
+                        SUM(CASE WHEN status = %s THEN 1 ELSE 0 END) as docling_ready,
+                        SUM(CASE WHEN status = %s THEN 1 ELSE 0 END) as api_complete,
+                        SUM(CASE WHEN status = %s THEN 1 ELSE 0 END) as failed
+                    FROM documents
+                    """,
+                    (
+                        DocumentStatus.PROCESSING.value,
+                        DocumentStatus.DOCLING_READY.value,
+                        DocumentStatus.API_COMPLETE.value,
+                        DocumentStatus.FAILED.value,
+                    ),
+                )
             
             row = cursor.fetchone()
             return {
@@ -291,7 +320,7 @@ class DeduplicationDatabase:
                 "failed": row["failed"]
             }
     
-    def _row_to_record(self, row: sqlite3.Row) -> DocumentRecord:
+    def _row_to_record(self, row: Dict[str, Any]) -> DocumentRecord:
         """Convert database row to DocumentRecord"""
         return DocumentRecord(
             id=row["id"],
@@ -302,5 +331,5 @@ class DeduplicationDatabase:
             docling_metadata_path=row["docling_metadata_path"],
             api_metadata_path=row["api_metadata_path"],
             vectorstore_collection=row["vectorstore_collection"],
-            created_at=datetime.fromisoformat(row["created_at"]) if row["created_at"] else None
+            created_at=row["created_at"],
         )

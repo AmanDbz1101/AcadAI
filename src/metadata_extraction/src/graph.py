@@ -47,14 +47,14 @@ class ExtractionState(TypedDict):
 class MetadataExtractionGraph:
     """LangGraph-based orchestration for metadata extraction."""
     
-    def __init__(self, db_path: str = "research_papers.db", enable_db: bool = True):
+    def __init__(self, db_url: str | None = None, enable_db: bool = True):
         """Initialize the extraction graph.
         
         Args:
-            db_path: Path to SQLite database file
+            db_url: PostgreSQL DSN/URL (or POSTGRES_DSN env fallback)
             enable_db: Whether to enable database storage (default: True)
         """
-        self.db_manager = DatabaseManager(db_path) if enable_db else None
+        self.db_manager = DatabaseManager(db_url) if enable_db else None
         self.enable_db = enable_db
         self.graph = self._build_graph()
     
