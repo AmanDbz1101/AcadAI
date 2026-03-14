@@ -10,6 +10,7 @@ Handles complete extraction workflow:
 
 import json
 import logging
+import os
 from pathlib import Path
 from typing import Optional, Dict, Any
 from datetime import datetime
@@ -17,9 +18,31 @@ from datetime import datetime
 from backend.extraction.pipelines.ingest_pipeline import IngestPipeline
 from backend.extraction.pipelines.metadata_pipeline import MetadataExtractionPipeline
 from backend.extraction.pipelines.section_hierarchy_pipeline import SectionHierarchyPipeline
+from backend.extraction.persistence import PostgresPaperStore
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
+
+
+def _resolve_postgres_dsn() -> Optional[str]:
+    """Resolve PostgreSQL DSN from environment variables."""
+    explicit = os.getenv("POSTGRES_DSN")
+    if explicit:
+        return explicit
+
+    host = os.getenv("POSTGRES_HOST") or os.getenv("PGHOST")
+    port = os.getenv("POSTGRES_PORT") or os.getenv("PGPORT")
+    dbname = os.getenv("POSTGRES_DB") or os.getenv("PGDATABASE")
+    user = os.getenv("POSTGRES_USER") or os.getenv("PGUSER")
+    password = os.getenv("POSTGRES_PASSWORD") or os.getenv("PGPASSWORD")
+
+    if not all([host, port, dbname, user]):
+        return None
+
+    if password:
+        return f"postgresql://{user}:{password}@{host}:{port}/{dbname}"
+
+    return f"postgresql://{user}@{host}:{port}/{dbname}"
 
 
 class PDFExtractor:
@@ -155,11 +178,48 @@ class PDFExtractor:
                 "sections": full_sections,  # Keep IDs in complete file
                 "global_stats": processed_doc.metadata.global_stats.model_dump(mode='json') if processed_doc.metadata.global_stats else {},
                 "inference": processed_doc.metadata.inference.model_dump(mode='json') if processed_doc.metadata.inference else {}
-            }
+            },
+            "extracted_elements": processed_doc.metadata.extracted_elements,
         }
         with open(complete_file, 'w', encoding='utf-8') as f:
             json.dump(complete_dict, f, indent=2, ensure_ascii=False)
         logger.info(f"Saved complete document: {complete_file}")
+
+        # Persist to PostgreSQL when configured.
+        db_result = None
+        postgres_dsn = _resolve_postgres_dsn()
+        if postgres_dsn:
+            try:
+                store = PostgresPaperStore(postgres_dsn)
+                section_payload = [s.model_dump(mode='json', exclude_none=True) for s in processed_doc.metadata.sections]
+                paper_name = (processed_doc.metadata.title or pdf_path.stem or pdf_path.name).strip()
+
+                db_result = store.persist_extraction(
+                    paper_name=paper_name,
+                    title=processed_doc.metadata.title,
+                    abstract=processed_doc.metadata.abstract,
+                    pdf_hash=validated_doc.pdf_hash,
+                    source_pdf_path=str(pdf_path),
+                    document_uuid=doc_id,
+                    metadata_json=metadata_dict,
+                    sections=section_payload,
+                    extracted_elements=processed_doc.metadata.extracted_elements or {},
+                )
+
+                if db_result.stored:
+                    logger.info(
+                        "Persisted extraction to PostgreSQL (paper_id=%s, paper_name=%s)",
+                        db_result.paper_id,
+                        db_result.paper_name,
+                    )
+                else:
+                    logger.info(
+                        "Skipped PostgreSQL persistence for duplicate paper (paper_id=%s, reason=%s)",
+                        db_result.paper_id,
+                        db_result.reason,
+                    )
+            except Exception as exc:
+                logger.warning("PostgreSQL persistence failed: %s", exc)
         
         extraction_time = (datetime.now() - start_time).total_seconds()
         
@@ -167,6 +227,7 @@ class PDFExtractor:
             "document_id": doc_id,
             "pdf_name": pdf_path.name,
             "metadata": metadata_dict,
+            "extracted_elements": processed_doc.metadata.extracted_elements,
             "hierarchy": hierarchy.model_dump(mode='json'),
             "full_text": full_text,
             "stats": {
@@ -183,7 +244,14 @@ class PDFExtractor:
                 "hierarchy": str(hierarchy_file),
                 "fulltext": str(fulltext_file),
                 "complete": str(complete_file)
-            }
+            },
+            "database": {
+                "enabled": bool(postgres_dsn),
+                "stored": db_result.stored if db_result else False,
+                "paper_id": db_result.paper_id if db_result else None,
+                "paper_name": db_result.paper_name if db_result else None,
+                "reason": db_result.reason if db_result else "postgres_not_configured",
+            },
         }
         
         logger.info(f"Extraction completed in {extraction_time:.2f}s")

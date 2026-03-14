@@ -15,7 +15,7 @@ docling-core>=2.0.0
 
 # Utilities
 python-dotenv>=1.0.0  # Environment variables
-psycopg2-binary>=2.9.9  # PostgreSQL driver
+
 
 # LLM Integration
 groq>=0.9.0  # Groq API client for LLM fallback
