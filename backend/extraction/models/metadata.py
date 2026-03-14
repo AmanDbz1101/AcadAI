@@ -71,6 +71,12 @@ class ExtractedMetadata(BaseModel):
     
     # Inferred properties
     inference: Optional[PaperInference] = Field(None, description="Inferred paper properties")
+
+    # Structured elements extracted from Docling (extensible for future element types)
+    extracted_elements: Dict[str, List[Dict[str, Any]]] = Field(
+        default_factory=dict,
+        description="Element payloads keyed by type (text_blocks, tables, figures, formulas, ...)"
+    )
     
     # Extraction metadata
     extraction_method: str = Field("docling+groq", description="Method used for extraction")

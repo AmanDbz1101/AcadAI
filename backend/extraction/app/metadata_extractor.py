@@ -9,6 +9,8 @@ import os
 import json
 import re
 import logging
+import hashlib
+from pathlib import Path
 from typing import List, Dict, Any, Optional
 
 from docling.document_converter import DocumentConverter, PdfFormatOption
@@ -154,6 +156,7 @@ Respond in JSON format:
         self.model = model
         _pipeline_options = PdfPipelineOptions(
             do_ocr=False,
+            generate_picture_images=True,
             accelerator_options=_get_accelerator_options(),
         )
         self.converter = DocumentConverter(
@@ -177,7 +180,8 @@ Respond in JSON format:
         logger.info(f"Extracting metadata from document {document.document_id}")
         
         # Extract structured data using Docling
-        structured_data = self._extract_structured_data(document.pdf_path)
+        image_output_dir = Path(os.getenv("EXTRACTED_IMAGE_DIR", "output/images")) / document.pdf_path.stem
+        structured_data = self._extract_structured_data(document.pdf_path, image_output_dir=image_output_dir)
         
         markdown = structured_data["markdown"]
         headings = structured_data["headings"]
@@ -229,6 +233,7 @@ Respond in JSON format:
             sections=classification['sections'],
             global_stats=global_stats,
             inference=inference,
+            extracted_elements=elements,
             extraction_method="docling+groq" if self.client else "docling",
             fallback_used=not bool(self.client),
             missing_fields=self._identify_missing_fields(classification)
@@ -243,7 +248,11 @@ Respond in JSON format:
         
         return metadata
     
-    def _extract_structured_data(self, pdf_path) -> Dict[str, Any]:
+    def _extract_structured_data(
+        self,
+        pdf_path: Path,
+        image_output_dir: Optional[Path] = None,
+    ) -> Dict[str, Any]:
         """
         Extract structured document data using Docling.
         
@@ -291,32 +300,51 @@ Respond in JSON format:
                 page_no = getattr(item.prov[0], "page_no", 0) + 1
             
             # Generate element ID (using hash of content or position)
-            import hashlib
-            element_id = hashlib.md5(str(item).encode()).hexdigest()
+            stable_repr = f"{getattr(item, 'label', '')}|{getattr(item, 'text', '')}|{page_no}|{level}"
+            element_id = hashlib.md5(stable_repr.encode()).hexdigest()
             
             if item.label in ["formula", "equation"]:
                 element_counts["formulas"] += 1
                 elements["formulas"].append({
                     "id": element_id,
-                    "page": page_no
+                    "page": page_no,
+                    "label": item.label,
+                    "text": self._item_to_text(item, doc),
                 })
             elif item.label == "table":
+                table_text = self._item_to_text(item, doc)
                 element_counts["tables"] += 1
                 elements["tables"].append({
                     "id": element_id,
-                    "page": page_no
+                    "page": page_no,
+                    "label": item.label,
+                    "text": table_text,
+                    "markdown": table_text,
                 })
             elif item.label == "picture":
                 element_counts["pictures"] += 1
+                image_path = self._save_picture_asset(
+                    item=item,
+                    doc=doc,
+                    output_dir=image_output_dir,
+                    element_id=element_id,
+                    page_no=page_no,
+                )
                 elements["figures"].append({
                     "id": element_id,
-                    "page": page_no
+                    "page": page_no,
+                    "label": item.label,
+                    "caption": self._item_to_text(item, doc),
+                    "image_path": str(image_path) if image_path else None,
                 })
             elif item.label in ["text", "paragraph"]:
+                text = self._item_to_text(item, doc)
                 element_counts["text_blocks"] += 1
                 elements["text_blocks"].append({
                     "id": element_id,
-                    "page": page_no
+                    "page": page_no,
+                    "label": item.label,
+                    "text": text,
                 })
         
         return {
@@ -325,6 +353,62 @@ Respond in JSON format:
             "element_counts": element_counts,
             "elements": elements
         }
+
+    def _item_to_text(self, item: Any, doc: Any) -> str:
+        """Extract best-effort text/markdown representation for an item."""
+        if hasattr(item, "text") and item.text:
+            return str(item.text)
+
+        if hasattr(item, "export_to_markdown"):
+            try:
+                return item.export_to_markdown(doc)
+            except Exception:
+                return ""
+
+        return ""
+
+    def _save_picture_asset(
+        self,
+        *,
+        item: Any,
+        doc: Any,
+        output_dir: Optional[Path],
+        element_id: str,
+        page_no: int,
+    ) -> Optional[Path]:
+        """Persist figure image to PNG when available from Docling."""
+        if output_dir is None:
+            return None
+
+        try:
+            output_dir.mkdir(parents=True, exist_ok=True)
+        except Exception:
+            return None
+
+        image_obj = None
+
+        # Try common Docling image access patterns (method first, then attributes).
+        try:
+            if hasattr(item, "get_image"):
+                image_obj = item.get_image(doc)
+        except Exception:
+            image_obj = None
+
+        if image_obj is None and hasattr(item, "image"):
+            image_obj = getattr(item, "image")
+
+        if image_obj is not None and hasattr(image_obj, "pil_image"):
+            image_obj = image_obj.pil_image
+
+        if image_obj is None:
+            return None
+
+        try:
+            target_path = output_dir / f"page_{page_no:03d}_{element_id}.png"
+            image_obj.save(target_path, format="PNG")
+            return target_path
+        except Exception:
+            return None
     
     def _classify_headings_llm(
         self,
