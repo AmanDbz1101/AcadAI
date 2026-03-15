@@ -1,0 +1,17 @@
+# Core dependencies for technical term detection
+spacy>=3.0.0
+scispacy>=0.5.0
+wordfreq>=3.0.0
+requests>=2.28.0
+
+# Note: The definition_lookup.py module uses Wikipedia REST API, 
+# CS Ontology API, and INSPIRE-HEP API - all free, no API keys needed.
+# No additional packages required beyond requests.
+
+# Note: After installing these, you need to download the models:
+# 
+# For best results (recommended):
+# pip install https://s3-us-west-2.amazonaws.com/ai2-s2-scispacy/releases/v0.5.4/en_core_sci_lg-0.5.4.tar.gz
+#
+# For fallback support:
+# python -m spacy download en_core_web_sm

@@ -1,5 +1,9 @@
 .env
 env_research
+
+
+env_tech_terms
+
 .venv
 models/
 # API and Frontend
