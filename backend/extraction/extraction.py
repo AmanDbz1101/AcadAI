@@ -140,6 +140,28 @@ class PDFExtractor:
         
         # Prepare full sections with IDs (for complete file)
         full_sections = [s.model_dump(mode='json', exclude_none=True) for s in processed_doc.metadata.sections]
+
+        # Normalize extracted elements and split references/bibliography explicitly.
+        extracted_elements = dict(processed_doc.metadata.extracted_elements or {})
+        text_blocks = extracted_elements.get("text_blocks") or []
+        references = []
+        for block in text_blocks:
+            if not isinstance(block, dict):
+                continue
+            label = str(block.get("label") or "").strip().lower()
+            section_name = str(block.get("section_title") or block.get("section") or "").strip().lower()
+            if label in {"reference", "bibliography"} or ("reference" in section_name or "bibliography" in section_name):
+                references.append(
+                    {
+                        "id": block.get("id"),
+                        "page": block.get("page"),
+                        "text": block.get("text"),
+                        "label": label,
+                        "section_id": block.get("section_id"),
+                        "section_title": block.get("section_title"),
+                    }
+                )
+        extracted_elements["references"] = references
         
         # Save metadata (without IDs)
         metadata_file = output_dir / f"{doc_id}_metadata.json"
@@ -179,7 +201,7 @@ class PDFExtractor:
                 "global_stats": processed_doc.metadata.global_stats.model_dump(mode='json') if processed_doc.metadata.global_stats else {},
                 "inference": processed_doc.metadata.inference.model_dump(mode='json') if processed_doc.metadata.inference else {}
             },
-            "extracted_elements": processed_doc.metadata.extracted_elements,
+            "extracted_elements": extracted_elements,
         }
         with open(complete_file, 'w', encoding='utf-8') as f:
             json.dump(complete_dict, f, indent=2, ensure_ascii=False)
@@ -203,7 +225,7 @@ class PDFExtractor:
                     document_uuid=doc_id,
                     metadata_json=metadata_dict,
                     sections=section_payload,
-                    extracted_elements=processed_doc.metadata.extracted_elements or {},
+                    extracted_elements=extracted_elements,
                 )
 
                 if db_result.stored:
@@ -227,7 +249,7 @@ class PDFExtractor:
             "document_id": doc_id,
             "pdf_name": pdf_path.name,
             "metadata": metadata_dict,
-            "extracted_elements": processed_doc.metadata.extracted_elements,
+            "extracted_elements": extracted_elements,
             "hierarchy": hierarchy.model_dump(mode='json'),
             "full_text": full_text,
             "stats": {

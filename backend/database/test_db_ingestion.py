@@ -10,7 +10,7 @@ This does NOT run the full LangGraph pipeline (no LLM calls).
 It exercises only:
   1. DoclingRichExtractor  – Docling conversion + rich element extraction
   2. DBIngestionPipeline   – writing everything to PostgreSQL
-  3. DocumentRepository    – reading back the stored data
+    3. PostgresPaperStore    – reading back the stored data
 
 Usage::
 
@@ -19,6 +19,7 @@ Usage::
 from __future__ import annotations
 
 import sys
+import os
 import uuid
 from pathlib import Path
 
@@ -30,9 +31,8 @@ if str(_root) not in sys.path:
 from dotenv import load_dotenv
 load_dotenv()
 
-from backend.database.connection import DatabaseConnection
-from backend.database.repository import DocumentRepository
 from backend.extraction.app.docling_rich_extractor import DoclingRichExtractor
+from backend.extraction.persistence import PostgresPaperStore
 from backend.extraction.pipelines.db_ingestion_pipeline import DBIngestionPipeline
 
 
@@ -44,12 +44,6 @@ def main(pdf_path: str) -> None:
     print(f"  DB Ingestion Smoke-Test")
     print(f"  PDF : {pdf.name}")
     print(f"{'='*60}\n")
-
-    # --- Connect ---
-    db = DatabaseConnection()
-    db.create_tables()
-    assert db.health_check(), "DB is not reachable — check DATABASE_URL in .env"
-    print("✓  Database reachable")
 
     # --- Extract rich data ---
     extractor = DoclingRichExtractor(extract_tables=True, extract_pictures=False)
@@ -66,7 +60,7 @@ def main(pdf_path: str) -> None:
 
     # --- Ingest ---
     doc_id = str(uuid.uuid4())
-    pipeline = DBIngestionPipeline(db_connection=db)
+    pipeline = DBIngestionPipeline(rich_extractor=extractor)
     stored_id = pipeline.ingest(
         pdf_path=pdf,
         document_id=doc_id,
@@ -76,22 +70,21 @@ def main(pdf_path: str) -> None:
     print(f"\n✓  Ingested document  id={stored_id}")
 
     # --- Read back ---
-    with db.session() as sess:
-        repo = DocumentRepository(sess)
-        stats = repo.get_document_stats(stored_id)
-        print(f"\n  DB stats for document:")
-        for k, v in stats.items():
-            print(f"     {k:<15} : {v}")
+    store = PostgresPaperStore(os.getenv("DATABASE_URL") or "postgresql+psycopg://postgres@localhost:5432/research_papers")
+    paper = store.get_paper_by_id(int(stored_id)) if stored_id.isdigit() else None
+    if paper:
+        print("\n  DB stats for paper:")
+        print(f"     id              : {paper.get('id')}")
+        print(f"     title           : {paper.get('title')}")
+        print(f"     created_at      : {paper.get('created_at')}")
 
-        blocks = repo.get_text_blocks_for_document(stored_id)
+        blocks = store.get_text_blocks_for_paper_id(int(stored_id))
         if blocks:
             sample = blocks[0]
-            print(f"\n  First text block:")
-            print(f"     page     : {sample.page_number}")
-            print(f"     label    : {sample.label}")
-            print(f"     section  : {sample.section_title!r}")
-            print(f"     bbox     : l={sample.bbox_l} t={sample.bbox_t} r={sample.bbox_r} b={sample.bbox_b}")
-            print(f"     content  : {sample.content[:120]!r}")
+            print("\n  First text block:")
+            print(f"     page     : {sample.get('page_number')}")
+            print(f"     id       : {sample.get('element_id')}")
+            print(f"     content  : {(sample.get('text_content') or '')[:120]!r}")
 
     print(f"\n✓  Smoke test passed\n")
 
