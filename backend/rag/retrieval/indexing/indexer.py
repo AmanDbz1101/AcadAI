@@ -17,6 +17,7 @@ paper.
 
 from __future__ import annotations
 
+import json
 import logging
 import time
 import uuid
@@ -118,8 +119,6 @@ class Indexer:
         doc_output_dir = output_dir or hierarchy_json_path.parent
 
         # ── Derive document_id ────────────────────────────────────────────────
-        import json
-
         with open(hierarchy_json_path, encoding="utf-8") as f:
             raw = json.load(f)
         hier = raw.get("hierarchy", raw)
@@ -159,6 +158,9 @@ class Indexer:
             output_dir=doc_output_dir,
             pdf_path=pdf_path,
         )
+
+        # Persist section-title lookup used by section-scoped retrieval.
+        self._write_section_lookup(document_id=document_id, chunks=chunks)
 
         if not chunks:
             logger.warning("Indexer: no chunks produced for document %s", document_id)
@@ -256,3 +258,35 @@ class Indexer:
                 batch_end - 1,
                 total,
             )
+
+    def _write_section_lookup(self, document_id: str, chunks: list[Chunk]) -> None:
+        """
+        Persist a normalized section lookup sidecar:
+            {normalized_section_title: [original_title_variants...]}
+
+        The retrieval graph uses this to translate guide section names into
+        payload filter values for ``section_path``.
+        """
+        lookup: dict[str, set[str]] = {}
+
+        for chunk in chunks:
+            titles = list(chunk.section_path or [])
+            if chunk.section_title:
+                titles.append(chunk.section_title)
+
+            for title in titles:
+                if not title:
+                    continue
+                norm = " ".join(title.lower().split())
+                lookup.setdefault(norm, set()).add(title)
+
+        serializable = {k: sorted(v) for k, v in lookup.items()}
+        out_path = self.output_dir / f"{document_id}_sections.json"
+        with open(out_path, "w", encoding="utf-8") as f:
+            json.dump(serializable, f, ensure_ascii=False, indent=2)
+
+        logger.info(
+            "Indexer: section lookup saved to %s (%d normalized keys)",
+            out_path,
+            len(serializable),
+        )

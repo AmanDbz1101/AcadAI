@@ -139,6 +139,8 @@ class QdrantStoreManager:
 
         - ``document_id`` — KEYWORD index for exact-match filtering.
         - ``section_title`` — TEXT (full-text) index required by ``MatchText``.
+        - ``section_path`` — KEYWORD index for section-scoped ``MatchAny``.
+        - ``chunk_level`` — KEYWORD index for fine/coarse filtering.
 
         Safe to call multiple times; silently ignores conflicts.
         """
@@ -173,6 +175,28 @@ class QdrantStoreManager:
             logger.info("QdrantStoreManager: ensured text index on 'section_title'")
         except Exception as exc:  # noqa: BLE001
             logger.debug("section_title text index already exists or failed: %s", exc)
+
+        # section_path: keyword array index (for MatchAny section scoping)
+        try:
+            self.client.create_payload_index(
+                collection_name=self.collection_name,
+                field_name="section_path",
+                field_schema=PayloadSchemaType.KEYWORD,
+            )
+            logger.info("QdrantStoreManager: ensured keyword index on 'section_path'")
+        except Exception as exc:  # noqa: BLE001
+            logger.debug("section_path index already exists or failed: %s", exc)
+
+        # chunk_level: exact match on fine/coarse.
+        try:
+            self.client.create_payload_index(
+                collection_name=self.collection_name,
+                field_name="chunk_level",
+                field_schema=PayloadSchemaType.KEYWORD,
+            )
+            logger.info("QdrantStoreManager: ensured keyword index on 'chunk_level'")
+        except Exception as exc:  # noqa: BLE001
+            logger.debug("chunk_level index already exists or failed: %s", exc)
 
     def delete_collection(self) -> None:
         """Delete the collection if it exists."""

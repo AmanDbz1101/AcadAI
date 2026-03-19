@@ -190,8 +190,11 @@ class RetrievalPipeline:
         query: str,
         document_id: Optional[str] = None,
         section_title_contains: Optional[str] = None,
+        section_path_any: Optional[list[str]] = None,
+        chunk_level: Optional[str] = None,
         top_k: int = RETRIEVER_TOP_K,
         top_n: int = RERANKER_TOP_N,
+        rerank: bool = True,
     ) -> list:
         """
         Run hybrid retrieval + reranking.
@@ -204,10 +207,17 @@ class RetrievalPipeline:
             Restrict search to one document.
         section_title_contains : str, optional
             Only return chunks whose section title contains this substring.
+        section_path_any : list[str], optional
+            Only return chunks whose ``section_path`` contains one of these
+            values.
+        chunk_level : str, optional
+            Restrict to a chunk granularity level (``"fine"`` / ``"coarse"``).
         top_k : int
             Candidates to retrieve before reranking.
         top_n : int
             Final results to return after reranking.
+        rerank : bool
+            Apply cross-encoder reranking when available.
 
         Returns
         -------
@@ -241,20 +251,31 @@ class RetrievalPipeline:
             query=query,
             document_id=document_id,
             section_title_contains=section_title_contains,
+            section_path_any=section_path_any,
+            chunk_level=chunk_level,
         )
 
         if not results:
             return []
 
-        # Rerank
-        reranker = self._get_reranker()
-        if reranker is not None:
-            results = reranker.rerank(query=query, results=results)
-            results = results[:top_n]
+        if rerank:
+            results = self.rerank_results(query=query, results=results, top_n=top_n)
         else:
-            results = results[:top_n]
+            results = results[:top_k]
 
         return results
+
+    def rerank_results(self, query: str, results: list, top_n: int = RERANKER_TOP_N) -> list:
+        """Rerank an existing result list and keep only ``top_n`` entries."""
+        if not results:
+            return []
+
+        reranker = self._get_reranker()
+        if reranker is None:
+            return results[:top_n]
+
+        reranked = reranker.rerank(query=query, results=results)
+        return reranked[:top_n]
 
     def collection_info(self) -> dict:
         """Return Qdrant collection metadata (points count, status)."""

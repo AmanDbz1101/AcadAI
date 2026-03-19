@@ -39,14 +39,31 @@ SPARSE_VECTOR_NAME: str = "sparse"    # named sparse vector in Qdrant collection
 BM25_ENCODER_DIR: str = os.getenv("BM25_ENCODER_DIR", str(_ROOT / "output"))
 
 # ── Chunking ────────────────────────────────────────────────────────────────
-CHUNK_SIZE: int = int(os.getenv("CHUNK_SIZE", 512))          # tokens per chunk
-CHUNK_OVERLAP: int = int(os.getenv("CHUNK_OVERLAP", 64))     # overlap tokens
+# Dual-level chunking (fine facts + coarse concepts)
+FINE_CHUNK_SIZE: int = int(os.getenv("FINE_CHUNK_SIZE", 150))
+FINE_CHUNK_OVERLAP: int = int(os.getenv("FINE_CHUNK_OVERLAP", 30))
+COARSE_CHUNK_SIZE: int = int(os.getenv("COARSE_CHUNK_SIZE", 400))
+COARSE_CHUNK_OVERLAP: int = int(os.getenv("COARSE_CHUNK_OVERLAP", 60))
+
+# Backward-compatible aliases used by older code paths.
+CHUNK_SIZE: int = int(os.getenv("CHUNK_SIZE", COARSE_CHUNK_SIZE))
+CHUNK_OVERLAP: int = int(os.getenv("CHUNK_OVERLAP", COARSE_CHUNK_OVERLAP))
 CHUNK_MIN_CHARS: int = int(os.getenv("CHUNK_MIN_CHARS", 80)) # discard tiny chunks
 
 # ── Retrieval ───────────────────────────────────────────────────────────────
 RETRIEVER_TOP_K: int = int(os.getenv("RETRIEVER_TOP_K", 20))  # candidates before rerank
-RERANKER_TOP_N: int = int(os.getenv("RERANKER_TOP_N", 5))     # final results after rerank
+SCOPED_TOP_K: int = int(os.getenv("SCOPED_TOP_K", 8))
+FALLBACK_TOP_K: int = int(os.getenv("FALLBACK_TOP_K", 4))
+RERANKER_TOP_N: int = int(os.getenv("RERANKER_TOP_N", 12))    # final results after rerank
+QA_TOP_K: int = int(os.getenv("QA_TOP_K", 4))
+MAX_GUIDE_QUESTIONS: int = int(os.getenv("MAX_GUIDE_QUESTIONS", 6))
+MAX_REWRITE_QUERIES: int = int(os.getenv("MAX_REWRITE_QUERIES", 3))
+MAX_PARALLEL_QUESTIONS: int = int(os.getenv("MAX_PARALLEL_QUESTIONS", 6))
 RERANKER_MODEL: str = os.getenv("RERANKER_MODEL", "ms-marco-MiniLM-L-12-v2")
+
+# Query rewrite (multi-query retrieval)
+ENABLE_QUERY_REWRITE: bool = os.getenv("ENABLE_QUERY_REWRITE", "true").lower() == "true"
+REWRITE_MODEL: str = os.getenv("REWRITE_MODEL", "llama-3.1-8b-instant")
 
 # ── Output directory ────────────────────────────────────────────────────────
 OUTPUT_DIR: Path = Path(os.getenv("OUTPUT_DIR", str(_ROOT / "output")))

@@ -32,6 +32,10 @@ class Chunk(BaseModel):
     chunk_index: int = Field(
         description="Zero-based index of this chunk within the document"
     )
+    chunk_level: str = Field(
+        default="coarse",
+        description="Chunk granularity level ('fine' or 'coarse')",
+    )
 
     # ── Section context ──────────────────────────────────────────────────────
     section_id: Optional[str] = Field(
@@ -78,6 +82,7 @@ class Chunk(BaseModel):
             "content": self.content,
             "token_count": self.token_count,
             "chunk_index": self.chunk_index,
+            "chunk_level": self.chunk_level,
             "section_id": self.section_id,
             "section_title": self.section_title,
             "section_level": self.section_level,

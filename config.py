@@ -57,14 +57,29 @@ DENSE_MODEL = os.getenv("DENSE_MODEL", "BAAI/bge-small-en-v1.5")
 DENSE_VECTOR_SIZE = int(os.getenv("DENSE_VECTOR_SIZE", 384))
 
 # Chunking
-CHUNK_SIZE = int(os.getenv("CHUNK_SIZE", 512))       # tokens per chunk
-CHUNK_OVERLAP = int(os.getenv("CHUNK_OVERLAP", 64))  # overlap between consecutive chunks
+# Dual-level chunking (fine facts + coarse concepts)
+FINE_CHUNK_SIZE = int(os.getenv("FINE_CHUNK_SIZE", 150))
+FINE_CHUNK_OVERLAP = int(os.getenv("FINE_CHUNK_OVERLAP", 30))
+COARSE_CHUNK_SIZE = int(os.getenv("COARSE_CHUNK_SIZE", 400))
+COARSE_CHUNK_OVERLAP = int(os.getenv("COARSE_CHUNK_OVERLAP", 60))
+
+# Backward-compatible aliases for older code paths.
+CHUNK_SIZE = int(os.getenv("CHUNK_SIZE", COARSE_CHUNK_SIZE))
+CHUNK_OVERLAP = int(os.getenv("CHUNK_OVERLAP", COARSE_CHUNK_OVERLAP))
 CHUNK_MIN_CHARS = int(os.getenv("CHUNK_MIN_CHARS", 80))  # discard chunks shorter than this
 
 # Retrieval
 RETRIEVER_TOP_K = int(os.getenv("RETRIEVER_TOP_K", 20))  # candidates before reranking
-RERANKER_TOP_N = int(os.getenv("RERANKER_TOP_N", 5))     # final results after reranking
+SCOPED_TOP_K = int(os.getenv("SCOPED_TOP_K", 8))
+FALLBACK_TOP_K = int(os.getenv("FALLBACK_TOP_K", 4))
+RERANKER_TOP_N = int(os.getenv("RERANKER_TOP_N", 12))    # final results after reranking
+QA_TOP_K = int(os.getenv("QA_TOP_K", 4))
+MAX_GUIDE_QUESTIONS = int(os.getenv("MAX_GUIDE_QUESTIONS", 6))
+MAX_REWRITE_QUERIES = int(os.getenv("MAX_REWRITE_QUERIES", 3))
+MAX_PARALLEL_QUESTIONS = int(os.getenv("MAX_PARALLEL_QUESTIONS", 6))
 RERANKER_MODEL = os.getenv("RERANKER_MODEL", "ms-marco-MiniLM-L-12-v2")
+ENABLE_QUERY_REWRITE = os.getenv("ENABLE_QUERY_REWRITE", "true").lower() == "true"
+REWRITE_MODEL = os.getenv("REWRITE_MODEL", "llama-3.1-8b-instant")
 
 # LangSmith Configuration (for LangGraph tracing and observability)
 LANGCHAIN_TRACING_V2 = os.getenv("LANGCHAIN_TRACING_V2", "false").lower() == "true"

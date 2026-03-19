@@ -71,6 +71,8 @@ class HybridRetriever:
         query: str,
         document_id: Optional[str] = None,
         section_title_contains: Optional[str] = None,
+        section_path_any: Optional[list[str]] = None,
+        chunk_level: Optional[str] = None,
     ) -> list:
         """
         Run hybrid search and return a list of ``RetrievalResult``.
@@ -83,6 +85,12 @@ class HybridRetriever:
             When set, results are filtered to this document only.
         section_title_contains : str, optional
             Case-insensitive substring filter on ``section_title`` payload.
+        section_path_any : list[str], optional
+            Restrict to chunks whose ``section_path`` array contains any of
+            the provided titles.
+        chunk_level : str, optional
+            Restrict retrieval to one chunk granularity (``"fine"`` or
+            ``"coarse"``).
 
         Returns
         -------
@@ -96,7 +104,12 @@ class HybridRetriever:
             return []
 
         # Build Qdrant payload filter
-        payload_filter = self._build_filter(document_id, section_title_contains)
+        payload_filter = self._build_filter(
+            document_id,
+            section_title_contains,
+            section_path_any,
+            chunk_level,
+        )
 
         # Attempt hybrid search; fall back to dense-only on error
         try:
@@ -159,9 +172,16 @@ class HybridRetriever:
     def _build_filter(
         document_id: Optional[str],
         section_title_contains: Optional[str],
+        section_path_any: Optional[list[str]],
+        chunk_level: Optional[str],
     ):
         """Build a ``qdrant_client.models.Filter`` or return None."""
         from qdrant_client.models import Filter, FieldCondition, MatchValue, MatchText  # type: ignore
+
+        try:
+            from qdrant_client.models import MatchAny  # type: ignore
+        except Exception:  # noqa: BLE001
+            MatchAny = None
 
         conditions = []
 
@@ -178,6 +198,31 @@ class HybridRetriever:
                 FieldCondition(
                     key="section_title",
                     match=MatchText(text=section_title_contains),
+                )
+            )
+
+        if section_path_any:
+            if MatchAny is not None:
+                conditions.append(
+                    FieldCondition(
+                        key="section_path",
+                        match=MatchAny(any=section_path_any),
+                    )
+                )
+            else:
+                # Older qdrant-client fallback (best-effort single value).
+                conditions.append(
+                    FieldCondition(
+                        key="section_path",
+                        match=MatchValue(value=section_path_any[0]),
+                    )
+                )
+
+        if chunk_level:
+            conditions.append(
+                FieldCondition(
+                    key="chunk_level",
+                    match=MatchValue(value=chunk_level),
                 )
             )
 

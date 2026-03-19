@@ -23,7 +23,14 @@ from typing import Optional
 
 from rag.retrieval.chunking.models import Chunk
 from rag.retrieval.chunking.text_splitter import TokenAwareSplitter
-from rag.retrieval.config import CHUNK_SIZE, CHUNK_OVERLAP, DENSE_MODEL, CHUNK_MIN_CHARS
+from rag.retrieval.config import (
+    FINE_CHUNK_SIZE,
+    FINE_CHUNK_OVERLAP,
+    COARSE_CHUNK_SIZE,
+    COARSE_CHUNK_OVERLAP,
+    DENSE_MODEL,
+    CHUNK_MIN_CHARS,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -148,10 +155,14 @@ class SectionChunker:
 
     Parameters
     ----------
-    chunk_size : int
-        Maximum tokens per chunk.
-    chunk_overlap : int
-        Overlap tokens between consecutive chunks in the same section.
+    fine_chunk_size : int
+        Maximum tokens per fine-grained chunk.
+    fine_chunk_overlap : int
+        Overlap tokens between consecutive fine chunks.
+    coarse_chunk_size : int
+        Maximum tokens per coarse-grained chunk.
+    coarse_chunk_overlap : int
+        Overlap tokens between consecutive coarse chunks.
     model_name : str
         HuggingFace model name used by the internal ``TokenAwareSplitter``
         for accurate token counting.
@@ -159,13 +170,20 @@ class SectionChunker:
 
     def __init__(
         self,
-        chunk_size: int = CHUNK_SIZE,
-        chunk_overlap: int = CHUNK_OVERLAP,
+        fine_chunk_size: int = FINE_CHUNK_SIZE,
+        fine_chunk_overlap: int = FINE_CHUNK_OVERLAP,
+        coarse_chunk_size: int = COARSE_CHUNK_SIZE,
+        coarse_chunk_overlap: int = COARSE_CHUNK_OVERLAP,
         model_name: str = DENSE_MODEL,
     ) -> None:
-        self.splitter = TokenAwareSplitter(
-            chunk_size=chunk_size,
-            chunk_overlap=chunk_overlap,
+        self.fine_splitter = TokenAwareSplitter(
+            chunk_size=fine_chunk_size,
+            chunk_overlap=fine_chunk_overlap,
+            model_name=model_name,
+        )
+        self.coarse_splitter = TokenAwareSplitter(
+            chunk_size=coarse_chunk_size,
+            chunk_overlap=coarse_chunk_overlap,
             model_name=model_name,
         )
 
@@ -266,32 +284,37 @@ class SectionChunker:
             )
 
             # Split the section text
-            windows = self.splitter.split(text)
-            for window in windows:
-                if len(window) < CHUNK_MIN_CHARS:
-                    continue
+            for chunk_level, splitter in (
+                ("fine", self.fine_splitter),
+                ("coarse", self.coarse_splitter),
+            ):
+                windows = splitter.split(text)
+                for window in windows:
+                    if len(window) < CHUNK_MIN_CHARS:
+                        continue
 
-                chunks.append(
-                    Chunk(
-                        document_id=document_id,
-                        content=window,
-                        token_count=self.splitter.count_tokens(window),
-                        chunk_index=chunk_index,
-                        section_id=section_id,
-                        section_title=node.get("title", ""),
-                        section_level=node.get("level", 1),
-                        section_numbering=node.get("numbering"),
-                        section_path=section_path,
-                        parent_section_id=node.get("parent_id"),
-                        page_start=node.get("page_start"),
-                        page_end=node.get("page_end"),
-                        element_ids=element_ids,
-                        source_file=str(
-                            pdf_path.name if pdf_path else f"{document_id}_fulltext.txt"
-                        ),
+                    chunks.append(
+                        Chunk(
+                            document_id=document_id,
+                            content=window,
+                            token_count=splitter.count_tokens(window),
+                            chunk_index=chunk_index,
+                            chunk_level=chunk_level,
+                            section_id=section_id,
+                            section_title=node.get("title", ""),
+                            section_level=node.get("level", 1),
+                            section_numbering=node.get("numbering"),
+                            section_path=section_path,
+                            parent_section_id=node.get("parent_id"),
+                            page_start=node.get("page_start"),
+                            page_end=node.get("page_end"),
+                            element_ids=element_ids,
+                            source_file=str(
+                                pdf_path.name if pdf_path else f"{document_id}_fulltext.txt"
+                            ),
+                        )
                     )
-                )
-                chunk_index += 1
+                    chunk_index += 1
 
         logger.info(
             "SectionChunker: %d chunks from %d sections for document %s",
@@ -318,13 +341,14 @@ class SectionChunker:
         if not full_text:
             return []
 
-        windows = self.splitter.split(full_text)
+        windows = self.coarse_splitter.split(full_text)
         return [
             Chunk(
                 document_id=document_id,
                 content=w,
-                token_count=self.splitter.count_tokens(w),
+                token_count=self.coarse_splitter.count_tokens(w),
                 chunk_index=i,
+                chunk_level="coarse",
                 section_title="",
                 section_level=1,
                 section_path=[],
