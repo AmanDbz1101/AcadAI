@@ -1,0 +1,31 @@
+{
+  "document_id": "sample_2.pdf",
+  "paper_title": "LLM Finite Context Window (e.g. 8k tokens)",
+  "abstract": "",
+  "sections": [
+    {
+      "original_name": "Function executor (handling of completion tokens )",
+      "level": 1,
+      "page_start": 2,
+      "stats": {
+        "formulas": 0,
+        "tables": 0,
+        "figures": 1,
+        "text_blocks": 4
+      }
+    }
+  ],
+  "global_stats": {
+    "total_formulas": 0,
+    "total_tables": 0,
+    "total_figures": 1,
+    "total_text_blocks": 4,
+    "total_pages": 1,
+    "total_sections": 1
+  },
+  "inference": {
+    "paper_type": "System",
+    "difficulty": "medium",
+    "math_heavy": false
+  }
+}

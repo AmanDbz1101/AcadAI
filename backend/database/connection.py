@@ -13,7 +13,7 @@ from typing import Generator
 from sqlalchemy import create_engine, text
 from sqlalchemy.orm import Session, sessionmaker
 
-from backend.database.models import Base
+from backend.extraction.persistence.postgres_store import Base
 
 logger = logging.getLogger(__name__)
 
@@ -37,13 +37,13 @@ def _build_database_url() -> str:
 
     host = os.getenv("PG_HOST", "localhost")
     port = os.getenv("PG_PORT", "5432")
-    db   = os.getenv("PG_DB",   "research_papers")
+    db   = os.getenv("PG_DB",   "research_agent")
     user = os.getenv("PG_USER", "postgres")
     pwd  = os.getenv("PG_PASSWORD", "")
 
     if pwd:
-        return f"postgresql+psycopg2://{user}:{pwd}@{host}:{port}/{db}"
-    return f"postgresql+psycopg2://{user}@{host}:{port}/{db}"
+        return f"postgresql+psycopg://{user}:{pwd}@{host}:{port}/{db}"
+    return f"postgresql+psycopg://{user}@{host}:{port}/{db}"
 
 
 # ---------------------------------------------------------------------------

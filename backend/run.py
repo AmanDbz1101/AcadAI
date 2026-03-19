@@ -122,9 +122,7 @@ class PaperAnalysisPipeline:
         if enable_db:
             try:
                 from backend.extraction.pipelines.db_ingestion_pipeline import DBIngestionPipeline
-                from backend.database.connection import DatabaseConnection
-                db_conn = DatabaseConnection(database_url) if database_url else DatabaseConnection()
-                self._db_pipeline = DBIngestionPipeline(db_connection=db_conn)
+                self._db_pipeline = DBIngestionPipeline(postgres_dsn=database_url)
                 logger.info("DB ingestion pipeline ready.")
             except Exception as exc:
                 logger.warning("DB ingestion pipeline could not be initialised: %s", exc)
@@ -230,6 +228,7 @@ class PaperAnalysisPipeline:
                     db_doc_id = self._db_pipeline.ingest(
                         pdf_path=pdf_path,
                         document_id=document_id,
+                        full_text=result.get("full_text"),
                     )
                     result["db_document_id"] = db_doc_id
                     logger.info("Document stored in DB: %s", db_doc_id)

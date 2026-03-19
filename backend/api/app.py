@@ -78,6 +78,7 @@ def get_paper_bundle(paper_id: int) -> Dict[str, Any]:
     text_blocks = store.get_text_blocks_for_paper_id(paper_id)
     tables = store.get_tables_for_paper_id(paper_id)
     images = store.get_images_for_paper_id(paper_id)
+    references = store.get_references_for_paper_id(paper_id)
     section_text_links = store.get_section_text_blocks_for_paper_id(paper_id)
 
     # Compose readable section content by linked text blocks (fallback to per-page aggregation).
@@ -121,5 +122,6 @@ def get_paper_bundle(paper_id: int) -> Dict[str, Any]:
         "sections": normalized_sections,
         "tables": tables,
         "images": images,
+        "references": references,
         "text_blocks": text_blocks,
     }

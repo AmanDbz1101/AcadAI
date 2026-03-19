@@ -43,7 +43,14 @@ def _resolve_postgres_dsn() -> str:
 def fetch_bundle(store: PostgresPaperStore, paper_name: str) -> Dict[str, Any]:
     paper = store.get_paper_by_name(paper_name)
     if not paper:
-        return {"paper": None, "sections": [], "text_blocks": [], "tables": [], "images": []}
+        return {
+            "paper": None,
+            "sections": [],
+            "text_blocks": [],
+            "tables": [],
+            "images": [],
+            "references": [],
+        }
 
     return {
         "paper": paper,
@@ -51,6 +58,7 @@ def fetch_bundle(store: PostgresPaperStore, paper_name: str) -> Dict[str, Any]:
         "text_blocks": store.get_text_blocks_for_paper(paper_name),
         "tables": store.get_tables_for_paper(paper_name),
         "images": store.get_images_for_paper(paper_name),
+        "references": store.get_references_for_paper(paper_name),
     }
 
 
@@ -76,6 +84,7 @@ def main() -> int:
         print("text_blocks:", len(bundle["text_blocks"]))
         print("tables:", len(bundle["tables"]))
         print("images:", len(bundle["images"]))
+        print("references:", len(bundle["references"]))
     else:
         print(json.dumps(bundle, indent=2, default=str, ensure_ascii=False))
 

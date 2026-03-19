@@ -13,7 +13,7 @@ sys.path.insert(0, '.')
 from backend.run import PaperAnalysisPipeline
 
 pipeline = PaperAnalysisPipeline()
-result = pipeline.run('input/attention.pdf')
+result = pipeline.run('input/survey.pdf')
 
 print()
 print('=' * 70)
