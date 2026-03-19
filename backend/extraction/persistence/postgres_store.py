@@ -411,6 +411,112 @@ class PostgresPaperStore:
                 row = cur.fetchone()
                 return dict(row) if row else None
 
+    def list_papers(self, limit: int = 100) -> List[Dict[str, Any]]:
+        with self._connect() as conn:
+            with conn.cursor(cursor_factory=RealDictCursor) as cur:
+                cur.execute(
+                    """
+                    SELECT id, paper_name, title, abstract, source_pdf_path, created_at
+                    FROM papers
+                    ORDER BY created_at DESC, id DESC
+                    LIMIT %s
+                    """,
+                    (limit,),
+                )
+                return [dict(r) for r in cur.fetchall()]
+
+    def get_paper_by_id(self, paper_id: int) -> Optional[Dict[str, Any]]:
+        with self._connect() as conn:
+            with conn.cursor(cursor_factory=RealDictCursor) as cur:
+                cur.execute(
+                    """
+                    SELECT * FROM papers
+                    WHERE id = %s
+                    LIMIT 1
+                    """,
+                    (paper_id,),
+                )
+                row = cur.fetchone()
+                return dict(row) if row else None
+
+    def get_images_for_paper_id(self, paper_id: int) -> List[Dict[str, Any]]:
+        with self._connect() as conn:
+            with conn.cursor(cursor_factory=RealDictCursor) as cur:
+                cur.execute(
+                    """
+                    SELECT *
+                    FROM images
+                    WHERE paper_id = %s
+                    ORDER BY page_number ASC, id ASC
+                    """,
+                    (paper_id,),
+                )
+                return [dict(r) for r in cur.fetchall()]
+
+    def get_tables_for_paper_id(self, paper_id: int) -> List[Dict[str, Any]]:
+        with self._connect() as conn:
+            with conn.cursor(cursor_factory=RealDictCursor) as cur:
+                cur.execute(
+                    """
+                    SELECT *
+                    FROM tables_data
+                    WHERE paper_id = %s
+                    ORDER BY page_number ASC, id ASC
+                    """,
+                    (paper_id,),
+                )
+                return [dict(r) for r in cur.fetchall()]
+
+    def get_text_blocks_for_paper_id(self, paper_id: int) -> List[Dict[str, Any]]:
+        with self._connect() as conn:
+            with conn.cursor(cursor_factory=RealDictCursor) as cur:
+                cur.execute(
+                    """
+                    SELECT *
+                    FROM text_blocks
+                    WHERE paper_id = %s
+                    ORDER BY page_number ASC, id ASC
+                    """,
+                    (paper_id,),
+                )
+                return [dict(r) for r in cur.fetchall()]
+
+    def get_sections_for_paper_id(self, paper_id: int) -> List[Dict[str, Any]]:
+        with self._connect() as conn:
+            with conn.cursor(cursor_factory=RealDictCursor) as cur:
+                cur.execute(
+                    """
+                    SELECT *
+                    FROM sections
+                    WHERE paper_id = %s
+                    ORDER BY section_key ASC
+                    """,
+                    (paper_id,),
+                )
+                return [dict(r) for r in cur.fetchall()]
+
+    def get_section_text_blocks_for_paper_id(self, paper_id: int) -> List[Dict[str, Any]]:
+        with self._connect() as conn:
+            with conn.cursor(cursor_factory=RealDictCursor) as cur:
+                cur.execute(
+                    """
+                    SELECT
+                        s.id AS section_id,
+                        s.original_name AS section_name,
+                        tb.id AS text_block_db_id,
+                        tb.element_id AS text_block_element_id,
+                        tb.page_number,
+                        tb.text_content
+                    FROM sections s
+                    JOIN section_text_blocks stb ON stb.section_id = s.id
+                    JOIN text_blocks tb ON tb.id = stb.text_block_id
+                    WHERE s.paper_id = %s
+                    ORDER BY s.section_key ASC, tb.page_number ASC, tb.id ASC
+                    """,
+                    (paper_id,),
+                )
+                return [dict(r) for r in cur.fetchall()]
+
     def get_images_for_paper(self, paper_name: str) -> List[Dict[str, Any]]:
         with self._connect() as conn:
             with conn.cursor(cursor_factory=RealDictCursor) as cur:
