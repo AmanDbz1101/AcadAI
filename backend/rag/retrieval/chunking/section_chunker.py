@@ -9,8 +9,9 @@ Text sourcing strategy
 -----------------------
 1. **PDF path provided** ─ PyMuPDF extracts page-level text; pages are assigned
    to section nodes using ``page_start``/``page_end`` ranges.
-2. **PDF not available** ─ falls back to ``_fulltext.txt``; section boundaries
-   are detected by matching section titles in the raw text.
+2. **PDF not available** ─ falls back to ``_fulltext.txt``.
+3. **No fulltext sidecar** ─ reconstructs text from ``_complete.json``
+    ``extracted_elements.text_blocks``.
 """
 
 from __future__ import annotations
@@ -21,6 +22,7 @@ import logging
 import mimetypes
 import os
 import re
+import uuid
 from pathlib import Path
 from typing import Optional
 
@@ -39,6 +41,13 @@ ElementDict = dict[str, list[dict]]
 
 logger = logging.getLogger(__name__)
 
+_REFERENCE_SECTION_KEYWORDS = (
+    "reference",
+    "references",
+    "bibliography",
+    "works cited",
+)
+
 
 # ── Internal helpers ──────────────────────────────────────────────────────────
 
@@ -51,6 +60,27 @@ def _load_hierarchy(hierarchy_path: Path) -> dict:
 def _load_complete(complete_path: Path) -> dict:
     with open(complete_path, encoding="utf-8") as f:
         return json.load(f)
+
+
+def _full_text_from_complete(complete_doc: dict) -> str:
+    """Reconstruct best-effort full text from complete.json text blocks."""
+    extracted_elements = complete_doc.get("extracted_elements")
+    if not isinstance(extracted_elements, dict):
+        return ""
+
+    text_blocks = extracted_elements.get("text_blocks")
+    if not isinstance(text_blocks, list):
+        return ""
+
+    parts: list[str] = []
+    for block in text_blocks:
+        if not isinstance(block, dict):
+            continue
+        text = str(block.get("text") or "").strip()
+        if text:
+            parts.append(text)
+
+    return "\n\n".join(parts)
 
 
 def _build_section_path(
@@ -67,6 +97,64 @@ def _build_section_path(
         path.insert(0, node.get("title", ""))
         current_id = node.get("parent_id")
     return path
+
+
+def build_section_path_ids(
+    section_id: str,
+    sections_by_id: dict[str, dict],
+) -> list[str]:
+    """
+    Build the full ancestry chain of section IDs from root to the given section.
+
+    This function walks the parent hierarchy using the sections_by_id lookup
+    to construct a breadcrumb of section IDs suitable for filtering in Qdrant.
+
+    Parameters
+    ----------
+    section_id : str
+        The target section ID (e.g., "3.2.1" or "73c94e37-8f06-4721-9fcd-495ca176c3f3_section_7").
+    sections_by_id : dict[str, dict]
+        A dictionary mapping section_id → section node dict, where each node
+        contains "parent_id" for hierarchy construction.
+
+    Returns
+    -------
+    list[str]
+        Ordered list of section IDs from root to target. For example:
+        - "3.2.1" with parent "3.2" and grandparent "3" → ["3", "3.2", "3.2.1"]
+        - "1" with no parents → ["1"]
+        - non-existent ID → []
+
+    Notes
+    -----
+    - Empty path returned if section_id is not in sections_by_id (missing parent).
+    - Walks are bounded by the chain; circular parent references will truncate
+      (when a parent is not found in sections_by_id, traversal stops).
+    """
+    path: list[str] = []
+    current_id: Optional[str] = section_id
+    visited: set[str] = set()
+
+    while current_id:
+        # Detect circular references and prevent infinite loops
+        if current_id in visited:
+            logger.warning(
+                "build_section_path_ids: circular parent reference detected at %s; stopping traversal",
+                current_id,
+            )
+            break
+        visited.add(current_id)
+
+        node = sections_by_id.get(current_id)
+        if not node:
+            # Missing node in hierarchy; silently stop traversal
+            break
+
+        path.insert(0, current_id)
+        current_id = node.get("parent_id")
+
+    return path
+
 
 
 def _extract_pages_pymupdf(pdf_path: Path) -> dict[int, str]:
@@ -149,6 +237,88 @@ def _segment_fulltext_by_sections(
         end = anchors[idx + 1][0] if idx + 1 < len(anchors) else len(full_text)
         seg[sec_id] = full_text[start:end].strip()
     return seg
+
+
+def _is_reference_section_title(title: str) -> bool:
+    title_norm = str(title or "").strip().lower()
+    if not title_norm:
+        return False
+    return any(keyword in title_norm for keyword in _REFERENCE_SECTION_KEYWORDS)
+
+
+def _is_reference_block(block: dict) -> bool:
+    label = str(block.get("label") or "").strip().lower()
+    section_name = str(block.get("section_title") or block.get("section") or "").strip().lower()
+    text = str(block.get("text") or "").strip()
+
+    if label in {"reference", "bibliography"}:
+        return True
+    if _is_reference_section_title(section_name):
+        return True
+    if text and re.match(r"^\s*(references|bibliography|works cited)\b", text, flags=re.I):
+        return True
+    return False
+
+
+def _extract_reference_blocks(elements: Optional[ElementDict]) -> list[dict]:
+    if not elements:
+        return []
+
+    explicit_refs = elements.get("references")
+    if isinstance(explicit_refs, list) and explicit_refs:
+        refs: list[dict] = []
+        for item in explicit_refs:
+            if not isinstance(item, dict):
+                continue
+            text = str(item.get("text") or "").strip()
+            if not text:
+                continue
+            refs.append(item)
+        if refs:
+            return refs
+
+    refs: list[dict] = []
+    for block in elements.get("text_blocks", []):
+        if not isinstance(block, dict):
+            continue
+        if not _is_reference_block(block):
+            continue
+        text = str(block.get("text") or "").strip()
+        if not text:
+            continue
+        refs.append(block)
+    return refs
+
+
+def _join_reference_text(reference_blocks: list[dict]) -> str:
+    if not reference_blocks:
+        return ""
+
+    seen: set[str] = set()
+    ordered: list[str] = []
+    for block in reference_blocks:
+        text = str(block.get("text") or "").strip()
+        if not text or text in seen:
+            continue
+        seen.add(text)
+        ordered.append(text)
+
+    return "\n".join(ordered).strip()
+
+
+def _strip_reference_text(text: str, reference_blocks: list[dict]) -> str:
+    cleaned = text or ""
+    if not cleaned or not reference_blocks:
+        return cleaned
+
+    for block in reference_blocks:
+        ref_text = str(block.get("text") or "").strip()
+        if len(ref_text) < 20:
+            continue
+        cleaned = cleaned.replace(ref_text, "")
+
+    cleaned = re.sub(r"\n{3,}", "\n\n", cleaned)
+    return cleaned.strip()
 
 
 def summarize_table(markdown_content: str) -> str:
@@ -329,11 +499,11 @@ class SectionChunker:
         hierarchy_json_path : Path
             Path to the ``<document_id>_hierarchy.json`` output file.
         output_dir : Path, optional
-            Directory where ``_complete.json`` and ``_fulltext.txt`` live.
+            Directory where ``_complete.json`` and optional ``_fulltext.txt`` live.
             Inferred from *hierarchy_json_path*'s parent when omitted.
         pdf_path : Path, optional
             Original PDF.  When provided, PyMuPDF is used for per-page text;
-            otherwise fulltext.txt is used.
+            otherwise fallback text is loaded from fulltext.txt or complete.json.
 
         Returns
         -------
@@ -359,8 +529,11 @@ class SectionChunker:
 
         # ── Gather page-level text ────────────────────────────────────────────
         page_texts: dict[int, str] = {}
+        source_file_name = f"{document_id}_complete.json"
         if pdf_path and Path(pdf_path).exists():
             page_texts = _extract_pages_pymupdf(Path(pdf_path))
+            if page_texts:
+                source_file_name = Path(pdf_path).name
 
         # ── Build section → text mapping ─────────────────────────────────────
         section_texts: dict[str, str] = {}
@@ -374,22 +547,33 @@ class SectionChunker:
                     node.get("page_end"),
                 )
         else:
-            # Fallback: segment fulltext by section headers
-            fulltext_path = output_dir / f"{document_id}_fulltext.txt"
-            if fulltext_path.exists():
-                full_text = fulltext_path.read_text(encoding="utf-8")
+            # Fallback: segment text sidecar by section headers.
+            fallback_text, fallback_source = self._load_fallback_full_text(
+                document_id,
+                output_dir,
+            )
+            if fallback_text:
+                source_file_name = fallback_source
                 section_texts = _segment_fulltext_by_sections(
-                    full_text, all_section_nodes
+                    fallback_text,
+                    all_section_nodes,
                 )
+                if not any(section_texts.values()):
+                    logger.warning(
+                        "Section-aware segmentation failed for %s; using whole-document fallback",
+                        document_id,
+                    )
+                    return self._fallback_full_text_chunks(document_id, output_dir)
             else:
                 logger.warning(
-                    "Neither PDF nor fulltext found for %s; returning empty chunk list",
+                    "Neither PDF pages nor fallback text found for %s; returning empty chunk list",
                     document_id,
                 )
                 return []
 
         # ── Load extracted elements from complete.json ────────────────────────
         extracted_elements = self._load_extracted_elements(document_id, output_dir)
+        reference_blocks = _extract_reference_blocks(extracted_elements)
 
         # ── Produce chunks ────────────────────────────────────────────────────
         chunks: list[Chunk] = []
@@ -401,11 +585,20 @@ class SectionChunker:
         for node in ordered_nodes:
             section_id = node["section_id"]
             text = section_texts.get(section_id, "").strip()
+            is_reference_section = _is_reference_section_title(node.get("title", ""))
+
+            if is_reference_section:
+                reference_text = _join_reference_text(reference_blocks)
+                if reference_text and reference_text not in text:
+                    text = f"{text}\n\n{reference_text}".strip() if text else reference_text
+            else:
+                text = _strip_reference_text(text, reference_blocks)
 
             if not text or len(text) < CHUNK_MIN_CHARS:
                 continue  # skip empty / near-empty sections
 
             section_path = _build_section_path(section_id, sections_by_id)
+            section_path_ids = build_section_path_ids(section_id, sections_by_id)
 
             # Gather element_ids from complete.json if available (best-effort)
             element_ids = self._collect_element_ids(
@@ -430,10 +623,11 @@ class SectionChunker:
                     node.get("level", 1),
                     node.get("numbering"),
                     section_path,
+                    section_path_ids,
                     node.get("parent_id"),
                     node.get("page_start"),
                     node.get("page_end"),
-                    str(pdf_path.name if pdf_path else f"{document_id}_fulltext.txt"),
+                    source_file_name,
                 )
                 chunks.append(chunk)
 
@@ -448,10 +642,11 @@ class SectionChunker:
                     node.get("level", 1),
                     node.get("numbering"),
                     section_path,
+                    section_path_ids,
                     node.get("parent_id"),
                     node.get("page_start"),
                     node.get("page_end"),
-                    str(pdf_path.name if pdf_path else f"{document_id}_fulltext.txt"),
+                    source_file_name,
                 )
                 if figure_chunk is None:
                     continue
@@ -481,13 +676,12 @@ class SectionChunker:
                             section_level=node.get("level", 1),
                             section_numbering=node.get("numbering"),
                             section_path=section_path,
+                            section_path_ids=section_path_ids,
                             parent_section_id=node.get("parent_id"),
                             page_start=node.get("page_start"),
                             page_end=node.get("page_end"),
                             element_ids=element_ids,
-                            source_file=str(
-                                pdf_path.name if pdf_path else f"{document_id}_fulltext.txt"
-                            ),
+                            source_file=source_file_name,
                         )
                     )
                     chunk_index += 1
@@ -503,6 +697,41 @@ class SectionChunker:
     # ── Private helpers ───────────────────────────────────────────────────────
 
     @staticmethod
+    def _load_fallback_full_text(document_id: str, output_dir: Path) -> tuple[str, str]:
+        """
+        Load fallback text from sidecar artifacts.
+
+        Priority:
+        1) ``<document_id>_fulltext.txt``
+        2) Reconstructed text from ``<document_id>_complete.json``
+        """
+        fulltext_path = output_dir / f"{document_id}_fulltext.txt"
+        if fulltext_path.exists():
+            full_text = fulltext_path.read_text(encoding="utf-8").strip()
+            if full_text:
+                return full_text, fulltext_path.name
+
+        complete_path = output_dir / f"{document_id}_complete.json"
+        if complete_path.exists():
+            try:
+                complete_doc = _load_complete(complete_path)
+                reconstructed = _full_text_from_complete(complete_doc).strip()
+                if reconstructed:
+                    logger.info(
+                        "Using reconstructed full text from %s",
+                        complete_path,
+                    )
+                    return reconstructed, complete_path.name
+            except Exception as exc:  # noqa: BLE001
+                logger.warning(
+                    "Failed to reconstruct fallback text from %s (%s)",
+                    complete_path,
+                    exc,
+                )
+
+        return "", ""
+
+    @staticmethod
     def _load_extracted_elements(
         document_id: str,
         output_dir: Path,
@@ -515,8 +744,7 @@ class SectionChunker:
             complete_path = output_dir / f"{document_id}_complete.json"
             if not complete_path.exists():
                 return None
-            with open(complete_path, encoding="utf-8") as f:
-                complete = json.load(f)
+            complete = _load_complete(complete_path)
             return complete.get("extracted_elements", {})
         except Exception:  # noqa: BLE001
             return None
@@ -564,6 +792,7 @@ class SectionChunker:
         section_level: int,
         section_numbering: Optional[str],
         section_path: list[str],
+        section_path_ids: list[str],
         parent_section_id: Optional[str],
         page_start: Optional[int],
         page_end: Optional[int],
@@ -587,6 +816,7 @@ class SectionChunker:
             section_level=section_level,
             section_numbering=section_numbering,
             section_path=section_path,
+            section_path_ids=section_path_ids,
             parent_section_id=parent_section_id,
             page_start=page_start,
             page_end=page_end,
@@ -605,6 +835,7 @@ class SectionChunker:
         section_level: int,
         section_numbering: Optional[str],
         section_path: list[str],
+        section_path_ids: list[str],
         parent_section_id: Optional[str],
         page_start: Optional[int],
         page_end: Optional[int],
@@ -658,6 +889,7 @@ class SectionChunker:
             section_level=section_level,
             section_numbering=section_numbering,
             section_path=section_path,
+            section_path_ids=section_path_ids,
             parent_section_id=parent_section_id,
             page_start=page_start,
             page_end=page_end,
@@ -702,14 +934,11 @@ class SectionChunker:
         self, document_id: str, output_dir: Path
     ) -> list[Chunk]:
         """
-        Last-resort: chunk the entire fulltext.txt without section context.
-        Used when hierarchy is empty or missing.
+        Last-resort: chunk full document text without section context.
+        Used when hierarchy is empty/missing or section segmentation fails.
         """
-        fulltext_path = output_dir / f"{document_id}_fulltext.txt"
-        if not fulltext_path.exists():
-            return []
-
-        full_text = fulltext_path.read_text(encoding="utf-8").strip()
+        full_text, source_file_name = self._load_fallback_full_text(document_id, output_dir)
+        full_text = full_text.strip()
         if not full_text:
             return []
 
@@ -725,11 +954,170 @@ class SectionChunker:
                 section_title="",
                 section_level=1,
                 section_path=[],
-                source_file=f"{document_id}_fulltext.txt",
+                source_file=source_file_name,
             )
             for i, w in enumerate(windows)
             if len(w) >= CHUNK_MIN_CHARS
         ]
+
+
+def chunk_paper(
+    sections: list[dict],
+    paper_id: str,
+    chunk_size: int = COARSE_CHUNK_SIZE,
+    overlap: int = COARSE_CHUNK_OVERLAP,
+    model_name: str = DENSE_MODEL,
+) -> list[Chunk]:
+    """
+    Chunk pre-extracted sections into Qdrant-ready payloads with section hierarchy.
+
+    This function takes a list of section dictionaries (typically from extraction)
+    and splits their text content into chunks, producing payloads with full
+    section context (ID, title, path, parent, depth) for section-aware retrieval.
+
+    Parameters
+    ----------
+    sections : list[dict]
+        List of section dictionaries. Each dict should contain:
+        - section_id: Unique section identifier (str, e.g. "3.2.1" or UUID-based)
+        - original_name: Section heading text (str)
+        - text: Section body text (str)
+        - parent_id: ID of parent section, or None for root (str or None)
+        - level: Section depth in hierarchy (int, 1 = top-level) [optional]
+        - numbering: Section numeric identifier (str, optional, e.g. "3.2.1")
+
+    paper_id : str
+        Unique identifier for the paper/document these sections belong to.
+
+    chunk_size : int
+        Maximum tokens per chunk. Defaults to COARSE_CHUNK_SIZE (400).
+
+    overlap : int
+        Number of tokens to overlap between consecutive chunks. Defaults to
+        COARSE_CHUNK_OVERLAP (60).
+
+    model_name : str
+        HuggingFace model name for tokenization. Defaults to DENSE_MODEL
+        (bge-small-en-v1.5).
+
+    Returns
+    -------
+    list[Chunk]
+        Ordered list of Chunk objects ready for embedding and Qdrant upsert.
+        Each chunk carries section context: section_id, title, path (ancestry),
+        parent_section_id, depth, and paper_id.
+
+    Notes
+    -----
+    - Builds a sections_by_id lookup first for O(1) parent traversal.
+    - Uses section numbering (if available) as canonical section_id in chunks.
+    - Falls back to provided section_id if numbering is absent.
+    - Text chunks smaller than CHUNK_MIN_CHARS are discarded.
+    - Section text is split using TokenAwareSplitter for token-accurate boundaries.
+    - Chunk IDs are deterministic (uuid5) based on paper_id and chunk index.
+
+    Example
+    -------
+    >>> sections = [
+    ...     {
+    ...         "section_id": "sec_1",
+    ...         "original_name": "Introduction",
+    ...         "numbering": "1",
+    ...         "text": "This paper introduces...",
+    ...         "parent_id": None,
+    ...         "level": 1,
+    ...     },
+    ...     {
+    ...         "section_id": "sec_2",
+    ...         "original_name": "Related Work",
+    ...         "numbering": "2",
+    ...         "text": "Prior research has...",
+    ...         "parent_id": None,
+    ...         "level": 1,
+    ...     },
+    ... ]
+    >>> chunks = chunk_paper(sections, paper_id="paper-uuid-123")
+    >>> len(chunks) > 0
+    True
+    >>> chunks[0].paper_id
+    'paper-uuid-123'
+    """
+    splitter = TokenAwareSplitter(
+        chunk_size=chunk_size,
+        chunk_overlap=overlap,
+        model_name=model_name,
+    )
+
+    # Build sections_by_id for O(1) parent lookup during path building
+    sections_by_id: dict[str, dict] = {s["section_id"]: s for s in sections}
+
+    chunks: list[Chunk] = []
+    chunk_index = 0
+
+    for section in sections:
+        section_id = section.get("section_id", "")
+        text = (section.get("text") or "").strip()
+
+        # Skip empty sections
+        if not text or len(text) < CHUNK_MIN_CHARS:
+            continue
+
+        # Use numbering as canonical section_id if available; fall back to section_id
+        canonical_section_id = section.get("numbering") or section_id
+
+        # Build section path (ancestry chain using internal IDs)
+        section_path_ids = build_section_path_ids(section_id, sections_by_id)
+        
+        # Build canonical path using numbering for display
+        canonical_path = (
+            [sections_by_id[sid].get("numbering") or sid for sid in section_path_ids if sid in sections_by_id]
+            if section_path_ids
+            else []
+        )
+
+        # Compute depth from path length
+        depth = len(section_path_ids)
+
+        # Split section text into chunks
+        windows = splitter.split(text)
+
+        for window in windows:
+            if len(window) < CHUNK_MIN_CHARS:
+                continue
+
+            chunk_uuid = str(
+                uuid.uuid5(uuid.NAMESPACE_DNS, f"{paper_id}:{chunk_index}")
+            )
+
+            chunks.append(
+                Chunk(
+                    chunk_id=chunk_uuid,
+                    document_id=paper_id,
+                    content=window,
+                    content_type="text",
+                    token_count=splitter.count_tokens(window),
+                    chunk_index=chunk_index,
+                    chunk_level="coarse",
+                    section_id=canonical_section_id,
+                    section_title=section.get("original_name", ""),
+                    section_level=section.get("level", 1),
+                    section_numbering=section.get("numbering"),
+                    section_path=canonical_path,
+                    section_path_ids=canonical_path,  # Use numbering-based ancestry for ID filtering
+                    parent_section_id=section.get("parent_id"),
+                    element_ids=[],
+                    source_file=None,
+                )
+            )
+            chunk_index += 1
+
+    logger.info(
+        "chunk_paper: produced %d chunks from %d sections for paper %s",
+        len(chunks),
+        len(sections),
+        paper_id,
+    )
+    return chunks
 
 
 def _flatten_sections(sections: list[dict]) -> list[dict]:
@@ -739,3 +1127,113 @@ def _flatten_sections(sections: list[dict]) -> list[dict]:
         result.append(s)
         result.extend(_flatten_sections(s.get("sections", [])))
     return result
+
+
+# ── Demo: in-memory section scoping test (no Qdrant required) ──────────────────
+
+def demo_section_scope_filtering():
+    """
+    Demonstrate section-aware chunk filtering without Qdrant.
+
+    This function creates an in-memory document hierarchy (sections 3, 3.2, 3.2.1)
+    and a set of sample chunks with their respective section_path_ids. It then
+    shows how filtering works:
+
+    - Querying for section "3" includes all chunks in 3, 3.2, 3.2.1 (parent scope)
+    - Querying for section "3.2" includes chunks in 3.2, 3.2.1 (intermediate scope)
+    - Querying for section "3.2.1" includes only chunks in 3.2.1 (leaf scope)
+
+    This filtering mirrors the behavior of retrieve_with_section_scope() which
+    uses the section_path_ids field in Qdrant payloads.
+
+    Example Output
+    ~~~~~~~~~~~~~~
+    ::
+
+        ✓ Section 3 (parent): matched 7 chunks (includes descendants)
+        ✓ Section 3.2 (intermediate): matched 5 chunks (includes descendants)
+        ✓ Section 3.2.1 (leaf): matched 2 chunks (exactly this section)
+
+    Notes
+    -----
+    - This demo does NOT require Qdrant Cloud connectivity.
+    - It shows that parent sections automatically include descendant chunks.
+    - Use this test to validate the section_path_ids field structure and
+      filtering logic before submitting chunks to Qdrant.
+    """
+    logger.info("🔬 Running demo: section scope filtering (no Qdrant required)")
+
+    # ── Create sample in-memory chunks with section hierarchies ──────────────
+    sample_chunks = [
+        # Section 3 chunks
+        {"id": "chunk_3_1", "content": "Section 3 intro", "section_id": "3", "section_path_ids": ["3"]},
+        {"id": "chunk_3_2", "content": "Section 3 main text", "section_id": "3", "section_path_ids": ["3"]},
+
+        # Section 3.2 chunks
+        {"id": "chunk_3.2_1", "content": "Section 3.2 intro", "section_id": "3.2", "section_path_ids": ["3", "3.2"]},
+        {"id": "chunk_3.2_2", "content": "Section 3.2 details", "section_id": "3.2", "section_path_ids": ["3", "3.2"]},
+        {"id": "chunk_3.2_3", "content": "Section 3.2 more details", "section_id": "3.2", "section_path_ids": ["3", "3.2"]},
+
+        # Section 3.2.1 chunks
+        {"id": "chunk_3.2.1_1", "content": "Section 3.2.1 content", "section_id": "3.2.1", "section_path_ids": ["3", "3.2", "3.2.1"]},
+        {"id": "chunk_3.2.1_2", "content": "Section 3.2.1 more content", "section_id": "3.2.1", "section_path_ids": ["3", "3.2", "3.2.1"]},
+
+        # Section 4 chunks (different parent)
+        {"id": "chunk_4_1", "content": "Section 4 intro", "section_id": "4", "section_path_ids": ["4"]},
+    ]
+
+    # ── Test cases: (query_section_id, expected_count, description) ──────────
+    test_cases = [
+        ("3", 7, "Parent section (should include descendants 3, 3.2, 3.2.1)"),
+        ("3.2", 5, "Intermediate section (should include descendants 3.2, 3.2.1)"),
+        ("3.2.1", 2, "Leaf section (should include only 3.2.1)"),
+        ("4", 1, "Different section (should include only 4)"),
+    ]
+
+    logger.info("📊 Testing section scope filtering with %d sample chunks", len(sample_chunks))
+
+    all_passed = True
+    for query_section_id, expected_count, description in test_cases:
+        # Filter chunks whose section_path_ids contains the query_section_id
+        matched_chunks = [
+            c for c in sample_chunks
+            if query_section_id in c["section_path_ids"]
+        ]
+        actual_count = len(matched_chunks)
+        passed = actual_count == expected_count
+
+        status = "✓" if passed else "✗"
+        logger.info(
+            "  %s Section %s (%s): matched %d chunks (expected %d)",
+            status,
+            query_section_id,
+            description,
+            actual_count,
+            expected_count,
+        )
+
+        if not passed:
+            all_passed = False
+            logger.error(
+                "    FAILED: Expected %d chunks but got %d",
+                expected_count,
+                actual_count,
+            )
+            for c in matched_chunks:
+                logger.debug("      - %s (section_path_ids=%s)", c["id"], c["section_path_ids"])
+
+    if all_passed:
+        logger.info("✅ All section scope filtering tests PASSED")
+    else:
+        logger.error("❌ Some section scope filtering tests FAILED")
+
+    return all_passed
+
+
+if __name__ == "__main__":
+    """Run demo test when module is executed."""
+    logging.basicConfig(
+        level=logging.INFO,
+        format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
+    )
+    demo_section_scope_filtering()

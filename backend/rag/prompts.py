@@ -338,6 +338,8 @@ def _flatten_sections(sections: list, level: int = 0) -> list:
 def applied_guide_prompt(
     title: str,
     abstract: str,
+    introduction: str,
+    conclusion: str,
     sections: list,
     num_figures: int = 0,
     num_tables: int = 0,
@@ -352,6 +354,8 @@ def applied_guide_prompt(
     Args:
         title: Paper title
         abstract: Paper abstract
+        introduction: Paper introduction text
+        conclusion: Paper conclusion text
         sections: List of section dictionaries with original_name field
         num_figures: Number of figures in the paper
         num_tables: Number of tables in the paper
@@ -370,6 +374,8 @@ This paper proposes, builds, implements, or experimentally validates something (
 PAPER INFORMATION:
 - Title: {title}
 - Abstract: {abstract}
+- Introduction: {introduction}
+- Conclusion: {conclusion}
 - Section Headings:
 {section_list}
 - Number of Figures: {num_figures}
@@ -398,9 +404,12 @@ INSTRUCTIONS:
 2. Each step must specify:
    - Which section(s) to read — use ACTUAL section names from the list above.
    - Objective of this step.
-   - 2-3 questions the reader should be able to answer after this step.
+    - 2-3 questions the reader should be able to answer after this step — CRITICAL: questions
+      must be specific to THIS paper, referencing actual methods, metrics, datasets, model
+      names, or numbers from the abstract, introduction, or conclusion. Generic questions
+      like "What did the authors propose?" are not acceptable.
    - Expected output or insight.
-3. Reference figures and tables using the counts above where relevant (e.g. "study Figure 1 which shows the architecture").
+3. Reference figures and tables by number where relevant (e.g. "Study Figure 1 which shows the architecture").
 4. Keep instructions clear and actionable.
 
 Always reference ACTUAL section names from the list above in your guide."""
@@ -413,6 +422,8 @@ Always reference ACTUAL section names from the list above in your guide."""
 def theoretical_guide_prompt(
     title: str,
     abstract: str,
+    introduction: str,
+    conclusion: str,
     sections: list,
     num_figures: int = 0,
     num_tables: int = 0,
@@ -427,6 +438,8 @@ def theoretical_guide_prompt(
     Args:
         title: Paper title
         abstract: Paper abstract
+        introduction: Paper introduction text
+        conclusion: Paper conclusion text
         sections: List of section dictionaries with original_name field
         num_figures: Number of figures in the paper
         num_tables: Number of tables in the paper
@@ -445,6 +458,8 @@ This paper formally proves or derives something (proofs, theorems, lemmas, compl
 PAPER INFORMATION:
 - Title: {title}
 - Abstract: {abstract}
+- Introduction: {introduction}
+- Conclusion: {conclusion}
 - Section Headings:
 {section_list}
 - Number of Figures: {num_figures}
@@ -453,7 +468,7 @@ PAPER INFORMATION:
 THREE PASS METHOD FOR THEORETICAL PAPERS:
 
 PASS 1 – Quick Scan (5-10 min):
-Reading order: Abstract → Introduction → Theorem/Lemma statements only (skip all proofs).
+Reading order: Abstract → Introduction → Conclusion → Theorem/Lemma statements only (skip all proofs).
 Goal: Understand WHAT was proven and WHY it matters, without getting lost in the proofs.
 For each step, specify which sections to read (use actual section names from the list above), the objective, 2-3 questions to answer, and expected output.
 
@@ -472,10 +487,13 @@ INSTRUCTIONS:
 2. Each step must specify:
    - Which section(s) to read — use ACTUAL section names from the list above.
    - Objective of this step.
-   - 2-3 questions the reader should be able to answer after this step.
+    - 2-3 questions the reader should be able to answer after this step — CRITICAL: questions must be
+      specific to THIS paper, referencing actual theorem, lemma, corollary names, assumptions,
+      notation, bounds, complexity results, or claims from the abstract, introduction, or conclusion.
+      Generic questions like "What is proved?" are not acceptable.
    - Expected output or insight.
 3. Flag specific theorem, lemma, and corollary names when they appear in the section headings.
-4. Reference figures and tables using the counts above where relevant.
+4. Reference figures and tables by number where relevant (e.g. "Figure 2", "Table 1").
 5. Keep instructions clear and actionable.
 
 Always reference ACTUAL section names from the list above in your guide."""
@@ -484,6 +502,8 @@ Always reference ACTUAL section names from the list above in your guide."""
 def survey_guide_prompt(
     title: str,
     abstract: str,
+    introduction: str,
+    conclusion: str,
     sections: list,
     num_figures: int = 0,
     num_tables: int = 0,
@@ -496,6 +516,8 @@ def survey_guide_prompt(
     Args:
         title: Paper title
         abstract: Paper abstract
+        introduction: Paper introduction text
+        conclusion: Paper conclusion text
         sections: List of section dictionaries with original_name field
         num_figures: Number of figures in the paper
         num_tables: Number of tables in the paper
@@ -514,6 +536,8 @@ This paper surveys, reviews, or organizes existing research (survey, review, lit
 PAPER INFORMATION:
 - Title: {title}
 - Abstract: {abstract}
+- Introduction: {introduction}
+- Conclusion: {conclusion}
 - Section Headings:
 {section_list}
 - Number of Figures: {num_figures}
@@ -522,7 +546,7 @@ PAPER INFORMATION:
 THREE PASS METHOD FOR SURVEY PAPERS:
 
 PASS 1 – Field Overview (5-10 min):
-Reading order: Abstract → Introduction → Taxonomy or categorization section headings → Research gaps / future directions.
+Reading order: Abstract → Introduction → Conclusion → Taxonomy or categorization section headings → Research gaps / future directions.
 Goal: Understand the SHAPE of the field, not the detail.
 For each step, specify which sections to read (use actual section names from the list above), the objective, 2-3 questions to answer, and expected output.
 
@@ -542,9 +566,12 @@ INSTRUCTIONS:
 2. Each step must specify:
    - Which section(s) to read — use ACTUAL section names from the list above.
    - Objective of this step.
-   - 2-3 questions the reader should be able to answer after this step.
+    - 2-3 questions the reader should be able to answer after this step — CRITICAL: questions must be
+      specific to THIS survey, referencing actual taxonomy/category names, method families, trends,
+      benchmark names, date ranges, or claims from the abstract, introduction, or conclusion.
+      Generic questions like "What are the categories?" are not acceptable.
    - Expected output or insight.
-3. Highlight taxonomy figures and comparison tables when relevant (paper has {num_figures} figures, {num_tables} tables).
+3. Highlight taxonomy figures and comparison tables by number when relevant (paper has {num_figures} figures, {num_tables} tables).
 4. Keep instructions clear and actionable.
 
 Always reference ACTUAL section names from the list above in your guide."""

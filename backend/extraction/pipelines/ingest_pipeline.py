@@ -13,7 +13,7 @@ import time
 import logging
 from pathlib import Path
 from typing import Optional, Dict, Any
-from uuid import UUID
+from uuid import NAMESPACE_URL, UUID, uuid4, uuid5
 
 from backend.extraction.models.document import ValidatedDocument, DocumentStatus, OCRMetadata
 from backend.extraction.app.validation import PDFValidator, ValidationResult
@@ -269,6 +269,7 @@ class IngestPipeline:
             ValidatedDocument
         """
         document = ValidatedDocument(
+            document_id=self._resolve_document_id(validation_result.pdf_hash),
             pdf_path=validation_result.pdf_path,
             pdf_hash=validation_result.pdf_hash,
             pages=extraction_result['pages'],
@@ -282,6 +283,19 @@ class IngestPipeline:
         )
         
         return document
+
+    @staticmethod
+    def _resolve_document_id(pdf_hash: Optional[str]) -> UUID:
+        """
+        Build a stable document UUID from the PDF hash.
+
+        This keeps the same ``document_id`` across repeated ingests of the
+        same file, enabling Qdrant's existing document-level dedup safeguards
+        to skip or overwrite rather than creating duplicate vectors.
+        """
+        if pdf_hash:
+            return uuid5(NAMESPACE_URL, f"pdf:{pdf_hash.lower()}")
+        return uuid4()
     
     def process_batch(
         self, 

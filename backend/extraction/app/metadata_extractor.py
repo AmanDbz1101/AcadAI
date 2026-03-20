@@ -133,6 +133,13 @@ Respond in JSON format:
     "math_heavy": true or false
 }}
 """
+
+    REFERENCE_SECTION_KEYWORDS = (
+        "reference",
+        "references",
+        "bibliography",
+        "works cited",
+    )
     
     def __init__(
         self,
@@ -195,6 +202,16 @@ Respond in JSON format:
             classification = self._classify_headings_llm(headings, markdown)
         else:
             classification = self._classify_headings_fallback(headings, markdown)
+
+        # Docling often emits bibliography entries as list_item blocks.
+        # Normalize these into explicit reference blocks and ensure a dedicated
+        # top-level "Reference" section is always present.
+        self._normalize_reference_blocks(elements)
+        classification["sections"] = self._ensure_reference_section(
+            classification.get("sections", []),
+            elements,
+            document.page_count,
+        )
         
         logger.info(f"Classified: Title='{classification['title'][:50]}...', {len(classification['sections'])} sections")
         
@@ -293,35 +310,46 @@ Respond in JSON format:
             "pictures": 0,
             "text_blocks": 0
         }
+
+        current_section_title: Optional[str] = None
         
         for item, level in doc.iterate_items():
+            label = str(getattr(item, "label", "")).lower()
+            item_text = self._item_to_text(item, doc)
+
             page_no = 1
             if item.prov:
                 page_no = getattr(item.prov[0], "page_no", 0) + 1
+
+            if label in ["section_header", "title"]:
+                heading_text = item_text.strip()
+                if heading_text:
+                    current_section_title = heading_text
+                continue
             
             # Generate element ID (using hash of content or position)
-            stable_repr = f"{getattr(item, 'label', '')}|{getattr(item, 'text', '')}|{page_no}|{level}"
+            stable_repr = f"{label}|{item_text}|{page_no}|{level}"
             element_id = hashlib.md5(stable_repr.encode()).hexdigest()
             
-            if item.label in ["formula", "equation"]:
+            if label in ["formula", "equation"]:
                 element_counts["formulas"] += 1
                 elements["formulas"].append({
                     "id": element_id,
                     "page": page_no,
-                    "label": item.label,
+                    "label": label,
                     "text": self._item_to_text(item, doc),
                 })
-            elif item.label == "table":
+            elif label == "table":
                 table_text = self._item_to_text(item, doc)
                 element_counts["tables"] += 1
                 elements["tables"].append({
                     "id": element_id,
                     "page": page_no,
-                    "label": item.label,
+                    "label": label,
                     "text": table_text,
                     "markdown": table_text,
                 })
-            elif item.label == "picture":
+            elif label == "picture":
                 element_counts["pictures"] += 1
                 image_path = self._save_picture_asset(
                     item=item,
@@ -333,18 +361,22 @@ Respond in JSON format:
                 elements["figures"].append({
                     "id": element_id,
                     "page": page_no,
-                    "label": item.label,
+                    "label": label,
                     "caption": self._item_to_text(item, doc),
                     "image_path": str(image_path) if image_path else None,
                 })
-            elif item.label in ["text", "paragraph"]:
-                text = self._item_to_text(item, doc)
+            elif label in ["text", "paragraph", "list_item", "list_items", "reference", "bibliography"]:
+                text = item_text
+                if not text.strip():
+                    continue
                 element_counts["text_blocks"] += 1
                 elements["text_blocks"].append({
                     "id": element_id,
                     "page": page_no,
-                    "label": item.label,
+                    "label": label,
                     "text": text,
+                    "section_title": current_section_title,
+                    "section": current_section_title,
                 })
         
         return {
@@ -384,6 +416,112 @@ Respond in JSON format:
             output_dir.mkdir(parents=True, exist_ok=True)
         except Exception:
             return None
+
+    @classmethod
+    def _is_reference_section_name(cls, section_name: str) -> bool:
+        section_norm = str(section_name or "").strip().lower()
+        if not section_norm:
+            return False
+        return any(keyword in section_norm for keyword in cls.REFERENCE_SECTION_KEYWORDS)
+
+    @classmethod
+    def _is_reference_block(cls, block: Dict[str, Any]) -> bool:
+        label = str(block.get("label") or "").strip().lower()
+        section_name = str(block.get("section_title") or block.get("section") or "").strip().lower()
+        text_value = str(block.get("text") or "").strip()
+
+        if label in {"reference", "bibliography"}:
+            return True
+        if cls._is_reference_section_name(section_name):
+            return True
+        if text_value and re.match(r"^\s*(references|bibliography|works cited)\b", text_value, flags=re.I):
+            return True
+        return False
+
+    def _normalize_reference_blocks(self, elements: Dict[str, List[Dict[str, Any]]]) -> None:
+        text_blocks = elements.get("text_blocks") or []
+        references: List[Dict[str, Any]] = []
+
+        for block in text_blocks:
+            if not isinstance(block, dict):
+                continue
+            if not self._is_reference_block(block):
+                continue
+
+            original_label = block.get("label")
+            if original_label and original_label != "reference":
+                block["docling_label"] = original_label
+
+            block["label"] = "reference"
+            block["section_title"] = "Reference"
+            block["section"] = "Reference"
+
+            references.append(
+                {
+                    "id": block.get("id"),
+                    "page": block.get("page"),
+                    "text": block.get("text"),
+                    "label": "reference",
+                    "section_id": block.get("section_id"),
+                    "section_title": "Reference",
+                }
+            )
+
+        elements["references"] = references
+
+    def _ensure_reference_section(
+        self,
+        sections: List[SectionInfo],
+        elements: Dict[str, List[Dict[str, Any]]],
+        total_pages: int,
+    ) -> List[SectionInfo]:
+        normalized_sections = list(sections or [])
+        reference_page = self._resolve_reference_page(elements, total_pages)
+
+        found_reference_section = False
+        for section in normalized_sections:
+            if self._is_reference_section_name(section.original_name):
+                section.original_name = "Reference"
+                if section.level < 1:
+                    section.level = 1
+                if section.page_start < 1:
+                    section.page_start = reference_page
+                found_reference_section = True
+
+        if not found_reference_section:
+            normalized_sections.append(
+                SectionInfo(
+                    original_name="Reference",
+                    level=1,
+                    page_start=reference_page,
+                )
+            )
+
+        return normalized_sections
+
+    def _resolve_reference_page(
+        self,
+        elements: Dict[str, List[Dict[str, Any]]],
+        total_pages: int,
+    ) -> int:
+        reference_candidates = elements.get("references") or []
+        if not reference_candidates:
+            reference_candidates = elements.get("text_blocks") or []
+
+        pages: List[int] = []
+        for item in reference_candidates:
+            if not isinstance(item, dict):
+                continue
+            if reference_candidates is elements.get("text_blocks") and not self._is_reference_block(item):
+                continue
+            page = item.get("page")
+            if isinstance(page, int) and page >= 1:
+                pages.append(page)
+
+        if pages:
+            return min(pages)
+
+        return max(int(total_pages or 1), 1)
 
         image_obj = None
 
@@ -817,8 +955,20 @@ Use the formula density to help determine if the paper is math_heavy:
                     stats.figure_ids.append(figure["id"])
             
             for text_block in elements.get("text_blocks", []):
-                if section_start <= text_block["page"] <= section_end:
-                    stats.text_blocks += 1
-                    stats.text_block_ids.append(text_block["id"])
+                page = text_block.get("page")
+                if page is None or not (section_start <= page <= section_end):
+                    continue
+
+                block_is_reference = self._is_reference_block(text_block)
+                is_reference_section = self._is_reference_section_name(section.original_name)
+
+                # Keep references isolated to the explicit Reference section.
+                if is_reference_section and not block_is_reference:
+                    continue
+                if not is_reference_section and block_is_reference:
+                    continue
+
+                stats.text_blocks += 1
+                stats.text_block_ids.append(text_block["id"])
             
             section.stats = stats

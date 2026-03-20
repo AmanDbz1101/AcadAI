@@ -22,6 +22,7 @@ Workflow paths:
 from __future__ import annotations
 
 from concurrent.futures import ThreadPoolExecutor, as_completed
+import inspect
 import json
 import logging
 import os
@@ -34,6 +35,7 @@ from langgraph.graph import StateGraph, START, END
 from langchain_groq import ChatGroq
 from langchain_core.messages import HumanMessage
 
+from config import MIN_RELEVANCE_THRESHOLD
 from rag.states import AgentState, RetrievalResult
 from rag.prompts import (
     categorizer_prompt,
@@ -112,6 +114,81 @@ def _extract_guide_retrieval_info(guide_json: dict) -> list[dict]:
     return pairs
 
 
+def _retrieve_with_section_id_scope(
+    pipeline,
+    question: str,
+    section_id: str,
+    document_id: str,
+) -> list:
+    """
+    Retrieve chunks scoped to a specific section ID and its descendants.
+
+    This helper enables section-aware retrieval using the new section_path_ids
+    feature, which allows parent sections to automatically include all descendant
+    sections in the results.
+
+    Parameters
+    ----------
+    pipeline : RetrievalPipeline
+        The retrieval pipeline instance.
+    question : str
+        The search query.
+    section_id : str
+        The section ID to scope results to (e.g., "3.2"). The filter will
+        match any chunk whose section_path_ids contains this ID.
+    document_id : str
+        The document ID being queried.
+
+    Returns
+    -------
+    list[RetrievalResult]
+        Chunks within the specified section scope, sorted by rerank score.
+
+    Notes
+    -----
+    - This function uses the new `retrieve_with_section_scope()` method on the
+      pipeline, which filters based on section_path_ids (ID ancestry) rather
+      than section_path (title ancestry).
+    - Parent sections automatically include all descendants.
+    - Falls back to empty list if no results found.
+
+    See Also
+    --------
+    RetrievalPipeline.retrieve_with_section_scope : Core section-scoped retrieval API.
+    """
+    if not section_id or not document_id:
+        logger.warning(
+            "_retrieve_with_section_id_scope: missing section_id or document_id;"
+            " skipping scoped retrieval"
+        )
+        return []
+
+    try:
+        results = pipeline.retrieve_with_section_scope(
+            query=question,
+            section_id=section_id,
+            document_id=document_id,
+            top_k=SCOPED_TOP_K,
+            top_n=SCOPED_TOP_K,
+            rerank=False,
+        )
+        logger.debug(
+            "Section-scoped retrieval for question '%s' (section_id=%s): "
+            "retrieved %d chunks",
+            question[:70],
+            section_id,
+            len(results),
+        )
+        return results
+    except Exception as exc:
+        logger.warning(
+            "Section-scoped retrieval failed for section_id=%s: %s",
+            section_id,
+            exc,
+        )
+        return []
+
+
 # Retrieval pipeline (lazy singleton — imported here to keep graph.py clean)
 _retrieval_pipeline = None
 
@@ -182,6 +259,135 @@ def _normalize_section_name(section_name: str) -> str:
     normalized = section_name.strip().lower()
     normalized = re.sub(r"^\d+(?:\.\d+)*\s*[:.)-]?\s*", "", normalized)
     return " ".join(normalized.split())
+
+
+def _strip_section_numbering(section_name: str) -> str:
+    """Remove common numeric prefixes from section labels."""
+    return re.sub(r"^\s*\d+(?:\.\d+)*\s*[:.)-]?\s*", "", section_name).strip()
+
+
+def _flatten_section_headings(sections: list[dict[str, Any]] | None) -> list[str]:
+    """Flatten nested section dictionaries into a unique ordered heading list."""
+    if not sections:
+        return []
+
+    headings: list[str] = []
+    seen: set[str] = set()
+
+    def _walk(nodes: list[dict[str, Any]]) -> None:
+        for node in nodes:
+            if not isinstance(node, dict):
+                continue
+            heading = str(node.get("original_name") or node.get("title") or "").strip()
+            if heading and heading not in seen:
+                seen.add(heading)
+                headings.append(heading)
+
+            children = node.get("sections") or []
+            if isinstance(children, list) and children:
+                _walk(children)
+
+    _walk(sections)
+    return headings
+
+
+def _build_heading_pattern(heading: str) -> re.Pattern[str]:
+    """Build a tolerant line-based regex for matching a section heading."""
+    normalized = " ".join(heading.split())
+    escaped = re.escape(normalized).replace(r"\ ", r"\s+")
+    return re.compile(rf"(?im)^\s*{escaped}\s*$")
+
+
+def _find_heading_bounds(full_text: str, heading: str, start_pos: int = 0) -> tuple[int, int] | None:
+    """Find heading start/end character offsets in full text."""
+    if not full_text or not heading:
+        return None
+
+    candidates = [heading]
+    stripped = _strip_section_numbering(heading)
+    if stripped and stripped.lower() != heading.lower():
+        candidates.append(stripped)
+
+    for candidate in candidates:
+        match = _build_heading_pattern(candidate).search(full_text, start_pos)
+        if match:
+            return match.start(), match.end()
+
+    if stripped:
+        escaped = re.escape(" ".join(stripped.split())).replace(r"\ ", r"\s+")
+        relaxed = re.compile(
+            rf"(?im)^\s*(?:\d+(?:\.\d+)*)?\s*[:.)-]?\s*{escaped}\s*$"
+        )
+        match = relaxed.search(full_text, start_pos)
+        if match:
+            return match.start(), match.end()
+
+    return None
+
+
+def _extract_section_text_from_full_text(
+    full_text: str,
+    section_headings: list[str],
+    keywords: tuple[str, ...],
+    max_chars: int = 1800,
+) -> str:
+    """Extract a section snippet by matching heading keywords in full text."""
+    if not full_text or not section_headings:
+        return ""
+
+    target_index = None
+    for idx, heading in enumerate(section_headings):
+        normalized = _normalize_section_name(heading)
+        if any(keyword in normalized for keyword in keywords):
+            target_index = idx
+            break
+
+    if target_index is None:
+        return ""
+
+    target_bounds = _find_heading_bounds(full_text, section_headings[target_index])
+    if target_bounds is None:
+        return ""
+
+    start = target_bounds[1]
+    end = len(full_text)
+    for next_heading in section_headings[target_index + 1 :]:
+        next_bounds = _find_heading_bounds(full_text, next_heading, start)
+        if next_bounds is not None:
+            end = next_bounds[0]
+            break
+
+    section_text = full_text[start:end].strip()
+    section_text = re.sub(r"\n{3,}", "\n\n", section_text)
+    if len(section_text) > max_chars:
+        section_text = section_text[:max_chars].rsplit(" ", 1)[0].rstrip() + "..."
+    return section_text
+
+
+def _extract_intro_conclusion_context(
+    full_text: str,
+    sections: list[dict[str, Any]] | None,
+) -> tuple[str, str]:
+    """Return best-effort introduction and conclusion snippets for prompt grounding."""
+    headings = _flatten_section_headings(sections)
+
+    introduction = _extract_section_text_from_full_text(
+        full_text=full_text,
+        section_headings=headings,
+        keywords=("introduction",),
+    )
+    conclusion = _extract_section_text_from_full_text(
+        full_text=full_text,
+        section_headings=headings,
+        keywords=("conclusion", "conclusions", "summary", "future work"),
+    )
+
+    if not introduction:
+        introduction = "Not available in extracted full text."
+    if not conclusion:
+        conclusion = "Not available in extracted full text."
+
+    return introduction, conclusion
 
 
 def _load_section_lookup(document_id: str) -> dict[str, list[str]]:
@@ -368,9 +574,14 @@ def _build_qa_context(chunks: list[Any]) -> str:
     """Format chunk snippets into QA prompt context."""
     context_parts = []
     for idx, chunk in enumerate(chunks, 1):
-        context_parts.append(
-            f"[{idx}] (relevance: {_result_score(chunk):.2f})\n{_result_content(chunk)}"
-        )
+        metadata = _result_metadata(chunk)
+        section_title = metadata.get("section_title")
+        chunk_text = _result_content(chunk)
+
+        if isinstance(section_title, str) and section_title.strip():
+            context_parts.append(f"[{idx}] (Section: {section_title.strip()})\n{chunk_text}")
+        else:
+            context_parts.append(f"[{idx}]\n{chunk_text}")
     return "\n\n".join(context_parts)
 
 
@@ -404,7 +615,9 @@ def extraction_node(state: dict) -> dict:
         result = extractor.extract(
             pdf_path=pdf_path,
             output_dir=Path("output"),
-            force_ocr=force_ocr
+            force_ocr=force_ocr,
+            save_metadata_file=False,
+            save_fulltext_file=False,
         )
         
         # Map extraction results to state
@@ -625,9 +838,16 @@ def retrieve_and_qa_node(state: dict) -> dict:
         if document_id:
             hierarchy_path = Path("output") / f"{document_id}_hierarchy.json"
             if hierarchy_path.exists():
+                pdf_path_value = state.get("pdf_path")
+                pdf_path_obj: Path | None = None
+                if pdf_path_value:
+                    candidate_pdf = Path(pdf_path_value)
+                    if candidate_pdf.exists():
+                        pdf_path_obj = candidate_pdf
                 index_result = pipeline.index(
                     hierarchy_json_path=hierarchy_path,
                     output_dir=Path("output"),
+                    pdf_path=pdf_path_obj,
                 )
                 if not index_result.skipped:
                     logger.info(
@@ -674,7 +894,13 @@ def retrieve_and_qa_node(state: dict) -> dict:
                 document_id=document_id,
                 category=category,
             )
-            top_hits = hits[:QA_TOP_K]
+            filtered_hits = [
+                chunk for chunk in hits if _result_score(chunk) >= MIN_RELEVANCE_THRESHOLD
+            ]
+            if len(filtered_hits) < 2:
+                filtered_hits = hits[:2]
+
+            top_hits = filtered_hits[:QA_TOP_K]
             logger.info(
                 "      → %d chunks retrieved, using top %d",
                 len(hits),
@@ -855,13 +1081,14 @@ def _run_guide_node(
     state         : current workflow state
     label         : human-readable label for logging (e.g. "APPLIED")
     guide_model_cls : Pydantic model class for structured output
-    prompt_fn     : function(title, abstract, sections, num_figures, num_tables) → str
+    prompt_fn     : function(title, abstract, sections, num_figures, num_tables[, introduction, conclusion]) → str
     """
     logger.info("📖 Guide node [%s]: generating reading guide…", label)
 
     title = state.get("title", "")
     abstract = state.get("abstract", "")
-    sections = state.get("sections", [])
+    sections = state.get("sections") or []
+    full_text = state.get("full_text", "")
     document_id = state.get("document_id", "")
 
     if not title or not abstract:
@@ -877,13 +1104,26 @@ def _run_guide_node(
         llm = ChatGroq(model="llama-3.3-70b-versatile", temperature=0.1)
         structured_llm = llm.with_structured_output(guide_model_cls)
 
-        prompt = prompt_fn(
-            title=title,
-            abstract=abstract,
-            sections=sections,
-            num_figures=num_figures,
-            num_tables=num_tables,
-        )
+        prompt_kwargs = {
+            "title": title,
+            "abstract": abstract,
+            "sections": sections,
+            "num_figures": num_figures,
+            "num_tables": num_tables,
+        }
+
+        prompt_parameters = inspect.signature(prompt_fn).parameters
+        if "introduction" in prompt_parameters or "conclusion" in prompt_parameters:
+            introduction, conclusion = _extract_intro_conclusion_context(
+                full_text=full_text,
+                sections=sections,
+            )
+            if "introduction" in prompt_parameters:
+                prompt_kwargs["introduction"] = introduction
+            if "conclusion" in prompt_parameters:
+                prompt_kwargs["conclusion"] = conclusion
+
+        prompt = prompt_fn(**prompt_kwargs)
 
         guide_model = structured_llm.invoke(prompt)
         guide_json = guide_model.model_dump()

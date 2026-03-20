@@ -66,14 +66,14 @@ class TestIngestPipelineProcess:
         assert len(document.pages) > 0
         assert document.processing_time_seconds > 0
     
-    def test_process_creates_document_id(self, sample_pdf_path):
-        """Test that processing creates a unique document ID."""
+    def test_process_creates_stable_document_id_for_same_pdf(self, sample_pdf_path):
+        """Test that processing the same PDF reuses the same document ID."""
         pipeline = IngestPipeline()
         
         doc1 = pipeline.process(sample_pdf_path)
         doc2 = pipeline.process(sample_pdf_path)
         
-        assert doc1.document_id != doc2.document_id
+        assert doc1.document_id == doc2.document_id
     
     def test_process_calculates_hash(self, sample_pdf_path):
         """Test that processing calculates PDF hash."""

@@ -196,6 +196,7 @@ class RetrievalPipeline:
         top_k: int = RETRIEVER_TOP_K,
         top_n: int = RERANKER_TOP_N,
         rerank: bool = True,
+        exclude_reference_sections: bool = True,
     ) -> list:
         """
         Run hybrid retrieval + reranking.
@@ -221,6 +222,8 @@ class RetrievalPipeline:
             Final results to return after reranking.
         rerank : bool
             Apply cross-encoder reranking when available.
+        exclude_reference_sections : bool
+            Exclude Reference/Bibliography sections from retrieval candidates.
 
         Returns
         -------
@@ -257,6 +260,7 @@ class RetrievalPipeline:
             section_path_any=section_path_any,
             chunk_level=chunk_level,
             section_id=section_id,
+            exclude_reference_sections=exclude_reference_sections,
         )
 
         if not results:
@@ -280,6 +284,111 @@ class RetrievalPipeline:
 
         reranked = reranker.rerank(query=query, results=results)
         return reranked[:top_n]
+
+    def retrieve_with_section_scope(
+        self,
+        query: str,
+        section_id: str,
+        document_id: str,
+        top_k: int = RETRIEVER_TOP_K,
+        top_n: int = RERANKER_TOP_N,
+        rerank: bool = True,
+        exclude_reference_sections: bool = True,
+    ) -> list:
+        """
+        Retrieve chunks scoped to a specific section and its descendants.
+
+        This function enables section-aware retrieval by filtering results to only
+        include chunks whose section hierarchy includes the specified section_id.
+        When a parent section is queried, all descendant sections are automatically
+        included in the results.
+
+        Parameters
+        ----------
+        query : str
+            Search query (raw or LLM-expanded).
+        section_id : str
+            Section ID to scope results to. The filter will match any chunk whose
+            ``section_path_ids`` contains this section_id, enabling parent-to-
+            descendant filtering.
+        document_id : str
+            Restrict search to this specific document. Required for sparse BM25
+            encoding lookup.
+        top_k : int, optional
+            Candidates to retrieve before reranking (default: RETRIEVER_TOP_K).
+        top_n : int, optional
+            Final results to return after reranking (default: RERANKER_TOP_N).
+        rerank : bool, optional
+            Apply cross-encoder reranking when available (default: True).
+        exclude_reference_sections : bool, optional
+            Exclude Reference/Bibliography sections from retrieval candidates.
+
+        Returns
+        -------
+        list[RetrievalResult]
+            Chunks within the specified section scope, sorted by rerank score
+            (or retrieval score when reranking is off). Returns empty list if
+            no matching chunks found.
+
+        Example
+        -------
+        ::
+
+            pipeline = RetrievalPipeline()
+            results = pipeline.retrieve_with_section_scope(
+                query="What is multi-head attention?",
+                section_id="3.2",
+                document_id="paper-uuid",
+                top_k=20,
+                top_n=5,
+            )
+            # Returns chunks from section 3.2 and any subsections (3.2.1, 3.2.2, etc.)
+
+        Notes
+        -----
+        - The section_id is checked against the ``section_path_ids`` field in each
+          chunk, which contains the full ancestry of section IDs from root to leaf.
+        - Parent sections automatically include all descendants; leaf sections include
+          only themselves and their nested content.
+        - Requires section hierarchy to be present in the indexed document.
+        """
+        from rag.retrieval.search.hybrid_retriever import HybridRetriever
+
+        # Resolve sparse encoder (per-document BM25)
+        sparse_enc = self._get_sparse_encoder(document_id)
+        if sparse_enc is None:
+            logger.info(
+                "RetrievalPipeline.retrieve_with_section_scope: "
+                "no BM25 encoder for document_id=%s; using dense-only retrieval",
+                document_id,
+            )
+            sparse_enc = _DenseFallbackSparseEncoder()
+
+        retriever = HybridRetriever(
+            store_manager=self._get_store_manager(),
+            dense_encoder=self._get_dense_encoder(),
+            sparse_encoder=sparse_enc,
+            top_k=top_k,
+        )
+
+        # Retrieve with section_path_ids filtering: only include chunks whose
+        # section_path_ids contains the target section_id (number-based like "3.2")
+        results = retriever.retrieve(
+            query=query,
+            document_id=document_id,
+            section_path_ids_any=[section_id],  # Filter by ID-based ancestry
+            exclude_reference_sections=exclude_reference_sections,
+        )
+
+        if not results:
+            return []
+
+        if rerank:
+            results = self.rerank_results(query=query, results=results, top_n=top_n)
+        else:
+            results = results[:top_k]
+
+        return results
 
     def collection_info(self) -> dict:
         """Return Qdrant collection metadata (points count, status)."""

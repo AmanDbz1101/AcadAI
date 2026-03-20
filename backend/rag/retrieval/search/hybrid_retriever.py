@@ -74,6 +74,8 @@ class HybridRetriever:
         section_path_any: Optional[list[str]] = None,
         chunk_level: Optional[str] = None,
         section_id: Optional[str] = None,
+        section_path_ids_any: Optional[list[str]] = None,
+        exclude_reference_sections: bool = True,
     ) -> list:
         """
         Run hybrid search and return a list of ``RetrievalResult``.
@@ -88,12 +90,19 @@ class HybridRetriever:
             Case-insensitive substring filter on ``section_title`` payload.
         section_path_any : list[str], optional
             Restrict to chunks whose ``section_path`` array contains any of
-            the provided titles.
+            the provided titles (legacy title-based filtering).
         chunk_level : str, optional
             Restrict retrieval to one chunk granularity (``"fine"`` or
             ``"coarse"``).
         section_id : str, optional
             When set, results are filtered to this section only.
+        section_path_ids_any : list[str], optional
+            Restrict to chunks whose ``section_path_ids`` array contains any of
+            the provided section IDs (numbering-based, e.g., "3.2.1"). Enables
+            parent-to-descendant filtering (parent "3" matches children "3.2", "3.2.1").
+        exclude_reference_sections : bool, optional
+            When True (default), chunks from Reference/Bibliography sections are
+            excluded from retrieval results.
 
         Returns
         -------
@@ -113,6 +122,8 @@ class HybridRetriever:
             section_path_any,
             chunk_level,
             section_id,
+            section_path_ids_any,
+            exclude_reference_sections,
         )
 
         # Attempt hybrid search; fall back to dense-only on error
@@ -179,6 +190,8 @@ class HybridRetriever:
         section_path_any: Optional[list[str]],
         chunk_level: Optional[str],
         section_id: Optional[str] = None,
+        section_path_ids_any: Optional[list[str]] = None,
+        exclude_reference_sections: bool = True,
     ):
         """Build a ``qdrant_client.models.Filter`` or return None."""
         from qdrant_client.models import Filter, FieldCondition, MatchValue, MatchText  # type: ignore
@@ -189,6 +202,7 @@ class HybridRetriever:
             MatchAny = None
 
         conditions = []
+        must_not_conditions = []
 
         if document_id:
             conditions.append(
@@ -223,6 +237,24 @@ class HybridRetriever:
                     )
                 )
 
+        # New: ID-based section filtering (numbering-based like "3.2.1")
+        if section_path_ids_any:
+            if MatchAny is not None:
+                conditions.append(
+                    FieldCondition(
+                        key="section_path_ids",
+                        match=MatchAny(any=section_path_ids_any),
+                    )
+                )
+            else:
+                # Older qdrant-client fallback (best-effort single value).
+                conditions.append(
+                    FieldCondition(
+                        key="section_path_ids",
+                        match=MatchValue(value=section_path_ids_any[0]),
+                    )
+                )
+
         if chunk_level:
             conditions.append(
                 FieldCondition(
@@ -239,7 +271,20 @@ class HybridRetriever:
                 )
             )
 
-        if not conditions:
+        if exclude_reference_sections:
+            reference_terms = ["reference", "bibliography", "works cited"]
+            for term in reference_terms:
+                must_not_conditions.append(
+                    FieldCondition(
+                        key="section_title",
+                        match=MatchText(text=term),
+                    )
+                )
+
+        if not conditions and not must_not_conditions:
             return None
 
-        return Filter(must=conditions)
+        return Filter(
+            must=conditions or None,
+            must_not=must_not_conditions or None,
+        )
