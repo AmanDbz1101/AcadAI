@@ -3,12 +3,16 @@
 from __future__ import annotations
 
 import os
+import shutil
 from collections import defaultdict
+from pathlib import Path
 from typing import Any, Dict, List
+from uuid import uuid4
 
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI, File, HTTPException, UploadFile
 from fastapi.middleware.cors import CORSMiddleware
 
+from backend.extraction.extraction import extract_pdf
 from backend.extraction.persistence import PostgresPaperStore
 
 
@@ -125,3 +129,66 @@ def get_paper_bundle(paper_id: int) -> Dict[str, Any]:
         "references": references,
         "text_blocks": text_blocks,
     }
+
+
+@app.post("/api/papers/upload")
+def upload_paper(file: UploadFile = File(...)) -> Dict[str, Any]:
+    filename = (file.filename or "").strip()
+    if not filename:
+        raise HTTPException(status_code=400, detail="Missing file name")
+
+    is_pdf_name = filename.lower().endswith(".pdf")
+    is_pdf_type = (file.content_type or "").lower() == "application/pdf"
+    if not (is_pdf_name or is_pdf_type):
+        raise HTTPException(status_code=400, detail="Only PDF files are supported")
+
+    upload_dir = Path(__file__).resolve().parents[2] / "temp_uploads"
+    upload_dir.mkdir(parents=True, exist_ok=True)
+    safe_name = Path(filename).name
+    temp_pdf_path = upload_dir / f"{uuid4().hex}_{safe_name}"
+
+    try:
+        with temp_pdf_path.open("wb") as out_file:
+            shutil.copyfileobj(file.file, out_file)
+
+        # Ensure extraction module can see the same DB config used by this API.
+        if not os.getenv("POSTGRES_DSN"):
+            os.environ["POSTGRES_DSN"] = _resolve_postgres_dsn()
+
+        extraction_result = extract_pdf(temp_pdf_path, output_dir="input")
+        db_result = extraction_result.get("database") or {}
+        paper_id = db_result.get("paper_id")
+        if paper_id is None:
+            raise HTTPException(
+                status_code=500,
+                detail=f"Upload processed but not stored in database: {db_result.get('reason', 'unknown')}",
+            )
+
+        store = _make_store()
+        paper = store.get_paper_by_id(int(paper_id))
+        if not paper:
+            raise HTTPException(status_code=500, detail="Paper persisted but could not be fetched")
+
+        return {
+            "paper": paper,
+            "database": {
+                "stored": bool(db_result.get("stored", False)),
+                "paper_id": int(paper_id),
+                "paper_name": db_result.get("paper_name"),
+                "reason": db_result.get("reason"),
+            },
+        }
+    except HTTPException:
+        raise
+    except Exception as exc:
+        raise HTTPException(status_code=500, detail=f"Failed to process PDF: {exc}") from exc
+    finally:
+        try:
+            file.file.close()
+        except Exception:
+            pass
+        try:
+            if temp_pdf_path.exists():
+                temp_pdf_path.unlink()
+        except Exception:
+            pass

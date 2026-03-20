@@ -2,13 +2,18 @@ import { useState, useRef, useCallback } from 'react'
 import PaperNavigation from '@/components/PaperNavigation'
 import PaperViewer, { PaperViewerHandle } from '@/components/PaperViewer'
 import AIToolsPanel from '@/components/AIToolsPanel'
-import { useQuery } from '@tanstack/react-query'
-import { getPaperBundle, getPapers } from '@/lib/api'
+import EmptyStateUpload from '@/components/EmptyStateUpload'
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
+import { getPaperBundle, getPapers, uploadPaper } from '@/lib/api'
 
 const Index = () => {
+  const queryClient = useQueryClient()
+  const [paperLoaded, setPaperLoaded] = useState(false)
   const [activeSection, setActiveSection] = useState('')
   const [focusedSection, setFocusedSection] = useState<string | null>(null)
   const [selectedPaperId, setSelectedPaperId] = useState<number | null>(null)
+  const [uploadedFileName, setUploadedFileName] = useState<string | null>(null)
+  const [uploadError, setUploadError] = useState<string | null>(null)
   const viewerRef = useRef<PaperViewerHandle>(null)
 
   const papersQuery = useQuery({
@@ -20,10 +25,34 @@ const Index = () => {
 
   const effectivePaperId = selectedPaperId ?? papers[0]?.id ?? null
 
+  const uploadPaperMutation = useMutation({
+    mutationFn: uploadPaper,
+    onMutate: (file: File) => {
+      setUploadError(null)
+      setUploadedFileName(file.name)
+    },
+    onSuccess: async (data) => {
+      const newPaperId = data.paper.id
+      setSelectedPaperId(newPaperId)
+      setActiveSection('')
+      setFocusedSection(null)
+      setPaperLoaded(true)
+
+      await queryClient.invalidateQueries({ queryKey: ['papers'] })
+      await queryClient.invalidateQueries({
+        queryKey: ['paper-bundle', newPaperId],
+      })
+    },
+    onError: (error: Error) => {
+      setUploadedFileName(null)
+      setUploadError(error.message || 'Upload failed')
+    },
+  })
+
   const paperBundleQuery = useQuery({
     queryKey: ['paper-bundle', effectivePaperId],
     queryFn: () => getPaperBundle(effectivePaperId as number),
-    enabled: effectivePaperId !== null,
+    enabled: paperLoaded && effectivePaperId !== null,
   })
 
   const sections = paperBundleQuery.data?.sections ?? []
@@ -58,6 +87,32 @@ const Index = () => {
     setFocusedSection(null)
   }, [])
 
+  const handleFileUploaded = useCallback(
+    (file: File) => {
+      uploadPaperMutation.mutate(file)
+    },
+    [uploadPaperMutation],
+  )
+
+  const handleFileBadgeClear = useCallback((fileName: string | null) => {
+    setUploadedFileName(fileName)
+    if (fileName === null) {
+      setPaperLoaded(false)
+    }
+  }, [])
+
+  if (!paperLoaded) {
+    return (
+      <div className="flex h-screen overflow-hidden">
+        <EmptyStateUpload
+          onFileUploaded={handleFileUploaded}
+          isUploading={uploadPaperMutation.isPending}
+          errorMessage={uploadError}
+        />
+      </div>
+    )
+  }
+
   if (papersQuery.isLoading || paperBundleQuery.isLoading) {
     return (
       <div className="h-screen w-full flex items-center justify-center bg-canvas">
@@ -83,8 +138,7 @@ const Index = () => {
     return (
       <div className="h-screen w-full flex items-center justify-center bg-canvas px-6">
         <p className="font-ui text-sm text-text-secondary text-center">
-          No papers found in the database yet. Run extraction first to populate
-          data.
+          No papers found in the database yet. Upload a paper to continue.
         </p>
       </div>
     )
@@ -99,6 +153,8 @@ const Index = () => {
         papers={papers}
         selectedPaperId={effectivePaperId}
         onPaperSelect={handlePaperSelect}
+        uploadedFileName={uploadedFileName}
+        onFileChange={handleFileBadgeClear}
       />
       <PaperViewer
         ref={viewerRef}
