@@ -1,4 +1,4 @@
-import { BookOpenText } from 'lucide-react'
+import { BookOpenText, FileText, X } from 'lucide-react'
 import type { PaperSummary } from '@/types/api'
 
 interface Section {
@@ -14,6 +14,8 @@ interface PaperNavigationProps {
   papers: PaperSummary[]
   selectedPaperId: number | null
   onPaperSelect: (paperId: number) => void
+  uploadedFileName?: string | null
+  onFileChange?: (fileName: string | null) => void
 }
 
 const PaperNavigation = ({
@@ -23,6 +25,8 @@ const PaperNavigation = ({
   papers,
   selectedPaperId,
   onPaperSelect,
+  uploadedFileName,
+  onFileChange,
 }: PaperNavigationProps) => {
   return (
     <aside className="w-[260px] min-w-[260px] bg-panel h-screen sticky top-0 flex flex-col border-r border-border/40">
@@ -37,6 +41,23 @@ const PaperNavigation = ({
           Research Paper Assistant
         </p>
       </div>
+
+      {uploadedFileName ? (
+        <div className="px-4 mb-4">
+          <div className="flex items-center gap-2 px-3 py-2.5 bg-accent/10 rounded-lg">
+            <FileText size={14} className="text-text-active flex-shrink-0" />
+            <span className="font-ui text-[12px] text-foreground truncate flex-1">
+              {uploadedFileName}
+            </span>
+            <button
+              onClick={() => onFileChange?.(null)}
+              className="text-text-secondary hover:text-foreground transition-colors"
+            >
+              <X size={12} />
+            </button>
+          </div>
+        </div>
+      ) : null}
 
       <div className="px-6 mb-3">
         <label className="font-ui text-[11px] font-semibold uppercase tracking-[0.18em] text-text-secondary block mb-2">
@@ -73,7 +94,7 @@ const PaperNavigation = ({
                     w-full text-left py-2.5 px-3 font-ui text-[13px] rounded-md transition-all duration-200 flex items-center gap-3
                     ${
                       isActive
-                        ? 'text-text-active bg-primary/8 font-semibold'
+                        ? 'text-text-active bg-accent/10 font-semibold'
                         : 'text-text-secondary hover:text-foreground hover:bg-canvas font-normal'
                     }
                   `}

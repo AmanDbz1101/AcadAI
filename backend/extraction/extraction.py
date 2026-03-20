@@ -11,6 +11,7 @@ Handles complete extraction workflow:
 import json
 import logging
 import os
+import re
 from pathlib import Path
 from typing import Optional, Dict, Any
 from datetime import datetime
@@ -22,6 +23,58 @@ from backend.extraction.persistence import PostgresPaperStore
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
+
+
+def _split_reference_entries(text: str) -> list[str]:
+    """Split a references blob into individual entries when delimiters are present."""
+    value = (text or "").strip()
+    if not value:
+        return []
+
+    para_chunks = [chunk.strip() for chunk in re.split(r"\n\s*\n", value) if chunk.strip()]
+    if len(para_chunks) >= 2:
+        first = re.sub(r"^\s*(references|bibliography|works cited)\s*:?\s*", "", para_chunks[0], flags=re.I).strip()
+        if first:
+            para_chunks[0] = first
+        return [chunk for chunk in para_chunks if chunk]
+
+    numbered_chunks = [chunk.strip() for chunk in re.split(r"(?=\n\s*\[?\d+\]?\s+)", value) if chunk.strip()]
+    if len(numbered_chunks) >= 2:
+        return numbered_chunks
+
+    return [value]
+
+
+def _extract_references_from_full_text(full_text: str) -> list[dict[str, Any]]:
+    """Fallback extraction when element labels/sections do not mark references explicitly."""
+    text = (full_text or "").strip()
+    if not text:
+        return []
+
+    match = re.search(r"\b(references|bibliography|works cited)\b", text, flags=re.I)
+    if not match:
+        return []
+
+    tail = text[match.start():].strip()
+    entries = _split_reference_entries(tail)
+
+    refs: list[dict[str, Any]] = []
+    for idx, entry in enumerate(entries):
+        value = (entry or "").strip()
+        if not value:
+            continue
+        refs.append(
+            {
+                "id": f"fulltext_ref_{idx}",
+                "page": None,
+                "text": value,
+                "label": "reference",
+                "section_id": None,
+                "section_title": "References",
+            }
+        )
+
+    return refs
 
 
 def _resolve_postgres_dsn() -> Optional[str]:
@@ -150,7 +203,15 @@ class PDFExtractor:
                 continue
             label = str(block.get("label") or "").strip().lower()
             section_name = str(block.get("section_title") or block.get("section") or "").strip().lower()
-            if label in {"reference", "bibliography"} or ("reference" in section_name or "bibliography" in section_name):
+            if (
+                label in {"reference", "bibliography"}
+                or (
+                    "reference" in section_name
+                    or "bibliography" in section_name
+                    or "works cited" in section_name
+                )
+                or re.match(r"^\s*(references|bibliography|works cited)\b", str(block.get("text") or ""), flags=re.I)
+            ):
                 references.append(
                     {
                         "id": block.get("id"),
@@ -161,6 +222,8 @@ class PDFExtractor:
                         "section_title": block.get("section_title"),
                     }
                 )
+        if not references:
+            references = _extract_references_from_full_text(full_text)
         extracted_elements["references"] = references
         
         # Save metadata (without IDs)
