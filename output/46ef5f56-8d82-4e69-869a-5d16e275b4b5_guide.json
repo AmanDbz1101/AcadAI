@@ -1,0 +1,148 @@
+{
+  "paper_title": "Attention Is All You Need",
+  "reading_strategy": {
+    "method": "three_pass_method",
+    "paper_type": "applied",
+    "estimated_total_time": "2-3 hours"
+  },
+  "pass1_quick_scan": {
+    "goal": "Understand the problem and whether the proposed solution works",
+    "estimated_time": "5-10 minutes",
+    "steps": [
+      {
+        "step_number": 1,
+        "section_to_read": [
+          "Abstract",
+          "Conclusion"
+        ],
+        "objective": "Understand the problem and proposed solution",
+        "questions_to_answer": [
+          "What problem does the paper address?",
+          "What is the proposed solution?"
+        ],
+        "expected_output": "Understand the research question and proposed approach"
+      },
+      {
+        "step_number": 2,
+        "section_to_read": [
+          "Figures 1-3",
+          "Tables 1-2"
+        ],
+        "objective": "Visualize the proposed model and results",
+        "questions_to_answer": [
+          "What does the model architecture look like?",
+          "What are the key results?"
+        ],
+        "expected_output": "Visual understanding of the model and results"
+      },
+      {
+        "step_number": 3,
+        "section_to_read": [
+          "Introduction"
+        ],
+        "objective": "Understand the context and motivation",
+        "questions_to_answer": [
+          "What is the motivation for the research?",
+          "What is the significance of the problem?"
+        ],
+        "expected_output": "Understand the context and motivation"
+      }
+    ]
+  },
+  "pass2_method_understanding": {
+    "goal": "Understand what was built and how it was evaluated",
+    "estimated_time": "20-40 minutes",
+    "steps": [
+      {
+        "step_number": 1,
+        "section_to_read": [
+          "3 Model Architecture",
+          "3.1 Encoder and Decoder Stacks"
+        ],
+        "objective": "Understand the model architecture",
+        "questions_to_answer": [
+          "What are the key components of the model?",
+          "How do they interact?"
+        ],
+        "expected_output": "Understand the model architecture"
+      },
+      {
+        "step_number": 2,
+        "section_to_read": [
+          "3.2 Attention",
+          "3.2.1 Scaled Dot-Product Attention"
+        ],
+        "objective": "Understand the attention mechanism",
+        "questions_to_answer": [
+          "What is the attention mechanism?",
+          "How does it work?"
+        ],
+        "expected_output": "Understand the attention mechanism"
+      },
+      {
+        "step_number": 3,
+        "section_to_read": [
+          "5 Training",
+          "5.1 Training Data and Batching"
+        ],
+        "objective": "Understand the training process",
+        "questions_to_answer": [
+          "What data was used for training?",
+          "How was the data batched?"
+        ],
+        "expected_output": "Understand the training process"
+      }
+    ]
+  },
+  "pass3_deep_analysis": {
+    "goal": "Critical analysis of whether the method is sound and generalizable",
+    "estimated_time": "1-2 hours",
+    "steps": [
+      {
+        "step_number": 1,
+        "section_to_read": [
+          "3.2.2 Multi-Head Attention",
+          "3.2.3 Applications of Attention in our Model"
+        ],
+        "objective": "Understand the multi-head attention mechanism",
+        "questions_to_answer": [
+          "What is the multi-head attention mechanism?",
+          "How does it improve the model?"
+        ],
+        "expected_output": "Understand the multi-head attention mechanism"
+      },
+      {
+        "step_number": 2,
+        "section_to_read": [
+          "6 Results",
+          "6.1 Machine Translation"
+        ],
+        "objective": "Analyze the results",
+        "questions_to_answer": [
+          "What are the key results?",
+          "How do they compare to previous work?"
+        ],
+        "expected_output": "Analyze the results"
+      },
+      {
+        "step_number": 3,
+        "section_to_read": [
+          "7 Conclusion"
+        ],
+        "objective": "Understand the limitations and future work",
+        "questions_to_answer": [
+          "What are the limitations of the model?",
+          "What are the potential future directions?"
+        ],
+        "expected_output": "Understand the limitations and future work"
+      }
+    ]
+  },
+  "final_user_task": {
+    "summary_task": "Summarize the paper in 1-2 pages",
+    "reflection_questions": [
+      "What are the key takeaways from the paper?",
+      "How can the proposed method be applied to other problems?"
+    ]
+  }
+}
