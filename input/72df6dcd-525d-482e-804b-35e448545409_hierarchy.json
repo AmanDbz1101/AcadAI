@@ -1,0 +1,105 @@
+{
+  "hierarchy": {
+    "document_id": "72df6dcd-525d-482e-804b-35e448545409",
+    "sections": [
+      {
+        "section_id": "72df6dcd-525d-482e-804b-35e448545409_section_0",
+        "title": "INTRODUCTION",
+        "level": 1,
+        "numbering": "I.",
+        "parent_id": null,
+        "page_start": 2,
+        "page_end": 2,
+        "has_subsections": false,
+        "child_section_ids": [],
+        "font_size": null,
+        "is_bold": null,
+        "reading_order": 0
+      },
+      {
+        "section_id": "72df6dcd-525d-482e-804b-35e448545409_section_1",
+        "title": "RELATED WORK",
+        "level": 1,
+        "numbering": "II.",
+        "parent_id": null,
+        "page_start": 3,
+        "page_end": 5,
+        "has_subsections": false,
+        "child_section_ids": [],
+        "font_size": null,
+        "is_bold": null,
+        "reading_order": 1
+      },
+      {
+        "section_id": "72df6dcd-525d-482e-804b-35e448545409_section_2",
+        "title": "METHODOLOGY",
+        "level": 1,
+        "numbering": "III.",
+        "parent_id": null,
+        "page_start": 3,
+        "page_end": 5,
+        "has_subsections": false,
+        "child_section_ids": [],
+        "font_size": null,
+        "is_bold": null,
+        "reading_order": 2
+      },
+      {
+        "section_id": "72df6dcd-525d-482e-804b-35e448545409_section_3",
+        "title": "RESULTS",
+        "level": 1,
+        "numbering": "IV.",
+        "parent_id": null,
+        "page_start": 6,
+        "page_end": 7,
+        "has_subsections": false,
+        "child_section_ids": [],
+        "font_size": null,
+        "is_bold": null,
+        "reading_order": 3
+      },
+      {
+        "section_id": "72df6dcd-525d-482e-804b-35e448545409_section_4",
+        "title": "THREATS TO VALIDITY",
+        "level": 1,
+        "numbering": "V.",
+        "parent_id": null,
+        "page_start": 8,
+        "page_end": 8,
+        "has_subsections": false,
+        "child_section_ids": [],
+        "font_size": null,
+        "is_bold": null,
+        "reading_order": 4
+      },
+      {
+        "section_id": "72df6dcd-525d-482e-804b-35e448545409_section_5",
+        "title": "CONCLUSION AND FUTURE WORK",
+        "level": 1,
+        "numbering": "VI.",
+        "parent_id": null,
+        "page_start": 9,
+        "page_end": null,
+        "has_subsections": false,
+        "child_section_ids": [],
+        "font_size": null,
+        "is_bold": null,
+        "reading_order": 5
+      }
+    ],
+    "root_sections": [
+      "72df6dcd-525d-482e-804b-35e448545409_section_0",
+      "72df6dcd-525d-482e-804b-35e448545409_section_1",
+      "72df6dcd-525d-482e-804b-35e448545409_section_2",
+      "72df6dcd-525d-482e-804b-35e448545409_section_3",
+      "72df6dcd-525d-482e-804b-35e448545409_section_4",
+      "72df6dcd-525d-482e-804b-35e448545409_section_5"
+    ],
+    "total_sections": 6,
+    "max_depth": 1,
+    "detection_method": "docling+heuristics",
+    "confidence_score": 1.0
+  },
+  "processing_time_seconds": 0.00043511390686035156,
+  "warnings": []
+}

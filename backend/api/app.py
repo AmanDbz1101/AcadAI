@@ -2,18 +2,121 @@
 
 from __future__ import annotations
 
+import base64
+import hashlib
+import hmac
+import json
 import os
+import secrets
 import shutil
+import time
 from collections import defaultdict
 from pathlib import Path
-from typing import Any, Dict, List
+from typing import Any, Dict, List, Optional
 from uuid import uuid4
 
-from fastapi import FastAPI, File, HTTPException, UploadFile
+from fastapi import FastAPI, File, Header, HTTPException, UploadFile
 from fastapi.middleware.cors import CORSMiddleware
+from pydantic import BaseModel
 
 from backend.extraction.extraction import extract_pdf
 from backend.extraction.persistence import PostgresPaperStore
+
+
+AUTH_SECRET_KEY = os.getenv("AUTH_SECRET_KEY", "dev-auth-secret-change-me")
+AUTH_TOKEN_TTL_SECONDS = int(os.getenv("AUTH_TOKEN_TTL_SECONDS", "86400"))
+
+
+class RegisterRequest(BaseModel):
+    email: str
+    password: str
+    display_name: Optional[str] = None
+
+
+class LoginRequest(BaseModel):
+    email: str
+    password: str
+
+
+def _b64url_encode(raw: bytes) -> str:
+    return base64.urlsafe_b64encode(raw).decode("utf-8").rstrip("=")
+
+
+def _b64url_decode(value: str) -> bytes:
+    padded = value + "=" * (-len(value) % 4)
+    return base64.urlsafe_b64decode(padded.encode("utf-8"))
+
+
+def _hash_password(password: str, salt_hex: str) -> str:
+    digest = hashlib.pbkdf2_hmac(
+        "sha256",
+        (password or "").encode("utf-8"),
+        bytes.fromhex(salt_hex),
+        200_000,
+    )
+    return digest.hex()
+
+
+def _create_password_hash(password: str) -> tuple[str, str]:
+    salt_hex = secrets.token_bytes(16).hex()
+    return _hash_password(password, salt_hex), salt_hex
+
+
+def _verify_password(password: str, salt_hex: str, stored_hash: str) -> bool:
+    candidate = _hash_password(password, salt_hex)
+    return hmac.compare_digest(candidate, stored_hash)
+
+
+def _create_token(user_id: int, email: str) -> str:
+    payload = {
+        "uid": int(user_id),
+        "em": email,
+        "exp": int(time.time()) + AUTH_TOKEN_TTL_SECONDS,
+    }
+    message = json.dumps(payload, separators=(",", ":"), sort_keys=True).encode("utf-8")
+    signature = hmac.new(AUTH_SECRET_KEY.encode("utf-8"), message, hashlib.sha256).digest()
+    return f"{_b64url_encode(message)}.{_b64url_encode(signature)}"
+
+
+def _parse_token(token: str) -> Dict[str, Any]:
+    try:
+        message_part, signature_part = token.split(".", 1)
+        message = _b64url_decode(message_part)
+        signature = _b64url_decode(signature_part)
+    except Exception as exc:
+        raise HTTPException(status_code=401, detail="Invalid token") from exc
+
+    expected = hmac.new(AUTH_SECRET_KEY.encode("utf-8"), message, hashlib.sha256).digest()
+    if not hmac.compare_digest(signature, expected):
+        raise HTTPException(status_code=401, detail="Invalid token signature")
+
+    try:
+        payload = json.loads(message.decode("utf-8"))
+    except Exception as exc:
+        raise HTTPException(status_code=401, detail="Invalid token payload") from exc
+
+    if int(payload.get("exp") or 0) < int(time.time()):
+        raise HTTPException(status_code=401, detail="Token expired")
+    if not payload.get("uid"):
+        raise HTTPException(status_code=401, detail="Invalid token subject")
+
+    return payload
+
+
+def _extract_bearer_token(authorization: Optional[str]) -> str:
+    value = (authorization or "").strip()
+    if not value or not value.lower().startswith("bearer "):
+        raise HTTPException(status_code=401, detail="Missing bearer token")
+    token = value[7:].strip()
+    if not token:
+        raise HTTPException(status_code=401, detail="Missing bearer token")
+    return token
+
+
+def _require_auth_user_id(authorization: Optional[str]) -> int:
+    token = _extract_bearer_token(authorization)
+    payload = _parse_token(token)
+    return int(payload["uid"])
 
 
 def _resolve_postgres_dsn() -> str:
@@ -63,16 +166,92 @@ def health() -> Dict[str, Any]:
         return {"status": "degraded", "db": "error", "error": str(exc)}
 
 
-@app.get("/api/papers")
-def list_papers(limit: int = 100) -> Dict[str, Any]:
+@app.post("/api/auth/register")
+def register(payload: RegisterRequest) -> Dict[str, Any]:
+    email = (payload.email or "").strip().lower()
+    password = payload.password or ""
+    if not email:
+        raise HTTPException(status_code=400, detail="Email is required")
+    if len(password) < 8:
+        raise HTTPException(status_code=400, detail="Password must be at least 8 characters")
+
     store = _make_store()
-    papers = store.list_papers(limit=limit)
+    password_hash, password_salt = _create_password_hash(password)
+    user = store.create_user(
+        email=email,
+        password_hash=password_hash,
+        password_salt=password_salt,
+        display_name=payload.display_name,
+    )
+    if user is None:
+        raise HTTPException(status_code=409, detail="User already exists")
+
+    user_safe = {
+        "id": user["id"],
+        "email": user["email"],
+        "display_name": user.get("display_name"),
+        "created_at": user.get("created_at"),
+    }
+    token = _create_token(int(user["id"]), str(user["email"]))
+    return {"token": token, "user": user_safe}
+
+
+@app.post("/api/auth/login")
+def login(payload: LoginRequest) -> Dict[str, Any]:
+    email = (payload.email or "").strip().lower()
+    password = payload.password or ""
+    if not email or not password:
+        raise HTTPException(status_code=400, detail="Email and password are required")
+
+    store = _make_store()
+    user = store.get_user_by_email(email)
+    if not user:
+        raise HTTPException(status_code=401, detail="Invalid credentials")
+
+    if not _verify_password(password, str(user["password_salt"]), str(user["password_hash"])):
+        raise HTTPException(status_code=401, detail="Invalid credentials")
+
+    token = _create_token(int(user["id"]), str(user["email"]))
+    user_safe = {
+        "id": user["id"],
+        "email": user["email"],
+        "display_name": user.get("display_name"),
+        "created_at": user.get("created_at"),
+    }
+    return {"token": token, "user": user_safe}
+
+
+@app.get("/api/auth/me")
+def me(authorization: Optional[str] = Header(default=None, alias="Authorization")) -> Dict[str, Any]:
+    user_id = _require_auth_user_id(authorization)
+    store = _make_store()
+    user = store.get_user_by_id(user_id)
+    if not user:
+        raise HTTPException(status_code=401, detail="User not found")
+    return {"user": user}
+
+
+@app.get("/api/papers")
+def list_papers(
+    limit: int = 100,
+    authorization: Optional[str] = Header(default=None, alias="Authorization"),
+) -> Dict[str, Any]:
+    user_id = _require_auth_user_id(authorization)
+    store = _make_store()
+    papers = store.list_papers_for_user(user_id=user_id, limit=limit)
     return {"papers": papers}
 
 
 @app.get("/api/papers/{paper_id}/bundle")
-def get_paper_bundle(paper_id: int) -> Dict[str, Any]:
+def get_paper_bundle(
+    paper_id: int,
+    authorization: Optional[str] = Header(default=None, alias="Authorization"),
+) -> Dict[str, Any]:
+    user_id = _require_auth_user_id(authorization)
     store = _make_store()
+
+    if not store.user_has_access_to_paper(user_id=user_id, paper_id=paper_id):
+        raise HTTPException(status_code=403, detail="You do not have access to this paper")
 
     paper = store.get_paper_by_id(paper_id)
     if not paper:
@@ -132,7 +311,11 @@ def get_paper_bundle(paper_id: int) -> Dict[str, Any]:
 
 
 @app.post("/api/papers/upload")
-def upload_paper(file: UploadFile = File(...)) -> Dict[str, Any]:
+def upload_paper(
+    file: UploadFile = File(...),
+    authorization: Optional[str] = Header(default=None, alias="Authorization"),
+) -> Dict[str, Any]:
+    user_id = _require_auth_user_id(authorization)
     filename = (file.filename or "").strip()
     if not filename:
         raise HTTPException(status_code=400, detail="Missing file name")
@@ -165,6 +348,7 @@ def upload_paper(file: UploadFile = File(...)) -> Dict[str, Any]:
             )
 
         store = _make_store()
+        store.link_user_to_paper(user_id=user_id, paper_id=int(paper_id))
         paper = store.get_paper_by_id(int(paper_id))
         if not paper:
             raise HTTPException(status_code=500, detail="Paper persisted but could not be fetched")

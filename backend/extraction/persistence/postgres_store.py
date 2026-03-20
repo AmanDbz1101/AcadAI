@@ -26,6 +26,7 @@ from sqlalchemy import (
     text,
 )
 from sqlalchemy.dialects.postgresql import JSONB
+from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column, relationship, sessionmaker
 
 
@@ -70,6 +71,30 @@ class PaperRecord(Base):
     )
     references: Mapped[list["ReferenceRecord"]] = relationship(
         back_populates="paper", cascade="all, delete-orphan"
+    )
+    user_links: Mapped[list["UserPaperRecord"]] = relationship(
+        back_populates="paper", cascade="all, delete-orphan"
+    )
+
+
+class UserRecord(Base):
+    __tablename__ = "users"
+    __table_args__ = (
+        Index("uq_users_email_lower", func.lower(text("email")), unique=True),
+    )
+
+    id: Mapped[int] = mapped_column(BigInteger, primary_key=True, autoincrement=True)
+    email: Mapped[str] = mapped_column(Text, nullable=False)
+    display_name: Mapped[Optional[str]] = mapped_column(Text)
+    password_hash: Mapped[str] = mapped_column(Text, nullable=False)
+    password_salt: Mapped[str] = mapped_column(Text, nullable=False)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), server_default=func.now(), onupdate=func.now()
+    )
+
+    paper_links: Mapped[list["UserPaperRecord"]] = relationship(
+        back_populates="user", cascade="all, delete-orphan"
     )
 
 
@@ -208,6 +233,27 @@ class SectionImageRecord(Base):
     image_id: Mapped[int] = mapped_column(
         BigInteger, ForeignKey("images.id", ondelete="CASCADE"), primary_key=True
     )
+
+
+class UserPaperRecord(Base):
+    __tablename__ = "user_papers"
+    __table_args__ = (
+        UniqueConstraint("user_id", "paper_id", name="uq_user_papers_user_paper"),
+        Index("idx_user_papers_user_id", "user_id"),
+        Index("idx_user_papers_paper_id", "paper_id"),
+    )
+
+    id: Mapped[int] = mapped_column(BigInteger, primary_key=True, autoincrement=True)
+    user_id: Mapped[int] = mapped_column(
+        BigInteger, ForeignKey("users.id", ondelete="CASCADE"), nullable=False
+    )
+    paper_id: Mapped[int] = mapped_column(
+        BigInteger, ForeignKey("papers.id", ondelete="CASCADE"), nullable=False
+    )
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
+
+    user: Mapped[UserRecord] = relationship(back_populates="paper_links")
+    paper: Mapped[PaperRecord] = relationship(back_populates="user_links")
 
 
 @dataclass
@@ -602,6 +648,124 @@ class PostgresPaperStore:
                 }
                 for r in rows
             ]
+
+    def list_papers_for_user(self, user_id: int, limit: int = 100) -> List[Dict[str, Any]]:
+        with self._Session() as session:
+            rows = (
+                session.query(PaperRecord)
+                .join(UserPaperRecord, UserPaperRecord.paper_id == PaperRecord.id)
+                .filter(UserPaperRecord.user_id == user_id)
+                .order_by(UserPaperRecord.created_at.desc(), PaperRecord.id.desc())
+                .limit(limit)
+                .all()
+            )
+            return [
+                {
+                    "id": int(r.id),
+                    "paper_name": r.paper_name,
+                    "title": r.title,
+                    "abstract": r.abstract,
+                    "source_pdf_path": r.source_pdf_path,
+                    "created_at": r.created_at,
+                }
+                for r in rows
+            ]
+
+    def create_user(
+        self,
+        *,
+        email: str,
+        password_hash: str,
+        password_salt: str,
+        display_name: Optional[str] = None,
+    ) -> Optional[Dict[str, Any]]:
+        email = (email or "").strip().lower()
+        if not email:
+            return None
+
+        self.ensure_schema()
+        with self._Session() as session:
+            user = UserRecord(
+                email=email,
+                display_name=(display_name or "").strip() or None,
+                password_hash=password_hash,
+                password_salt=password_salt,
+            )
+            session.add(user)
+            try:
+                session.commit()
+            except IntegrityError:
+                session.rollback()
+                return None
+            session.refresh(user)
+            return {
+                "id": int(user.id),
+                "email": user.email,
+                "display_name": user.display_name,
+                "password_hash": user.password_hash,
+                "password_salt": user.password_salt,
+                "created_at": user.created_at,
+            }
+
+    def get_user_by_email(self, email: str) -> Optional[Dict[str, Any]]:
+        key = (email or "").strip().lower()
+        if not key:
+            return None
+        with self._Session() as session:
+            row = (
+                session.query(UserRecord)
+                .filter(func.lower(UserRecord.email) == key)
+                .first()
+            )
+            if not row:
+                return None
+            return {
+                "id": int(row.id),
+                "email": row.email,
+                "display_name": row.display_name,
+                "password_hash": row.password_hash,
+                "password_salt": row.password_salt,
+                "created_at": row.created_at,
+            }
+
+    def get_user_by_id(self, user_id: int) -> Optional[Dict[str, Any]]:
+        with self._Session() as session:
+            row = session.query(UserRecord).filter(UserRecord.id == user_id).first()
+            if not row:
+                return None
+            return {
+                "id": int(row.id),
+                "email": row.email,
+                "display_name": row.display_name,
+                "created_at": row.created_at,
+            }
+
+    def link_user_to_paper(self, user_id: int, paper_id: int) -> None:
+        self.ensure_schema()
+        with self._Session() as session:
+            link = (
+                session.query(UserPaperRecord)
+                .filter(
+                    UserPaperRecord.user_id == user_id,
+                    UserPaperRecord.paper_id == paper_id,
+                )
+                .first()
+            )
+            if link is None:
+                session.add(UserPaperRecord(user_id=user_id, paper_id=paper_id))
+                session.commit()
+
+    def user_has_access_to_paper(self, user_id: int, paper_id: int) -> bool:
+        with self._Session() as session:
+            row = (
+                session.query(UserPaperRecord.id)
+                .filter(
+                    UserPaperRecord.user_id == user_id,
+                    UserPaperRecord.paper_id == paper_id,
+                )
+                .first()
+            )
+            return row is not None
 
     def get_paper_by_id(self, paper_id: int) -> Optional[Dict[str, Any]]:
         with self._Session() as session:

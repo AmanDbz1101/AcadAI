@@ -1,5 +1,28 @@
 import type { PaperBundle, PaperSummary } from '@/types/api'
 
+export interface AuthUser {
+  id: number
+  email: string
+  display_name?: string | null
+  created_at?: string
+}
+
+export interface AuthResponse {
+  token: string
+  user: AuthUser
+}
+
+export interface RegisterPayload {
+  email: string
+  password: string
+  display_name?: string
+}
+
+export interface LoginPayload {
+  email: string
+  password: string
+}
+
 export interface UploadPaperResponse {
   paper: PaperSummary
   database: {
@@ -13,13 +36,75 @@ export interface UploadPaperResponse {
 const API_BASE_URL =
   import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000'
 
+const AUTH_TOKEN_KEY = 'researchagent.auth.token'
+const AUTH_USER_KEY = 'researchagent.auth.user'
+
+function getAuthHeader(): HeadersInit {
+  const token = localStorage.getItem(AUTH_TOKEN_KEY)
+  return token ? { Authorization: `Bearer ${token}` } : {}
+}
+
+export function setAuthSession(token: string, user: AuthUser): void {
+  localStorage.setItem(AUTH_TOKEN_KEY, token)
+  localStorage.setItem(AUTH_USER_KEY, JSON.stringify(user))
+}
+
+export function clearAuthSession(): void {
+  localStorage.removeItem(AUTH_TOKEN_KEY)
+  localStorage.removeItem(AUTH_USER_KEY)
+}
+
+export function getCachedAuthUser(): AuthUser | null {
+  const raw = localStorage.getItem(AUTH_USER_KEY)
+  if (!raw) return null
+  try {
+    return JSON.parse(raw) as AuthUser
+  } catch {
+    return null
+  }
+}
+
 async function fetchJson<T>(path: string): Promise<T> {
-  const response = await fetch(`${API_BASE_URL}${path}`)
+  const response = await fetch(`${API_BASE_URL}${path}`, {
+    headers: {
+      ...getAuthHeader(),
+    },
+  })
   if (!response.ok) {
     const body = await response.text()
     throw new Error(`API ${response.status}: ${body || response.statusText}`)
   }
   return response.json() as Promise<T>
+}
+
+async function postJson<T>(path: string, body: unknown): Promise<T> {
+  const response = await fetch(`${API_BASE_URL}${path}`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      ...getAuthHeader(),
+    },
+    body: JSON.stringify(body),
+  })
+  if (!response.ok) {
+    const text = await response.text()
+    throw new Error(`API ${response.status}: ${text || response.statusText}`)
+  }
+  return response.json() as Promise<T>
+}
+
+export async function registerUser(
+  payload: RegisterPayload,
+): Promise<AuthResponse> {
+  return postJson<AuthResponse>('/api/auth/register', payload)
+}
+
+export async function loginUser(payload: LoginPayload): Promise<AuthResponse> {
+  return postJson<AuthResponse>('/api/auth/login', payload)
+}
+
+export async function getMe(): Promise<{ user: AuthUser }> {
+  return fetchJson<{ user: AuthUser }>('/api/auth/me')
 }
 
 export async function getPapers(): Promise<PaperSummary[]> {
@@ -37,6 +122,9 @@ export async function uploadPaper(file: File): Promise<UploadPaperResponse> {
 
   const response = await fetch(`${API_BASE_URL}/api/papers/upload`, {
     method: 'POST',
+    headers: {
+      ...getAuthHeader(),
+    },
     body: formData,
   })
 
