@@ -192,6 +192,7 @@ class RetrievalPipeline:
         section_title_contains: Optional[str] = None,
         section_path_any: Optional[list[str]] = None,
         chunk_level: Optional[str] = None,
+        section_id: Optional[str] = None,
         top_k: int = RETRIEVER_TOP_K,
         top_n: int = RERANKER_TOP_N,
         rerank: bool = True,
@@ -212,6 +213,8 @@ class RetrievalPipeline:
             values.
         chunk_level : str, optional
             Restrict to a chunk granularity level (``"fine"`` / ``"coarse"``).
+        section_id : str, optional
+            When set, results are filtered to this section only.
         top_k : int
             Candidates to retrieve before reranking.
         top_n : int
@@ -253,6 +256,7 @@ class RetrievalPipeline:
             section_title_contains=section_title_contains,
             section_path_any=section_path_any,
             chunk_level=chunk_level,
+            section_id=section_id,
         )
 
         if not results:

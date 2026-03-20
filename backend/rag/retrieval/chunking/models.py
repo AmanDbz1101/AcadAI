@@ -28,6 +28,18 @@ class Chunk(BaseModel):
 
     # ── Content ─────────────────────────────────────────────────────────────
     content: str = Field(description="Raw text content of the chunk")
+    original_content: Optional[str] = Field(
+        None,
+        description="Original unmodified content (used for transformed chunks like table summaries)",
+    )
+    image_path: Optional[str] = Field(
+        None,
+        description="Path to the source figure image on disk",
+    )
+    content_type: str = Field(
+        default="text",
+        description="Content type ('text', 'table', or 'figure')",
+    )
     token_count: int = Field(default=0, description="Estimated token count")
     chunk_index: int = Field(
         description="Zero-based index of this chunk within the document"
@@ -80,6 +92,9 @@ class Chunk(BaseModel):
             "chunk_id": self.chunk_id,
             "document_id": self.document_id,
             "content": self.content,
+            "original_content": self.original_content,
+            "image_path": self.image_path,
+            "content_type": self.content_type,
             "token_count": self.token_count,
             "chunk_index": self.chunk_index,
             "chunk_level": self.chunk_level,

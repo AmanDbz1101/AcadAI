@@ -73,6 +73,7 @@ class HybridRetriever:
         section_title_contains: Optional[str] = None,
         section_path_any: Optional[list[str]] = None,
         chunk_level: Optional[str] = None,
+        section_id: Optional[str] = None,
     ) -> list:
         """
         Run hybrid search and return a list of ``RetrievalResult``.
@@ -91,6 +92,8 @@ class HybridRetriever:
         chunk_level : str, optional
             Restrict retrieval to one chunk granularity (``"fine"`` or
             ``"coarse"``).
+        section_id : str, optional
+            When set, results are filtered to this section only.
 
         Returns
         -------
@@ -109,6 +112,7 @@ class HybridRetriever:
             section_title_contains,
             section_path_any,
             chunk_level,
+            section_id,
         )
 
         # Attempt hybrid search; fall back to dense-only on error
@@ -174,6 +178,7 @@ class HybridRetriever:
         section_title_contains: Optional[str],
         section_path_any: Optional[list[str]],
         chunk_level: Optional[str],
+        section_id: Optional[str] = None,
     ):
         """Build a ``qdrant_client.models.Filter`` or return None."""
         from qdrant_client.models import Filter, FieldCondition, MatchValue, MatchText  # type: ignore
@@ -223,6 +228,14 @@ class HybridRetriever:
                 FieldCondition(
                     key="chunk_level",
                     match=MatchValue(value=chunk_level),
+                )
+            )
+
+        if section_id:
+            conditions.append(
+                FieldCondition(
+                    key="section_id",
+                    match=MatchValue(value=section_id),
                 )
             )
 
