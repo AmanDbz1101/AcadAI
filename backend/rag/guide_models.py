@@ -10,6 +10,14 @@ class ReadingStep(BaseModel):
     """A single step in the reading process."""
     step_number: int = Field(description="Sequential step number")
     section_to_read: List[str] = Field(description="List of sections to read in this step")
+    needs_figures: bool = Field(
+        default=False,
+        description="Whether this step requires understanding figures/diagrams from the section",
+    )
+    needs_tables: bool = Field(
+        default=False,
+        description="Whether this step requires understanding tables/data from the section",
+    )
     objective: str = Field(description="What the reader should achieve in this step")
     questions_to_answer: List[str] = Field(description="Specific questions to guide the reading")
     expected_output: str = Field(description="What understanding or output the reader should have")

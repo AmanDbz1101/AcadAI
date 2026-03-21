@@ -8,6 +8,7 @@ using a combination of Docling layout analysis and Groq LLM classification.
 import os
 import json
 import re
+import html
 import logging
 import hashlib
 from pathlib import Path
@@ -63,11 +64,12 @@ class MetadataExtractor:
     3. Fallback to pattern matching for abstract extraction
     """
     
-    HEADING_CLASSIFICATION_PROMPT = """You are an expert research paper analyst. Given a list of headings extracted from a research paper, classify and extract the following:
+    HEADING_CLASSIFICATION_PROMPT = """You are an expert research paper analyst. Given a list of headings and opening paragraphs extracted from a research paper, classify and extract the following:
 
 1. **title**: Identify which heading is the main paper title (usually the first major heading)
-2. **abstract**: Extract the abstract text if provided in the headings list (return empty string if not found)
-3. **sections**: Identify the main content sections ONLY
+2. **abstract**: Extract the paper abstract from headings OR opening paragraphs
+3. **keywords**: Extract 5-12 concise research keywords/phrases from title + abstract
+4. **sections**: Identify the main content sections ONLY
 
 **EXCLUDE these sections:**
 - References / Bibliography
@@ -94,19 +96,26 @@ class MetadataExtractor:
 
 {headings_json}
 
+## Opening Context (first few paragraphs)
+
+{context_excerpt}
+
 ## Instructions
 
 - Identify the paper title (usually first heading, might be unnumbered)
-- Extract abstract text if present (look for "Abstract" heading)
+- Title must be the actual paper title, not a document type label (e.g., "Invited Review", "Review Article"), author names, affiliations, or venue text
+- Extract a non-empty abstract. Prefer the explicit "Abstract" section; if missing, infer from opening paragraphs before Introduction.
+- Abstract should be a concise summary paragraph only; exclude title lines, author/affiliation lines, and keyword lists
+- Extract 5-12 specific keywords (avoid generic words like "paper", "method", "results")
 - List main content sections with their level (1-5) and page_start
 - Assign appropriate section levels based on heading hierarchy
-- If abstract is not in headings, return empty string for abstract
 - Be precise and only include sections that contain main paper content
 
 Respond in JSON format:
 {{
     "title": "paper title here",
-    "abstract": "abstract text or empty string",
+    "abstract": "non-empty abstract text",
+    "keywords": ["keyword1", "keyword2", "keyword3"],
     "sections": [
         {{"original_name": "Introduction", "level": 1, "page_start": 1}},
         {{"original_name": "Methodology", "level": 1, "page_start": 3}}
@@ -203,6 +212,9 @@ Respond in JSON format:
         else:
             classification = self._classify_headings_fallback(headings, markdown)
 
+        if not self._is_valid_abstract(classification.get("abstract", "")):
+            raise ValueError("Abstract extraction failed: abstract is required.")
+
         # Docling often emits bibliography entries as list_item blocks.
         # Normalize these into explicit reference blocks and ensure a dedicated
         # top-level "Reference" section is always present.
@@ -247,6 +259,7 @@ Respond in JSON format:
         metadata = ExtractedMetadata(
             title=classification['title'],
             abstract=classification['abstract'],
+            keywords=classification.get('keywords', []),
             sections=classification['sections'],
             global_stats=global_stats,
             inference=inference,
@@ -564,8 +577,12 @@ Respond in JSON format:
             Dict with title, abstract, and sections
         """
         headings_json = json.dumps(headings, indent=2)
-        
-        prompt = self.HEADING_CLASSIFICATION_PROMPT.format(headings_json=headings_json)
+        context_excerpt = self._build_opening_context(markdown)
+
+        prompt = self.HEADING_CLASSIFICATION_PROMPT.format(
+            headings_json=headings_json,
+            context_excerpt=context_excerpt,
+        )
         
         try:
             response = self.client.chat.completions.create(
@@ -599,10 +616,28 @@ Respond in JSON format:
                 fallback_abstract = self._extract_abstract_from_markdown(markdown)
                 if fallback_abstract:
                     abstract = fallback_abstract
+
+            title = str(result.get("title", "") or "").strip()
+            abstract = str(abstract or "").strip()
+            keywords = self._normalize_keywords(result.get("keywords", []))
+
+            title, abstract = self._recover_title_abstract_from_prefix(
+                title=title,
+                abstract=abstract,
+                markdown=markdown,
+                headings=headings,
+            )
+            title = self._clean_title_text(title)
+            if not self._is_valid_title(title):
+                title = self._extract_title_from_headings(headings) or title
+            title, abstract = self._postprocess_title_abstract(title=title, abstract=abstract)
+            if not keywords:
+                keywords = self._extract_keywords(title=title, abstract=abstract, markdown=markdown)
             
             return {
-                "title": result.get("title", ""),
+                "title": title,
                 "abstract": abstract,
+                "keywords": keywords,
                 "sections": sections
             }
             
@@ -653,11 +688,349 @@ Respond in JSON format:
                 page_start=heading["page"]
             ))
         
+        title, abstract = self._recover_title_abstract_from_prefix(
+            title=str(title or "").strip(),
+            abstract=str(abstract or "").strip(),
+            markdown=markdown,
+            headings=headings,
+        )
+
+        title = self._clean_title_text(title)
+        if not self._is_valid_title(title):
+            title = self._extract_title_from_headings(headings) or title
+        title, abstract = self._postprocess_title_abstract(title=title, abstract=abstract)
+
+        keywords = self._extract_keywords(title=title, abstract=abstract, markdown=markdown)
+
         return {
             "title": title,
             "abstract": abstract,
+            "keywords": keywords,
             "sections": sections
         }
+
+    def _recover_title_abstract_from_prefix(
+        self,
+        title: str,
+        abstract: str,
+        markdown: str,
+        headings: Optional[List[Dict[str, Any]]] = None,
+    ) -> tuple[str, str]:
+        """
+        Recover missing title/abstract from opening markdown context via Groq.
+
+        This is only used when heuristic/primary extraction leaves title or abstract empty.
+        """
+        title = self._clean_title_text(title)
+        missing_title = not self._is_valid_title(title)
+        missing_abstract = not self._is_valid_abstract(abstract)
+
+        # Always try deterministic abstract recovery first so rate limits do not
+        # block extraction when an abstract exists in raw text.
+        if missing_abstract:
+            heuristic_abstract = self._extract_abstract_from_markdown(markdown)
+            if self._is_valid_abstract(heuristic_abstract):
+                abstract = heuristic_abstract
+                missing_abstract = False
+
+        if not (missing_title or missing_abstract):
+            return title, abstract
+
+        if not self.client:
+            return title, abstract
+
+        context_excerpt = self._build_opening_context(markdown, char_limit=8000, max_paragraphs=14)
+        if not context_excerpt:
+            return title, abstract
+
+        prompt = (
+            "Extract the paper title and abstract from the opening paper content below. "
+            "Prioritize the explicit abstract section; otherwise infer the abstract from the opening summary paragraphs before Introduction. "
+            "Do not return document labels (like 'Invited Review'), author names, affiliations, venue headers, or keyword lists as title/abstract content. "
+            "Return valid JSON only.\n\n"
+            f"Opening content:\n{context_excerpt}\n\n"
+            "Return JSON with keys: title, abstract."
+        )
+
+        try:
+            response = self.client.chat.completions.create(
+                model=self.model,
+                messages=[
+                    {
+                        "role": "system",
+                        "content": "You are a precise metadata extraction assistant. Return valid JSON only.",
+                    },
+                    {
+                        "role": "user",
+                        "content": prompt,
+                    },
+                ],
+                temperature=0,
+                max_tokens=700,
+                response_format={"type": "json_object"},
+            )
+
+            result = json.loads(response.choices[0].message.content)
+
+            if missing_title:
+                candidate_title = self._clean_title_text(str(result.get("title", "") or ""))
+                if self._is_valid_title(candidate_title):
+                    title = candidate_title
+
+            if missing_abstract:
+                candidate_abstract = str(result.get("abstract", "") or "").strip()
+                candidate_abstract = self._clean_abstract_text(candidate_abstract)
+                if self._is_valid_abstract(candidate_abstract):
+                    abstract = candidate_abstract
+
+        except Exception as exc:
+            logger.warning("Title/abstract prefix recovery failed: %s", exc)
+
+        # If LLM recovery is unavailable or rate-limited, retry deterministic
+        # extraction once more before giving up.
+        if not self._is_valid_abstract(abstract):
+            heuristic_abstract = self._extract_abstract_from_markdown(markdown)
+            if self._is_valid_abstract(heuristic_abstract):
+                abstract = heuristic_abstract
+
+        if not self._is_valid_title(title):
+            heading_title = self._extract_title_from_headings(headings or [])
+            if self._is_valid_title(heading_title):
+                title = heading_title
+
+        return self._clean_title_text(title), self._clean_abstract_text(abstract)
+
+    def _postprocess_title_abstract(self, title: str, abstract: str) -> tuple[str, str]:
+        """Final cleanup for title/abstract pair to remove common front-matter noise."""
+        clean_title = self._clean_title_text(title)
+        candidate = self._clean_abstract_text(abstract)
+
+        # If abstract starts by repeating title, trim that duplicate prefix.
+        if clean_title and candidate.lower().startswith(clean_title.lower()):
+            candidate = candidate[len(clean_title):].lstrip(" .,:;-")
+
+        # Remove author/affiliation preamble when a clear abstract opener appears later.
+        start_match = re.search(
+            r"(?i)\b(recently|in this paper|in this survey|this paper|we\s+(?:propose|present|introduce|show|study|investigate|develop)|our\s+paper)\b",
+            candidate,
+        )
+        if start_match and start_match.start() > 20:
+            prefix = candidate[:start_match.start()]
+            if re.search(r"(?i)\b(university|department|school|laboratory|institute|@)\b", prefix) or prefix.count(",") >= 3:
+                candidate = candidate[start_match.start():].lstrip(" .,:;-")
+
+        return clean_title, self._clean_abstract_text(candidate)
+
+    def _build_opening_context(
+        self,
+        markdown: str,
+        char_limit: int = 6000,
+        max_paragraphs: int = 12,
+    ) -> str:
+        """Build opening-context text using first few non-empty paragraphs."""
+        text = str(markdown or "")
+        if not text.strip():
+            return ""
+
+        text = re.sub(r"\r\n?", "\n", text)
+        text = re.sub(r"\n{3,}", "\n\n", text)
+        paragraphs = [p.strip() for p in text.split("\n\n") if p.strip()]
+        selected: List[str] = []
+        for para in paragraphs:
+            cleaned = self._clean_noise_text(para)
+            if not cleaned:
+                continue
+            selected.append(cleaned)
+            if len(selected) >= max_paragraphs:
+                break
+
+        excerpt = "\n\n".join(selected).strip()
+        return excerpt[:char_limit]
+
+    @staticmethod
+    def _clean_noise_text(text: str) -> str:
+        """Remove noisy OCR/markdown artifacts that harm metadata extraction."""
+        cleaned = str(text or "")
+        cleaned = html.unescape(cleaned)
+        cleaned = re.sub(r"!\[[^\]]*\]\([^)]*\)", " ", cleaned)
+        cleaned = re.sub(r"GLYPH<\d+>", " ", cleaned)
+        cleaned = re.sub(r"\s+", " ", cleaned).strip()
+        return cleaned
+
+    @staticmethod
+    def _clean_title_text(text: str) -> str:
+        """Normalize title text and strip common non-title labels."""
+        candidate = MetadataExtractor._clean_noise_text(text)
+        candidate = re.sub(r"(?m)^\s*#{1,6}\s*", "", candidate)
+        candidate = re.sub(
+            r"(?i)^\s*(invited\s+review|review\s+article|tutorial\s+paper|editorial)\s*[\.:;\-|]+\s*",
+            "",
+            candidate,
+        )
+        candidate = candidate.strip(" \t\n\r'\"`.,;:-")
+        return candidate
+
+    @staticmethod
+    def _is_valid_title(title: str) -> bool:
+        """Return True when title appears to be a real paper title."""
+        candidate = MetadataExtractor._clean_title_text(title)
+        if not candidate:
+            return False
+
+        lower = candidate.lower()
+        if lower in {"unknown title", "unknown", "n/a"}:
+            return False
+        if re.fullmatch(r"(?i)(invited\s+review|review\s+article|editorial)", candidate):
+            return False
+
+        words = candidate.split()
+        if len(words) < 3 or len(words) > 35:
+            return False
+        if re.search(r"(?i)\b(university|department|school|laboratory|email|@)\b", candidate):
+            return False
+
+        return True
+
+    def _extract_title_from_headings(self, headings: List[Dict[str, Any]]) -> str:
+        """Pick the most likely paper title from extracted headings."""
+        best_title = ""
+        best_score = -10
+
+        for heading in headings or []:
+            text = self._clean_title_text(str(heading.get("text", "") or ""))
+            if not text:
+                continue
+
+            text_lower = text.lower()
+            if re.match(r"^\d+(\.\d+)*\s+", text):
+                continue
+            if re.search(r"\b(abstract|introduction|reference|references|bibliography|appendix|acknowledg)\b", text_lower):
+                continue
+
+            score = 0
+            page = int(heading.get("page", 99) or 99)
+            if page <= 2:
+                score += 3
+            if self._is_valid_title(text):
+                score += 3
+            if 20 <= len(text) <= 220:
+                score += 1
+            if ":" in text:
+                score += 1
+
+            if score > best_score:
+                best_score = score
+                best_title = text
+
+        return best_title
+
+    @staticmethod
+    def _normalize_keywords(raw_keywords: Any) -> List[str]:
+        """Normalize candidate keywords to a clean, unique list."""
+        if not raw_keywords:
+            return []
+
+        if isinstance(raw_keywords, str):
+            candidates = re.split(r",|;|\n", raw_keywords)
+        elif isinstance(raw_keywords, list):
+            candidates = raw_keywords
+        else:
+            return []
+
+        normalized: List[str] = []
+        seen = set()
+        for item in candidates:
+            kw = re.sub(r"\s+", " ", str(item or "")).strip(" .,:;\t\n\r").lower()
+            if len(kw) < 3 or len(kw) > 64:
+                continue
+            if kw in seen:
+                continue
+            seen.add(kw)
+            normalized.append(kw)
+
+        return normalized[:15]
+
+    @staticmethod
+    def _is_valid_abstract(abstract: str) -> bool:
+        """Return True when abstract has meaningful length/content."""
+        cleaned = re.sub(r"\s+", " ", str(abstract or "")).strip()
+        word_count = len(cleaned.split()) if cleaned else 0
+        return len(cleaned) >= 50 or word_count >= 12
+
+    @staticmethod
+    def _clean_abstract_text(text: str) -> str:
+        """Normalize abstract text and trim common trailing noise."""
+        candidate = MetadataExtractor._clean_noise_text(text)
+        candidate = re.sub(r"\r\n?", "\n", candidate)
+        # Remove markdown heading markers that can leak into extracted text.
+        candidate = re.sub(r"(?m)^\s*#{1,6}\s*", "", candidate)
+        # Remove leading labels and non-abstract boilerplate that can leak into candidate.
+        candidate = re.sub(r"(?i)^\s*abstract\s*[:\-]?\s*", "", candidate)
+        candidate = re.sub(r"(?i)^\s*invited\s+review\s*[\.:;\-|]*\s*", "", candidate)
+        # Trim explicit keyword/index-terms tails often present after abstracts.
+        candidate = re.split(r"(?i)\b(keywords?|index\s+terms?)\b\s*[:\-]?", candidate, maxsplit=1)[0]
+        # Trim trailing comma-separated keyword-like tails when no explicit keyword label exists.
+        candidate = re.sub(
+            r"(?i)([\.!?])\s*[A-Z][A-Za-z\- ]+(?:\s*,\s*[A-Z][A-Za-z\- ]+){4,}\s*$",
+            r"\1",
+            candidate,
+        )
+        candidate = re.sub(r"\s+", " ", candidate).strip(" .;:-\n\t")
+        return candidate
+
+    def _extract_keywords(self, title: str, abstract: str, markdown: str) -> List[str]:
+        """Extract keywords via LLM when available, else use heuristic fallback."""
+        if self.client:
+            context_excerpt = self._build_opening_context(markdown, char_limit=2500, max_paragraphs=6)
+            prompt = (
+                "Extract 5-12 high-signal research keywords from the paper content. "
+                "Prefer terms from title and abstract, include technical phrases, and avoid generic words. "
+                "Return JSON with a single key 'keywords' as an array of strings.\n\n"
+                f"Title:\n{title}\n\n"
+                f"Abstract:\n{abstract}\n\n"
+                f"Opening paragraphs:\n{context_excerpt}"
+            )
+
+            try:
+                response = self.client.chat.completions.create(
+                    model=self.model,
+                    messages=[
+                        {
+                            "role": "system",
+                            "content": "You are a precise metadata extraction assistant. Return valid JSON only.",
+                        },
+                        {
+                            "role": "user",
+                            "content": prompt,
+                        },
+                    ],
+                    temperature=0,
+                    max_tokens=256,
+                    response_format={"type": "json_object"},
+                )
+                result = json.loads(response.choices[0].message.content)
+                normalized = self._normalize_keywords(result.get("keywords", []))
+                if normalized:
+                    return normalized
+            except Exception as exc:
+                logger.warning("Keyword extraction failed: %s", exc)
+
+        # Heuristic keyword fallback from title + abstract
+        text = f"{title} {abstract}".lower()
+        tokens = re.findall(r"[a-z][a-z0-9\-]{2,}", text)
+        stopwords = {
+            "the", "and", "for", "with", "from", "this", "that", "are", "was", "were", "into", "using",
+            "paper", "study", "result", "results", "method", "methods", "approach", "based", "analysis",
+            "model", "models", "data", "new", "novel", "our", "their", "than", "also", "show", "shows",
+        }
+        freq: Dict[str, int] = {}
+        for tok in tokens:
+            if tok in stopwords:
+                continue
+            freq[tok] = freq.get(tok, 0) + 1
+
+        ranked = sorted(freq.items(), key=lambda x: x[1], reverse=True)
+        return [kw for kw, _ in ranked[:10]]
     
     def _extract_abstract_from_markdown(self, markdown: str) -> str:
         """
@@ -669,41 +1042,53 @@ Respond in JSON format:
         Returns:
             Abstract text or empty string
         """
-        # Try to find abstract section
-        abstract_pattern = r'(?i)(?:^|\n)#{1,3}\s*abstract\s*\n((?:(?!^#{1,3}\s).)+)'
-        match = re.search(abstract_pattern, markdown, re.MULTILINE | re.DOTALL)
-        
+        text = str(markdown or "")
+        if not text.strip():
+            return ""
+
+        normalized = re.sub(r"\r\n?", "\n", text)
+        normalized = re.sub(r"\n{3,}", "\n\n", normalized)
+
+        # 1) Standard markdown heading form: "## Abstract" + body
+        heading_pattern = r"(?is)(?:^|\n)#{1,6}\s*abstract\s*\n(.{60,6000}?)(?=\n#{1,6}\s|\Z)"
+        match = re.search(heading_pattern, normalized)
         if match:
-            abstract = match.group(1).strip()
-            # Clean up the abstract
-            abstract = re.sub(r'\n+', ' ', abstract)
-            abstract = re.sub(r'\s+', ' ', abstract)
-            return abstract
-        
-        # Fallback: try to find text after "Abstract" keyword
-        lines = markdown.split('\n')
-        abstract_lines = []
-        capture = False
-        
-        for line in lines:
-            line_lower = line.lower().strip()
-            
-            if 'abstract' in line_lower and len(line_lower) < 50:
-                capture = True
+            candidate = self._clean_abstract_text(match.group(1))
+            if self._is_valid_abstract(candidate):
+                return candidate
+
+        # 2) Plain-text / OCR form where Abstract is not a markdown heading.
+        # Stop at common boundaries: keywords/index terms/introduction/section 1.
+        plain_pattern = (
+            r"(?is)\babstract\b\s*[:\-]?\s*(.{60,8000}?)"
+            r"(?=\bkeywords?\b|\bindex\s+terms\b|\bintroduction\b|\n\s*1\.?\s+[A-Za-z]|\n\s*#{1,6}\s|\Z)"
+        )
+        match = re.search(plain_pattern, normalized)
+        if match:
+            candidate = self._clean_abstract_text(match.group(1))
+            if self._is_valid_abstract(candidate):
+                return candidate
+
+        # 3) Last fallback: take first substantive paragraphs before Introduction.
+        paragraphs = [p.strip() for p in normalized.split("\n\n") if p.strip()]
+        collected: List[str] = []
+        for p in paragraphs[:12]:
+            lower = p.lower()
+            if "introduction" in lower:
+                break
+            if re.fullmatch(r"#{1,6}\s*abstract\s*", p, flags=re.IGNORECASE):
                 continue
-            
-            if capture:
-                # Stop at next heading or introduction
-                if line.startswith('#') or 'introduction' in line.lower():
-                    break
-                if line.strip():
-                    abstract_lines.append(line.strip())
-        
-        if abstract_lines:
-            return ' '.join(abstract_lines)
-        
+            collected.append(p)
+            if len(" ".join(collected)) > 1800:
+                break
+
+        if collected:
+            candidate = self._clean_abstract_text(" ".join(collected))
+            if self._is_valid_abstract(candidate):
+                return candidate
+
         return ""
-    
+
     def _infer_paper_properties(
         self,
         title: str,
@@ -833,8 +1218,10 @@ Use the formula density to help determine if the paper is math_heavy:
         
         if not classification.get('title'):
             missing.append('title')
-        if not classification.get('abstract'):
+        if not self._is_valid_abstract(classification.get('abstract', '')):
             missing.append('abstract')
+        if not classification.get('keywords'):
+            missing.append('keywords')
         if not classification.get('sections'):
             missing.append('sections')
         

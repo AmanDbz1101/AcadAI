@@ -402,14 +402,18 @@ For each step, specify which sections to read, the objective, 2-3 questions to a
 INSTRUCTIONS:
 1. For each pass, create 3-5 sequential steps.
 2. Each step must specify:
-   - Which section(s) to read — use ACTUAL section names from the list above.
+    - For the section_to_read field, only write actual section titles or section numbers from the paper (e.g. '3. Methodology', 'Results'). Never write 'Figure N' or 'Table N' as section references — these are not retrievable sections.
+    - Instead, use two separate boolean fields:
+      needs_figures: true if this step requires understanding a figure or diagram from that section
+      needs_tables: true if this step requires understanding a table or data from that section
+      These flags will be used to fetch the summarized figure and table content automatically.
    - Objective of this step.
     - 2-3 questions the reader should be able to answer after this step — CRITICAL: questions
       must be specific to THIS paper, referencing actual methods, metrics, datasets, model
       names, or numbers from the abstract, introduction, or conclusion. Generic questions
       like "What did the authors propose?" are not acceptable.
    - Expected output or insight.
-3. Reference figures and tables by number where relevant (e.g. "Study Figure 1 which shows the architecture").
+3. Use needs_figures / needs_tables to indicate figure/table dependency for each step.
 4. Keep instructions clear and actionable.
 
 Always reference ACTUAL section names from the list above in your guide."""
@@ -485,7 +489,11 @@ For each step, specify which sections to read, the objective, 2-3 questions to a
 INSTRUCTIONS:
 1. For each pass, create 3-5 sequential steps.
 2. Each step must specify:
-   - Which section(s) to read — use ACTUAL section names from the list above.
+    - For the section_to_read field, only write actual section titles or section numbers from the paper (e.g. '3. Methodology', 'Results'). Never write 'Figure N' or 'Table N' as section references — these are not retrievable sections.
+    - Instead, use two separate boolean fields:
+      needs_figures: true if this step requires understanding a figure or diagram from that section
+      needs_tables: true if this step requires understanding a table or data from that section
+      These flags will be used to fetch the summarized figure and table content automatically.
    - Objective of this step.
     - 2-3 questions the reader should be able to answer after this step — CRITICAL: questions must be
       specific to THIS paper, referencing actual theorem, lemma, corollary names, assumptions,
@@ -493,7 +501,7 @@ INSTRUCTIONS:
       Generic questions like "What is proved?" are not acceptable.
    - Expected output or insight.
 3. Flag specific theorem, lemma, and corollary names when they appear in the section headings.
-4. Reference figures and tables by number where relevant (e.g. "Figure 2", "Table 1").
+4. Use needs_figures / needs_tables to indicate figure/table dependency for each step.
 5. Keep instructions clear and actionable.
 
 Always reference ACTUAL section names from the list above in your guide."""
@@ -564,14 +572,18 @@ For each step, specify which sections to read, the objective, 2-3 questions to a
 INSTRUCTIONS:
 1. For each pass, create 3-5 sequential steps.
 2. Each step must specify:
-   - Which section(s) to read — use ACTUAL section names from the list above.
+    - For the section_to_read field, only write actual section titles or section numbers from the paper (e.g. '3. Methodology', 'Results'). Never write 'Figure N' or 'Table N' as section references — these are not retrievable sections.
+    - Instead, use two separate boolean fields:
+      needs_figures: true if this step requires understanding a figure or diagram from that section
+      needs_tables: true if this step requires understanding a table or data from that section
+      These flags will be used to fetch the summarized figure and table content automatically.
    - Objective of this step.
     - 2-3 questions the reader should be able to answer after this step — CRITICAL: questions must be
       specific to THIS survey, referencing actual taxonomy/category names, method families, trends,
       benchmark names, date ranges, or claims from the abstract, introduction, or conclusion.
       Generic questions like "What are the categories?" are not acceptable.
    - Expected output or insight.
-3. Highlight taxonomy figures and comparison tables by number when relevant (paper has {num_figures} figures, {num_tables} tables).
+3. Use needs_figures / needs_tables to indicate figure/table dependency for each step.
 4. Keep instructions clear and actionable.
 
 Always reference ACTUAL section names from the list above in your guide."""

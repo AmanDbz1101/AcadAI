@@ -1,0 +1,100 @@
+{
+  "paper_title": "Attention Is All You Need",
+  "reading_strategy": {
+    "method": "three_pass_method",
+    "paper_type": "applied",
+    "estimated_total_time": "45-60 minutes"
+  },
+  "pass1_quick_scan": {
+    "goal": "Understand problem, motivation, and high-level contribution.",
+    "estimated_time": "10-15 minutes",
+    "steps": [
+      {
+        "step_number": 1,
+        "section_to_read": [
+          "Abstract",
+          "1 Introduction"
+        ],
+        "needs_figures": false,
+        "needs_tables": false,
+        "objective": "Get a fast global understanding of the paper.",
+        "questions_to_answer": [
+          "What problem does this paper solve?"
+        ],
+        "expected_output": "A concise summary of the main problem and contribution."
+      }
+    ]
+  },
+  "pass2_method_understanding": {
+    "goal": "Understand method design and experimental setup.",
+    "estimated_time": "15-20 minutes",
+    "steps": [
+      {
+        "step_number": 1,
+        "section_to_read": [
+          "Abstract",
+          "1 Introduction",
+          "2 Background",
+          "3 Model Architecture"
+        ],
+        "needs_figures": false,
+        "needs_tables": false,
+        "objective": "Understand how the core approach/argument is built.",
+        "questions_to_answer": [
+          "What is the proposed method or model?"
+        ],
+        "expected_output": "A clear outline of the method/proof strategy and assumptions."
+      }
+    ]
+  },
+  "pass3_deep_analysis": {
+    "goal": "Validate claims via detailed results, limitations, and failure modes.",
+    "estimated_time": "20-25 minutes",
+    "steps": [
+      {
+        "step_number": 1,
+        "section_to_read": [
+          "Abstract",
+          "1 Introduction",
+          "2 Background",
+          "3 Model Architecture",
+          "3.1 Encoder and Decoder Stacks",
+          "3.2 Attention"
+        ],
+        "needs_figures": false,
+        "needs_tables": false,
+        "objective": "Inspect evidence depth, technical details, and limitations.",
+        "questions_to_answer": [
+          "What are the key experimental findings?"
+        ],
+        "expected_output": "A judgment on the strength and boundaries of the claims."
+      },
+      {
+        "step_number": 2,
+        "section_to_read": [
+          "6.3 English Constituency Parsing",
+          "7 Conclusion",
+          "Attention Visualizations Input-Input Layer5"
+        ],
+        "needs_figures": false,
+        "needs_tables": false,
+        "objective": "Extract future work and unresolved questions.",
+        "questions_to_answer": [
+          "What limitations or future work are discussed?"
+        ],
+        "expected_output": "A short list of follow-up research questions."
+      }
+    ]
+  },
+  "final_user_task": {
+    "summary_task": "Write a one-page synthesis covering core claims, evidence strength, and practical implications.",
+    "reflection_questions": [
+      "Which design choices seem most responsible for the reported gains?",
+      "What evidence best supports the paper's central claim?",
+      "What limitations matter most for real-world use?"
+    ]
+  },
+  "fallback": true,
+  "category": "APPLIED",
+  "notes": "Heuristic fallback guide generated because LLM guide generation was unavailable."
+}

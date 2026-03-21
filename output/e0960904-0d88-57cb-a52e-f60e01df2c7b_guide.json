@@ -1,0 +1,100 @@
+{
+  "paper_title": "Pre-trained Models for Natural Language Processing: A Survey",
+  "reading_strategy": {
+    "method": "three_pass_method",
+    "paper_type": "survey",
+    "estimated_total_time": "45-60 minutes"
+  },
+  "pass1_field_overview": {
+    "goal": "Map the survey scope, motivation, and major categories.",
+    "estimated_time": "10-15 minutes",
+    "steps": [
+      {
+        "step_number": 1,
+        "section_to_read": [
+          "Pre-trained Models for Natural Language Processing: A Survey",
+          "1 Introduction"
+        ],
+        "needs_figures": false,
+        "needs_tables": false,
+        "objective": "Get a fast global understanding of the paper.",
+        "questions_to_answer": [
+          "What is the scope of this survey?"
+        ],
+        "expected_output": "A concise summary of the main problem and contribution."
+      }
+    ]
+  },
+  "pass2_taxonomy_understanding": {
+    "goal": "Understand taxonomy criteria and category-level comparisons.",
+    "estimated_time": "15-20 minutes",
+    "steps": [
+      {
+        "step_number": 1,
+        "section_to_read": [
+          "Pre-trained Models for Natural Language Processing: A Survey",
+          "1 Introduction",
+          "2 Background",
+          "2.1 Language Representation Learning"
+        ],
+        "needs_figures": false,
+        "needs_tables": false,
+        "objective": "Understand how the core approach/argument is built.",
+        "questions_to_answer": [
+          "What taxonomy or categorization does the paper propose?"
+        ],
+        "expected_output": "A clear outline of the method/proof strategy and assumptions."
+      }
+    ]
+  },
+  "pass3_research_landscape_analysis": {
+    "goal": "Synthesize trends, gaps, and promising future directions.",
+    "estimated_time": "20-25 minutes",
+    "steps": [
+      {
+        "step_number": 1,
+        "section_to_read": [
+          "Pre-trained Models for Natural Language Processing: A Survey",
+          "1 Introduction",
+          "2 Background",
+          "2.1 Language Representation Learning",
+          "2.2 Neural Contextual Encoders",
+          "2.2.1 Sequence Models"
+        ],
+        "needs_figures": false,
+        "needs_tables": false,
+        "objective": "Inspect evidence depth, technical details, and limitations.",
+        "questions_to_answer": [
+          "What comparative findings are most important?"
+        ],
+        "expected_output": "A judgment on the strength and boundaries of the claims."
+      },
+      {
+        "step_number": 2,
+        "section_to_read": [
+          "7.7 Adversarial Attacks and Defenses",
+          "8 Future Directions",
+          "9 Conclusion"
+        ],
+        "needs_figures": false,
+        "needs_tables": false,
+        "objective": "Extract future work and unresolved questions.",
+        "questions_to_answer": [
+          "What trends and future directions are identified?"
+        ],
+        "expected_output": "A short list of follow-up research questions."
+      }
+    ]
+  },
+  "final_user_task": {
+    "summary_task": "Write a one-page synthesis covering core claims, evidence strength, and practical implications.",
+    "reflection_questions": [
+      "Which taxonomy dimensions are most actionable for your use case?",
+      "Which categories appear under-explored and why?",
+      "What concrete follow-up papers should be prioritized next?"
+    ]
+  },
+  "fallback": true,
+  "category": "SURVEY",
+  "notes": "Heuristic fallback guide generated because LLM guide generation was unavailable."
+}

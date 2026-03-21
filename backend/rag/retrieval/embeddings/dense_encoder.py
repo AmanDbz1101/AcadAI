@@ -17,6 +17,7 @@ This encoder handles the prefix automatically; callers do not need to add it.
 from __future__ import annotations
 
 import logging
+import threading
 import time
 from typing import Optional
 
@@ -64,23 +65,32 @@ class DenseEncoder(Embeddings):
         self.normalize = normalize
         self._model = None  # lazy load
         self._device = device
+        self._load_lock = threading.Lock()
 
     # ── Lazy model loading ────────────────────────────────────────────────────
 
     def _load(self):
         if self._model is not None:
             return self._model
-        from sentence_transformers import SentenceTransformer  # type: ignore
 
-        logger.info("DenseEncoder: loading model %s …", self.model_name)
-        t0 = time.time()
-        cache_dir = MODEL_CACHE_DIR / "sentence_transformers"
-        cache_dir.mkdir(parents=True, exist_ok=True)
-        kwargs: dict = {"cache_folder": str(cache_dir)}
-        if self._device is not None:
-            kwargs["device"] = self._device
-        self._model = SentenceTransformer(self.model_name, **kwargs)
-        logger.info("DenseEncoder: model loaded in %.1fs", time.time() - t0)
+        # Guard model construction so parallel retrieval workers do not
+        # concurrently initialise SentenceTransformer (can cause meta-tensor errors).
+        with self._load_lock:
+            if self._model is not None:
+                return self._model
+
+            from sentence_transformers import SentenceTransformer  # type: ignore
+
+            logger.info("DenseEncoder: loading model %s …", self.model_name)
+            t0 = time.time()
+            cache_dir = MODEL_CACHE_DIR / "sentence_transformers"
+            cache_dir.mkdir(parents=True, exist_ok=True)
+            kwargs: dict = {"cache_folder": str(cache_dir)}
+            if self._device is not None:
+                kwargs["device"] = self._device
+            self._model = SentenceTransformer(self.model_name, **kwargs)
+            logger.info("DenseEncoder: model loaded in %.1fs", time.time() - t0)
+
         return self._model
 
     # ── LangChain Embeddings interface ────────────────────────────────────────

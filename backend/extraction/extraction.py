@@ -189,6 +189,7 @@ class PDFExtractor:
             "document_id": pdf_path.name,  # Use PDF filename as document_id
             "paper_title": processed_doc.metadata.title,
             "abstract": processed_doc.metadata.abstract,
+            "keywords": processed_doc.metadata.keywords,
             "sections": remove_ids_from_sections(full_sections),
             "global_stats": processed_doc.metadata.global_stats.model_dump(mode='json') if processed_doc.metadata.global_stats else {},
             "inference": processed_doc.metadata.inference.model_dump(mode='json') if processed_doc.metadata.inference else {}
@@ -223,6 +224,7 @@ class PDFExtractor:
                 "document_id": pdf_path.name,
                 "paper_title": processed_doc.metadata.title,
                 "abstract": processed_doc.metadata.abstract,
+                "keywords": processed_doc.metadata.keywords,
                 "sections": full_sections,  # Keep IDs in complete file
                 "global_stats": processed_doc.metadata.global_stats.model_dump(mode='json') if processed_doc.metadata.global_stats else {},
                 "inference": processed_doc.metadata.inference.model_dump(mode='json') if processed_doc.metadata.inference else {}

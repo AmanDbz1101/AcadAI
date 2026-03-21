@@ -1,0 +1,100 @@
+{
+  "paper_title": "Another generalization of Hadamard test: Optimal sample complexities for learning functions on the unitary group",
+  "reading_strategy": {
+    "method": "three_pass_method",
+    "paper_type": "theoretical",
+    "estimated_total_time": "45-60 minutes"
+  },
+  "pass1_quick_scan": {
+    "goal": "Understand the theorem-level claims and problem framing without reading proofs in detail.",
+    "estimated_time": "10-15 minutes",
+    "steps": [
+      {
+        "step_number": 1,
+        "section_to_read": [
+          "Abstract",
+          "1 Introduction"
+        ],
+        "needs_figures": false,
+        "needs_tables": false,
+        "objective": "Get a fast global understanding of the paper.",
+        "questions_to_answer": [
+          "What is the core theoretical problem addressed?"
+        ],
+        "expected_output": "A concise summary of the main problem and contribution."
+      }
+    ]
+  },
+  "pass2_proof_strategy": {
+    "goal": "Identify assumptions, proof strategy, and key intermediate results.",
+    "estimated_time": "15-20 minutes",
+    "steps": [
+      {
+        "step_number": 1,
+        "section_to_read": [
+          "Abstract",
+          "1 Introduction",
+          "1.1 Our contributions",
+          "1.1.1 First result"
+        ],
+        "needs_figures": false,
+        "needs_tables": false,
+        "objective": "Understand how the core approach/argument is built.",
+        "questions_to_answer": [
+          "What is the main proof strategy or formal argument?"
+        ],
+        "expected_output": "A clear outline of the method/proof strategy and assumptions."
+      }
+    ]
+  },
+  "pass3_deep_mathematical_analysis": {
+    "goal": "Read proof details, implications, and open theoretical directions.",
+    "estimated_time": "20-25 minutes",
+    "steps": [
+      {
+        "step_number": 1,
+        "section_to_read": [
+          "Abstract",
+          "1 Introduction",
+          "1.1 Our contributions",
+          "1.1.1 First result",
+          "1.1.2 Second result",
+          "1.2 Proof techniques"
+        ],
+        "needs_figures": false,
+        "needs_tables": false,
+        "objective": "Inspect evidence depth, technical details, and limitations.",
+        "questions_to_answer": [
+          "What assumptions and limitations are stated?"
+        ],
+        "expected_output": "A judgment on the strength and boundaries of the claims."
+      },
+      {
+        "step_number": 2,
+        "section_to_read": [
+          "5.2.2 The trace function",
+          "5.2.3 Irreducible representations π λ ( g ) i,j",
+          "Lemma 2."
+        ],
+        "needs_figures": false,
+        "needs_tables": false,
+        "objective": "Extract future work and unresolved questions.",
+        "questions_to_answer": [
+          "What conclusions or open problems are highlighted?"
+        ],
+        "expected_output": "A short list of follow-up research questions."
+      }
+    ]
+  },
+  "final_user_task": {
+    "summary_task": "Write a one-page synthesis covering core claims, evidence strength, and practical implications.",
+    "reflection_questions": [
+      "Which assumptions are most critical for the main results?",
+      "How does the proof strategy compare to related theoretical techniques?",
+      "What open problems naturally follow from these results?"
+    ]
+  },
+  "fallback": true,
+  "category": "THEORETICAL",
+  "notes": "Heuristic fallback guide generated because LLM guide generation was unavailable."
+}

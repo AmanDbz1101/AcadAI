@@ -193,6 +193,7 @@ class RetrievalPipeline:
         section_path_any: Optional[list[str]] = None,
         chunk_level: Optional[str] = None,
         section_id: Optional[str] = None,
+        content_type: Optional[str] = None,
         top_k: int = RETRIEVER_TOP_K,
         top_n: int = RERANKER_TOP_N,
         rerank: bool = True,
@@ -216,6 +217,9 @@ class RetrievalPipeline:
             Restrict to a chunk granularity level (``"fine"`` / ``"coarse"``).
         section_id : str, optional
             When set, results are filtered to this section only.
+        content_type : str, optional
+            When set, results are filtered to this payload content type
+            (for example ``"figure"`` or ``"table"``).
         top_k : int
             Candidates to retrieve before reranking.
         top_n : int
@@ -260,6 +264,7 @@ class RetrievalPipeline:
             section_path_any=section_path_any,
             chunk_level=chunk_level,
             section_id=section_id,
+            content_type=content_type,
             exclude_reference_sections=exclude_reference_sections,
         )
 
@@ -389,6 +394,24 @@ class RetrievalPipeline:
             results = results[:top_k]
 
         return results
+
+    def retrieve_by_content_type(
+        self,
+        document_id: str,
+        section_id: str,
+        content_type: str,
+        top_k: int = 10,
+    ) -> list:
+        """Retrieve section-scoped chunks filtered by payload content_type."""
+        return self.query(
+            query=content_type,
+            document_id=document_id,
+            section_id=section_id,
+            content_type=content_type,
+            top_k=top_k,
+            top_n=top_k,
+            rerank=False,
+        )
 
     def collection_info(self) -> dict:
         """Return Qdrant collection metadata (points count, status)."""

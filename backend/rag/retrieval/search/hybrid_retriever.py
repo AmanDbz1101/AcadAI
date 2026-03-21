@@ -19,11 +19,17 @@ Query flow
 from __future__ import annotations
 
 import logging
+import re
 from typing import Optional
 
 from rag.retrieval.config import RETRIEVER_TOP_K, SPARSE_VECTOR_NAME, DENSE_VECTOR_NAME
 
 logger = logging.getLogger(__name__)
+
+_REFERENCE_SECTION_HEADING_RE = re.compile(
+    r"^\s*(?:\d+(?:\.\d+)*)?\s*[:.)-]?\s*(?:references?|bibliography|works cited)\b",
+    flags=re.IGNORECASE,
+)
 
 
 class HybridRetriever:
@@ -75,6 +81,7 @@ class HybridRetriever:
         chunk_level: Optional[str] = None,
         section_id: Optional[str] = None,
         section_path_ids_any: Optional[list[str]] = None,
+        content_type: Optional[str] = None,
         exclude_reference_sections: bool = True,
     ) -> list:
         """
@@ -123,6 +130,7 @@ class HybridRetriever:
             chunk_level,
             section_id,
             section_path_ids_any,
+            content_type,
             exclude_reference_sections,
         )
 
@@ -158,6 +166,22 @@ class HybridRetriever:
             len(results),
             document_id,
         )
+
+        if exclude_reference_sections:
+            filtered = [
+                result
+                for result in results
+                if not self._metadata_is_reference_section(result.metadata)
+            ]
+            removed = len(results) - len(filtered)
+            if removed:
+                logger.info(
+                    "HybridRetriever: removed %d reference-section results for query='%s'",
+                    removed,
+                    query[:60],
+                )
+            results = filtered
+
         return results
 
     # ── Low-level search helpers ──────────────────────────────────────────────
@@ -191,6 +215,7 @@ class HybridRetriever:
         chunk_level: Optional[str],
         section_id: Optional[str] = None,
         section_path_ids_any: Optional[list[str]] = None,
+        content_type: Optional[str] = None,
         exclude_reference_sections: bool = True,
     ):
         """Build a ``qdrant_client.models.Filter`` or return None."""
@@ -271,6 +296,14 @@ class HybridRetriever:
                 )
             )
 
+        if content_type:
+            conditions.append(
+                FieldCondition(
+                    key="content_type",
+                    match=MatchValue(value=content_type),
+                )
+            )
+
         if exclude_reference_sections:
             reference_terms = ["reference", "bibliography", "works cited"]
             for term in reference_terms:
@@ -288,3 +321,30 @@ class HybridRetriever:
             must=conditions or None,
             must_not=must_not_conditions or None,
         )
+
+    @staticmethod
+    def _is_reference_heading(value: object) -> bool:
+        if not isinstance(value, str):
+            return False
+        heading = " ".join(value.split())
+        if not heading:
+            return False
+        return bool(_REFERENCE_SECTION_HEADING_RE.match(heading))
+
+    @classmethod
+    def _metadata_is_reference_section(cls, metadata: dict | None) -> bool:
+        if not isinstance(metadata, dict):
+            return False
+
+        if cls._is_reference_heading(metadata.get("section_title")):
+            return True
+
+        section_path = metadata.get("section_path")
+        if isinstance(section_path, list):
+            for item in section_path:
+                if cls._is_reference_heading(item):
+                    return True
+        elif cls._is_reference_heading(section_path):
+            return True
+
+        return False
