@@ -3,7 +3,9 @@ export interface PaperSummary {
   paper_name: string
   title?: string | null
   abstract?: string | null
+  pdf_url?: string | null
   source_pdf_path?: string | null
+  document_uuid?: string | null
   created_at?: string
 }
 

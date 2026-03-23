@@ -17,6 +17,7 @@ from uuid import uuid4
 
 from fastapi import FastAPI, File, Header, HTTPException, UploadFile
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import FileResponse
 from pydantic import BaseModel
 
 from backend.extraction.extraction import extract_pdf
@@ -239,7 +240,12 @@ def list_papers(
     user_id = _require_auth_user_id(authorization)
     store = _make_store()
     papers = store.list_papers_for_user(user_id=user_id, limit=limit)
-    return {"papers": papers}
+    # Add pdf_url to each paper
+    papers_with_urls = [
+        {**paper, "pdf_url": f"/api/papers/{paper['id']}/pdf"}
+        for paper in papers
+    ]
+    return {"papers": papers_with_urls}
 
 
 @app.get("/api/papers/{paper_id}/bundle")
@@ -300,14 +306,191 @@ def get_paper_bundle(
             }
         )
 
+    # Add pdf_url to paper object for frontend to fetch PDF
+    paper_with_url = {
+        **paper,
+        "pdf_url": f"/api/papers/{paper_id}/pdf"
+    }
+    
     return {
-        "paper": paper,
+        "paper": paper_with_url,
         "sections": normalized_sections,
         "tables": tables,
         "images": images,
         "references": references,
         "text_blocks": text_blocks,
     }
+
+
+@app.get("/api/papers/{paper_id}/pdf")
+def get_paper_pdf(
+    paper_id: int,
+    authorization: Optional[str] = Header(default=None, alias="Authorization"),
+    token: Optional[str] = None,
+) -> FileResponse:
+    """Serve the PDF file for a given paper ID. Accepts auth via header or query param."""
+    # Try to get user_id from Authorization header; if not present, try token query param
+    auth_header = authorization
+    if not auth_header and token:
+        auth_header = f"Bearer {token}"
+    
+    user_id = _require_auth_user_id(auth_header)
+    store = _make_store()
+    
+    if not store.user_has_access_to_paper(user_id=user_id, paper_id=paper_id):
+        raise HTTPException(status_code=403, detail="You do not have access to this paper")
+    
+    paper = store.get_paper_by_id(paper_id)
+    if not paper:
+        raise HTTPException(status_code=404, detail="Paper not found")
+
+    # Primary source: use the exact persisted source path when available.
+    source_pdf_path = paper.get("source_pdf_path")
+    if source_pdf_path:
+        source_path = Path(str(source_pdf_path)).expanduser().resolve()
+        if source_path.exists() and source_path.is_file():
+            print(f"[PDF_SERVE] Serving source_pdf_path: {source_path}")
+            return FileResponse(
+                path=source_path,
+                filename=f"{paper.get('paper_name', 'paper')}.pdf",
+                media_type="application/pdf",
+                content_disposition_type="inline",
+            )
+    
+    # Fallback: look for PDF in pdfs directory
+    pdfs_dir = Path(__file__).resolve().parents[2] / "pdfs"
+    doc_uuid = paper.get("document_uuid")
+    
+    # Try primary search: find by paper_name pattern
+    pdf_files = []
+    if pdfs_dir.exists():
+        paper_name = (paper.get("paper_name") or "").strip()
+        paper_name_tokens = [token.lower() for token in paper_name.replace("_", " ").split() if token]
+
+        all_pdfs = list(pdfs_dir.glob("*.pdf"))
+
+        # Try strict document UUID matching first.
+        if doc_uuid:
+            doc_uuid_str = str(doc_uuid)
+            pdf_files = [
+                p for p in all_pdfs if doc_uuid_str in p.name or doc_uuid_str[:8] in p.name
+            ]
+
+        # Then try fuzzy name-token matching for mismatched upload filenames.
+        if not pdf_files and paper_name_tokens:
+            def _name_matches(file_name: str) -> bool:
+                lowered = file_name.lower()
+                return sum(1 for t in paper_name_tokens if t in lowered) >= min(2, len(paper_name_tokens))
+
+            pdf_files = [p for p in all_pdfs if _name_matches(p.name)]
+    
+    # If PDF found, serve it
+    if pdf_files:
+        pdf_path = pdf_files[0]
+        print(f"[PDF_SERVE] Serving PDF: {pdf_path}")
+        return FileResponse(
+            path=pdf_path,
+            filename=f"{paper.get('paper_name', 'paper')}.pdf",
+            media_type="application/pdf",
+            content_disposition_type="inline",
+        )
+    
+    # Fallback: Look for extracted complete.json in input directory and convert to HTML
+    print(f"[PDF_SERVE] PDF not found on disk, looking for extracted JSON for paper_id={paper_id}")
+    input_dir = Path(__file__).resolve().parents[2] / "input"
+    
+    if input_dir.exists() and doc_uuid:
+        # Search for extracted files matching this document's UUID
+        base_name = f"{doc_uuid}_complete.json"
+        complete_json_path = input_dir / base_name
+        
+        if complete_json_path.exists():
+            print(f"[PDF_SERVE] Found extracted JSON, generating HTML: {complete_json_path}")
+            import json
+            
+            try:
+                with open(complete_json_path, 'r', encoding='utf-8') as f:
+                    doc_data = json.load(f)
+                
+                # Build basic HTML from extracted content
+                title = paper.get('paper_name', 'Document')
+                abstract = doc_data.get('metadata', {}).get('abstract', '')
+                
+                # Extract text from various possible formats
+                text_content = ''
+                extracted_elements = doc_data.get('extracted_elements', [])
+                for elem in extracted_elements[:500]:  # Limit to first 500 elements
+                    if isinstance(elem, dict) and 'text' in elem:
+                        text_content += elem['text'].strip() + '\n\n'
+                
+                if not text_content:
+                    # Fallback to marked_text if available
+                    text_content = '\n\n'.join([
+                        md.get('text', '') for md in doc_data.get('marked_text', [])
+                        if md.get('text', '').strip()
+                    ])
+                
+                # Sanitize HTML content
+                title_safe = title.replace('<', '&lt;').replace('>', '&gt;')
+                abstract_safe = abstract.replace('<', '&lt;').replace('>', '&gt;')[:500]
+                preview_text = text_content[:3000].replace('<', '&lt;').replace('>', '&gt;')
+                
+                html_content = f"""<!DOCTYPE html>
+<html>
+<head>
+    <title>{title_safe}</title>
+    <style>
+        body {{ font-family: 'Georgia', serif; line-height: 1.8; margin: 0; padding: 0; background: #f9f9f9; }}
+        .header {{ background: white; padding: 40px; border-bottom: 1px solid #e0e0e0; }}
+        .container {{ max-width: 900px; margin: 0 auto; background: white; padding: 40px; min-height: 100vh; }}
+        h1 {{ font-size: 28px; color: #000; margin: 0 0 20px 0; }}
+        .subtitle {{ color: #666; font-size: 14px; margin: 0; }}
+        .warning {{ background: #fff3cd; border: 1px solid #ffc107; border-radius: 4px; padding: 15px; margin: 30px 0; color: #856404; }}
+        .metadata {{ background: #f8f9fa; border-left: 4px solid #007bff; padding: 15px; margin: 20px 0; font-size: 13px; }}
+        .content {{ margin-top: 40px; color: #333; white-space: pre-wrap; word-wrap: break-word; font-family: 'Segoe UI', sans-serif; }}
+        .page-break {{ margin: 60px 0; border-top: 2px dashed #ccc; padding-top: 40px; }}
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>{title_safe}</h1>
+        <p class="subtitle">Research Paper Viewer - Extracted Content Preview</p>
+    </div>
+    <div class="container">
+        <div class="warning">
+            <strong>⚠️ Extracted Content Preview:</strong><br/>
+            The original PDF file is not available. This is an HTML rendering of extracted text and metadata. 
+            For the complete reading experience with proper formatting and images, please re-upload the PDF file.
+        </div>
+        <div class="metadata">
+            <strong>Paper ID:</strong> {paper_id} | <strong>Document UUID:</strong> {doc_uuid[:8]}...<br/>
+            <strong>Status:</strong> Served as extracted text fallback
+        </div>
+        {f'<h2>Abstract</h2><p>{abstract_safe}</p>' if abstract_safe else ''}
+        <div class="page-break"></div>
+        <h2>Extracted Content Preview</h2>
+        <div class="content">{preview_text}...</div>
+        <div class="page-break"></div>
+        <p style="text-align: center; color: #999; font-size: 12px; margin-top: 60px;">
+            To view the complete document with proper formatting, images, and layout, please upload the original PDF file.
+        </p>
+    </div>
+</body>
+</html>"""
+                
+                from fastapi.responses import HTMLResponse
+                return HTMLResponse(content=html_content)
+            except Exception as e:
+                print(f"[PDF_SERVE] Error generating HTML from JSON: {e}")
+                import traceback
+                traceback.print_exc()
+    
+    # No PDF found and no extracted JSON available
+    print(f"[PDF_SERVE] No PDF or extracted data found. UUID={doc_uuid}, paper_name={paper.get('paper_name')}")
+    raise HTTPException(
+        status_code=404,
+        detail="PDF file not available. Please re-upload the paper to get PDF viewing."
+    )
 
 
 @app.post("/api/papers/upload")
@@ -325,10 +508,12 @@ def upload_paper(
     if not (is_pdf_name or is_pdf_type):
         raise HTTPException(status_code=400, detail="Only PDF files are supported")
 
-    upload_dir = Path(__file__).resolve().parents[2] / "temp_uploads"
-    upload_dir.mkdir(parents=True, exist_ok=True)
+    pdfs_dir = Path(__file__).resolve().parents[2] / "pdfs"
+    pdfs_dir.mkdir(parents=True, exist_ok=True)
     safe_name = Path(filename).name
-    temp_pdf_path = upload_dir / f"{uuid4().hex}_{safe_name}"
+    pdf_uuid = uuid4().hex
+    pdf_storage_path = pdfs_dir / f"{pdf_uuid}_{safe_name}"
+    temp_pdf_path = pdf_storage_path
 
     try:
         with temp_pdf_path.open("wb") as out_file:
@@ -361,6 +546,7 @@ def upload_paper(
                 "paper_name": db_result.get("paper_name"),
                 "reason": db_result.get("reason"),
             },
+            "pdf_id": pdf_uuid,
         }
     except HTTPException:
         raise
@@ -369,10 +555,5 @@ def upload_paper(
     finally:
         try:
             file.file.close()
-        except Exception:
-            pass
-        try:
-            if temp_pdf_path.exists():
-                temp_pdf_path.unlink()
         except Exception:
             pass

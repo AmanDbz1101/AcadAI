@@ -297,7 +297,7 @@ const Index = () => {
       <div className="h-screen w-full flex items-center justify-center bg-canvas px-6">
         <p className="font-ui text-sm text-destructive text-center">
           Unable to load papers. Ensure backend API is running at
-          VITE_API_BASE_URL (default http://localhost:8000).
+          VITE_API_BASE_URL (default http://localhost:8001).
         </p>
       </div>
     )
@@ -333,7 +333,7 @@ const Index = () => {
       <div className="h-screen w-full flex items-center justify-center bg-canvas px-6">
         <p className="font-ui text-sm text-destructive text-center">
           Unable to load paper data. Ensure backend API is running at
-          VITE_API_BASE_URL (default http://localhost:8000).
+          VITE_API_BASE_URL (default http://localhost:8001).
         </p>
       </div>
     )
@@ -367,7 +367,12 @@ const Index = () => {
         paper={paper}
         sections={sections}
       />
-      <AIToolsPanel images={images} tables={tables} />
+      <AIToolsPanel
+        paper={paper}
+        sections={sections}
+        images={images}
+        tables={tables}
+      />
     </div>
   )
 }

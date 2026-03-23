@@ -1,0 +1,19 @@
+{
+  "document_id": "853ef38d48d0407bb5fe81125700b187_Artificial Intelligence_organized.pdf",
+  "paper_title": "Unknown Title",
+  "abstract": "",
+  "sections": [],
+  "global_stats": {
+    "total_formulas": 2,
+    "total_tables": 25,
+    "total_figures": 9,
+    "total_text_blocks": 0,
+    "total_pages": 28,
+    "total_sections": 0
+  },
+  "inference": {
+    "paper_type": "Other",
+    "difficulty": "medium",
+    "math_heavy": false
+  }
+}

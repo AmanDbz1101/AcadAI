@@ -13,7 +13,7 @@ import logging
 import os
 import re
 from pathlib import Path
-from typing import Optional, Dict, Any
+from typing import Optional, Dict, Any, Union
 from datetime import datetime
 
 from backend.extraction.pipelines.ingest_pipeline import IngestPipeline
@@ -120,8 +120,8 @@ class PDFExtractor:
     
     def extract(
         self, 
-        pdf_path: str | Path,
-        output_dir: str | Path = "input",
+        pdf_path: Union[str, Path],
+        output_dir: Union[str, Path] = "input",
         force_ocr: bool = False
     ) -> Dict[str, Any]:
         """
@@ -344,8 +344,8 @@ class PDFExtractor:
 
 
 def extract_pdf(
-    pdf_path: str | Path,
-    output_dir: str | Path = "input",
+    pdf_path: Union[str, Path],
+    output_dir: Union[str, Path] = "input",
     groq_api_key: Optional[str] = None,
     force_ocr: bool = False
 ) -> Dict[str, Any]:

@@ -1,0 +1,16 @@
+{
+  "hierarchy": {
+    "document_id": "56909969-8095-4514-be4f-57d9415fb4f6",
+    "sections": [],
+    "root_sections": [],
+    "total_sections": 0,
+    "max_depth": 0,
+    "detection_method": "none",
+    "confidence_score": 0.0
+  },
+  "processing_time_seconds": 7.82012939453125e-05,
+  "warnings": [
+    "No sections detected in document",
+    "Low confidence score: 0.00"
+  ]
+}

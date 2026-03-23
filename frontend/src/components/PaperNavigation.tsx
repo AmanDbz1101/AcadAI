@@ -1,5 +1,11 @@
-import { BookOpenText, FileText, X, Upload } from 'lucide-react'
+import { BookOpenText, ChevronDown, FileText, Upload, X } from 'lucide-react'
 import { useRef, useState } from 'react'
+import {
+  Collapsible,
+  CollapsibleContent,
+  CollapsibleTrigger,
+} from '@/components/ui/collapsible'
+import { ScrollArea } from '@/components/ui/scroll-area'
 import type { PaperSummary } from '@/types/api'
 
 interface Section {
@@ -22,6 +28,79 @@ interface PaperNavigationProps {
   uploadError?: string | null
 }
 
+interface ReadingPhase {
+  id: string
+  title: string
+  goal: string
+  keywords: string[]
+  outcome: string
+}
+
+const readingPhases: ReadingPhase[] = [
+  {
+    id: 'quick-understanding',
+    title: 'Quick Understanding',
+    goal: 'Get a high-level overview of the problem and key contribution.',
+    keywords: ['abstract', 'introduction', 'conclusion'],
+    outcome: 'You should be able to summarize the paper in 2-3 sentences.',
+  },
+  {
+    id: 'method-understanding',
+    title: 'Method Understanding',
+    goal: 'Understand how the approach works and how it is evaluated.',
+    keywords: ['method', 'model', 'approach', 'architecture', 'experiment'],
+    outcome: 'You should be able to explain the method to a peer.',
+  },
+  {
+    id: 'deep-analysis',
+    title: 'Deep Analysis',
+    goal: 'Evaluate evidence quality, limitations, and practical implications.',
+    keywords: [
+      'result',
+      'discussion',
+      'analysis',
+      'evaluation',
+      'table',
+      'figure',
+    ],
+    outcome: 'You should be able to critique the strength of claims.',
+  },
+]
+
+const normalize = (value: string) =>
+  value
+    .toLowerCase()
+    .replace(/[^a-z0-9\s]/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim()
+
+function getSectionsForPhase(
+  phase: ReadingPhase,
+  sections: Section[],
+): Section[] {
+  const ranked = sections
+    .map((section) => {
+      const hay = normalize(section.title)
+      const score = phase.keywords.reduce(
+        (acc, keyword) => (hay.includes(keyword) ? acc + 1 : acc),
+        0,
+      )
+      return { section, score }
+    })
+    .filter((entry) => entry.score > 0)
+    .sort((a, b) => b.score - a.score)
+    .slice(0, 3)
+    .map((entry) => entry.section)
+
+  if (ranked.length > 0) return ranked
+
+  if (phase.id === 'quick-understanding') {
+    return sections.slice(0, Math.min(3, sections.length))
+  }
+
+  return []
+}
+
 const PaperNavigation = ({
   activeSection,
   onSectionClick,
@@ -37,6 +116,17 @@ const PaperNavigation = ({
 }: PaperNavigationProps) => {
   const fileInputRef = useRef<HTMLInputElement>(null)
   const [dragActive, setDragActive] = useState(false)
+  const [openPhases, setOpenPhases] = useState<Record<string, boolean>>({
+    'quick-understanding': true,
+  })
+
+  const togglePhase = (phaseId: string) => {
+    setOpenPhases((prev) => ({
+      ...prev,
+      [phaseId]: !prev[phaseId],
+    }))
+  }
+
   return (
     <aside className="w-[260px] min-w-[260px] bg-panel h-screen sticky top-0 flex flex-col border-r border-border/40">
       <div className="px-6 pt-8 pb-6">
@@ -87,39 +177,116 @@ const PaperNavigation = ({
 
       <div className="px-6 mb-3">
         <h2 className="font-ui text-[11px] font-semibold uppercase tracking-[0.18em] text-text-secondary">
-          Paper Structure
+          Reading Guide
         </h2>
       </div>
 
-      <nav className="flex-1 px-4 py-1 overflow-y-auto">
-        <ul className="space-y-0.5">
-          {sections.map((section) => {
-            const isActive = activeSection === section.id
+      <ScrollArea className="flex-1 px-4 py-1">
+        <div className="space-y-1 pb-4">
+          {readingPhases.map((phase, idx) => {
+            const mappedSections = getSectionsForPhase(phase, sections)
+
             return (
-              <li key={section.id}>
-                <button
-                  onClick={() => onSectionClick(section.id)}
-                  className={`
-                    w-full text-left py-2.5 px-3 font-ui text-[13px] rounded-md transition-all duration-200 flex items-center gap-3
-                    ${
-                      isActive
-                        ? 'text-text-active bg-accent/10 font-semibold'
-                        : 'text-text-secondary hover:text-foreground hover:bg-canvas font-normal'
-                    }
-                  `}
-                >
-                  <span
-                    className={`text-[10px] font-mono ${isActive ? 'text-text-active' : 'text-text-secondary/50'}`}
-                  >
-                    {section.label}
+              <Collapsible
+                key={phase.id}
+                open={openPhases[phase.id] ?? false}
+                onOpenChange={() => togglePhase(phase.id)}
+              >
+                <CollapsibleTrigger className="w-full text-left px-3 py-2.5 rounded-md hover:bg-canvas transition-colors duration-200 group flex items-center gap-2">
+                  <span className="font-mono text-[10px] text-text-secondary/60">
+                    {String(idx + 1).padStart(2, '0')}
                   </span>
-                  {section.title}
-                </button>
-              </li>
+                  <span className="font-ui text-[13px] font-medium text-foreground flex-1">
+                    {phase.title}
+                  </span>
+                  <ChevronDown
+                    size={14}
+                    className={`text-text-secondary transition-transform duration-200 ${
+                      openPhases[phase.id] ? 'rotate-180' : ''
+                    }`}
+                  />
+                </CollapsibleTrigger>
+
+                <CollapsibleContent className="animate-fade-in">
+                  <div className="ml-[26px] mr-1 mb-2 space-y-2 border-l-2 border-border/40 pl-3 py-2">
+                    <p className="font-ui text-[11px] text-text-secondary italic leading-relaxed">
+                      {phase.goal}
+                    </p>
+
+                    {mappedSections.length > 0 ? (
+                      <div className="flex flex-wrap gap-1">
+                        {mappedSections.map((section) => {
+                          const isActive = activeSection === section.id
+                          return (
+                            <button
+                              key={`${phase.id}-${section.id}`}
+                              onClick={() => onSectionClick(section.id)}
+                              className={`font-ui text-[11px] px-2 py-0.5 rounded transition-colors ${
+                                isActive
+                                  ? 'bg-accent/25 text-foreground font-medium'
+                                  : 'bg-accent/10 text-foreground hover:bg-accent/20'
+                              }`}
+                            >
+                              {section.title}
+                            </button>
+                          )
+                        })}
+                      </div>
+                    ) : (
+                      <p className="font-ui text-[11px] text-text-secondary leading-relaxed">
+                        Matching sections will appear when more structure is
+                        extracted.
+                      </p>
+                    )}
+
+                    <div className="bg-canvas rounded-md px-2.5 py-2">
+                      <p className="font-ui text-[10px] font-semibold uppercase tracking-wider text-text-active mb-0.5">
+                        Outcome
+                      </p>
+                      <p className="font-ui text-[11px] text-foreground leading-relaxed">
+                        {phase.outcome}
+                      </p>
+                    </div>
+                  </div>
+                </CollapsibleContent>
+              </Collapsible>
             )
           })}
-        </ul>
-      </nav>
+        </div>
+
+        <div className="px-2 pt-2 pb-1">
+          <h3 className="font-ui text-[11px] font-semibold uppercase tracking-[0.18em] text-text-secondary mb-2">
+            Paper Structure
+          </h3>
+          <ul className="space-y-0.5">
+            {sections.map((section) => {
+              const isActive = activeSection === section.id
+              return (
+                <li key={section.id}>
+                  <button
+                    onClick={() => onSectionClick(section.id)}
+                    className={`
+                      w-full text-left py-2 px-2.5 font-ui text-[12px] rounded-md transition-all duration-200 flex items-center gap-2.5
+                      ${
+                        isActive
+                          ? 'text-text-active bg-accent/10 font-semibold'
+                          : 'text-text-secondary hover:text-foreground hover:bg-canvas font-normal'
+                      }
+                    `}
+                  >
+                    <span
+                      className={`text-[10px] font-mono ${isActive ? 'text-text-active' : 'text-text-secondary/50'}`}
+                    >
+                      {section.label}
+                    </span>
+                    <span className="truncate">{section.title}</span>
+                  </button>
+                </li>
+              )
+            })}
+          </ul>
+        </div>
+      </ScrollArea>
 
       <div className="border-t border-border/40 px-4 py-4">
         <input
