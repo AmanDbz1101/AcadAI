@@ -145,6 +145,239 @@ def _make_store() -> PostgresPaperStore:
     return PostgresPaperStore(_resolve_postgres_dsn())
 
 
+def _pick_sections_by_keywords(
+    sections: List[Dict[str, Any]],
+    keywords: List[str],
+    limit: int = 3,
+) -> List[str]:
+    scored: List[tuple[int, str]] = []
+    for section in sections:
+        title = str(section.get("title") or section.get("original_name") or "").strip()
+        if not title:
+            continue
+        normalized = title.lower()
+        score = sum(1 for keyword in keywords if keyword in normalized)
+        if score > 0:
+            scored.append((score, title))
+
+    scored.sort(key=lambda pair: pair[0], reverse=True)
+    selected = [title for _, title in scored[:limit]]
+    if selected:
+        return selected
+
+    fallback_titles = [
+        str(section.get("title") or section.get("original_name") or "").strip()
+        for section in sections[:limit]
+    ]
+    return [title for title in fallback_titles if title]
+
+
+def _build_fallback_reading_guide(
+    paper_title: str,
+    sections: List[Dict[str, Any]],
+    paper_type_hint: Optional[str] = None,
+) -> Dict[str, Any]:
+    pass1_sections = _pick_sections_by_keywords(
+        sections,
+        ["abstract", "introduction", "conclusion", "overview"],
+    )
+    pass2_sections = _pick_sections_by_keywords(
+        sections,
+        ["method", "approach", "model", "architecture", "proof", "taxonomy"],
+    )
+    pass3_sections = _pick_sections_by_keywords(
+        sections,
+        ["result", "analysis", "discussion", "evaluation", "limitation"],
+    )
+
+    # Infer fallback paper type so pass key names align with guide schema variants.
+    section_titles = " ".join(
+        str(section.get("title") or section.get("original_name") or "").lower()
+        for section in sections
+    )
+    hint = (paper_type_hint or "").strip().lower()
+    if hint in {"theoretical", "theory", "proof"}:
+        paper_type = "theoretical"
+    elif hint in {"survey", "review", "literature_review", "meta_analysis"}:
+        paper_type = "survey"
+    elif hint in {"applied", "experimental", "empirical", "system"}:
+        paper_type = "applied"
+    elif any(token in section_titles for token in ["theorem", "lemma", "proof", "corollary"]):
+        paper_type = "theoretical"
+    elif any(token in section_titles for token in ["survey", "taxonomy", "landscape", "review"]):
+        paper_type = "survey"
+    else:
+        paper_type = "applied"
+
+    if paper_type == "theoretical":
+        pass2_key = "pass2_proof_strategy"
+        pass2_goal = "Understand the theorem structure, assumptions, and proof plan."
+        pass2_questions = [
+            "What is the proof strategy?",
+            "Which assumptions are essential?",
+        ]
+        pass3_key = "pass3_deep_mathematical_analysis"
+        pass3_goal = "Analyze proof details, rigor, and mathematical limitations."
+    elif paper_type == "survey":
+        pass2_key = "pass2_taxonomy_understanding"
+        pass2_goal = "Understand the taxonomy and category-level comparisons."
+        pass2_questions = [
+            "How is the taxonomy organized?",
+            "What distinguishes the categories?",
+        ]
+        pass3_key = "pass3_research_landscape_analysis"
+        pass3_goal = "Analyze gaps, trends, and future research directions."
+    else:
+        pass2_key = "pass2_method_understanding"
+        pass2_goal = "Understand methodology and technical approach."
+        pass2_questions = [
+            "What are the main components of the method?",
+            "What assumptions are required?",
+        ]
+        pass3_key = "pass3_deep_analysis"
+        pass3_goal = "Critically analyze evidence, results, and limitations."
+
+    def _step_sections(section_names: List[str], index: int) -> List[str]:
+        if not section_names:
+            return []
+        if len(section_names) >= 3:
+            return [section_names[index]]
+        # Ensure each step has at least one section even for short lists.
+        return [section_names[min(index, len(section_names) - 1)]]
+
+    return {
+        "paper_title": paper_title or "Unknown Paper",
+        "reading_strategy": {
+            "method": "three_pass_method",
+            "paper_type": paper_type,
+            "estimated_total_time": "45-60 minutes",
+        },
+        "pass1_quick_scan": {
+            "goal": "Build a high-level understanding of the paper.",
+            "estimated_time": "10-15 minutes",
+            "steps": [
+                {
+                    "step_number": 1,
+                    "section_to_read": _step_sections(pass1_sections, 0),
+                    "needs_figures": False,
+                    "needs_tables": False,
+                    "objective": "Identify the problem and context.",
+                    "questions_to_answer": [
+                        "What problem does this paper solve?",
+                        "Why is this problem important?",
+                    ],
+                    "expected_output": "A concise statement of the paper's problem and motivation.",
+                },
+                {
+                    "step_number": 2,
+                    "section_to_read": _step_sections(pass1_sections, 1),
+                    "needs_figures": False,
+                    "needs_tables": False,
+                    "objective": "Extract the core contribution and scope.",
+                    "questions_to_answer": [
+                        "What is the main contribution?",
+                        "What is in scope vs out of scope?",
+                    ],
+                    "expected_output": "A short description of novelty and scope.",
+                },
+                {
+                    "step_number": 3,
+                    "section_to_read": _step_sections(pass1_sections, 2),
+                    "needs_figures": False,
+                    "needs_tables": False,
+                    "objective": "Summarize claims and high-level outcomes.",
+                    "questions_to_answer": [
+                        "What key claims are made?",
+                        "What headline outcomes are reported?",
+                    ],
+                    "expected_output": "A 2-3 sentence high-level paper summary.",
+                }
+            ],
+        },
+        pass2_key: {
+            "goal": pass2_goal,
+            "estimated_time": "15-20 minutes",
+            "steps": [
+                {
+                    "step_number": 1,
+                    "section_to_read": _step_sections(pass2_sections, 0),
+                    "needs_figures": True,
+                    "needs_tables": False,
+                    "objective": "Understand the method components and assumptions.",
+                    "questions_to_answer": pass2_questions,
+                    "expected_output": "A component-level method breakdown.",
+                },
+                {
+                    "step_number": 2,
+                    "section_to_read": _step_sections(pass2_sections, 1),
+                    "needs_figures": True,
+                    "needs_tables": False,
+                    "objective": "Trace the end-to-end flow of the approach.",
+                    "questions_to_answer": [
+                        "How does data flow through the method?",
+                        "Which design choices are critical?",
+                    ],
+                    "expected_output": "A clear end-to-end explanation in your own words.",
+                },
+                {
+                    "step_number": 3,
+                    "section_to_read": _step_sections(pass2_sections, 2),
+                    "needs_figures": True,
+                    "needs_tables": True,
+                    "objective": "Understand setup details used for evaluation.",
+                    "questions_to_answer": [
+                        "How is the method evaluated?",
+                        "What baselines or comparisons are used?",
+                    ],
+                    "expected_output": "A summary of evaluation setup and comparisons.",
+                }
+            ],
+        },
+        pass3_key: {
+            "goal": pass3_goal,
+            "estimated_time": "20-25 minutes",
+            "steps": [
+                {
+                    "step_number": 1,
+                    "section_to_read": _step_sections(pass3_sections, 0),
+                    "needs_figures": True,
+                    "needs_tables": True,
+                    "objective": "Evaluate whether the evidence supports the claims.",
+                    "questions_to_answer": [
+                        "Do the results support the claims?",
+                        "Where is evidence strongest or weakest?",
+                    ],
+                    "expected_output": "An evidence-based judgment of claim validity.",
+                },
+                {
+                    "step_number": 2,
+                    "section_to_read": _step_sections(pass3_sections, 1),
+                    "needs_figures": True,
+                    "needs_tables": True,
+                    "objective": "Probe robustness, edge cases, and limitations.",
+                    "questions_to_answer": [
+                        "What are the key limitations?",
+                        "What failure modes or edge cases are likely?",
+                    ],
+                    "expected_output": "A concise limitations and risk assessment.",
+                },
+                {
+                    "step_number": 3,
+                    "section_to_read": _step_sections(pass3_sections, 2),
+                    "needs_figures": False,
+                    "needs_tables": False,
+                    "objective": "Assess practical impact and next steps.",
+                    "questions_to_answer": [
+                        "What is practically useful from this work?",
+                        "What follow-up experiments or research are needed?",
+                    ],
+                    "expected_output": "A final critical summary with actionable next steps.",
+                }
+            ],
+        },
+    }
+
+
 app = FastAPI(title="ResearchAgent Backend API", version="1.0.0")
 
 app.add_middleware(
@@ -312,6 +545,21 @@ def get_paper_bundle(
         "pdf_url": f"/api/papers/{paper_id}/pdf"
     }
     
+    # Extract reading guide from paper object if available
+    reading_guide = paper_with_url.pop("reading_guide", None)
+
+    # If no guide is stored, synthesize a deterministic fallback guide from sections.
+    # This keeps frontend behavior consistent for legacy papers.
+    if not isinstance(reading_guide, dict) or not reading_guide:
+        metadata_json = paper_with_url.get("metadata_json")
+        inference = metadata_json.get("inference") if isinstance(metadata_json, dict) else {}
+        paper_type_hint = inference.get("paper_type") if isinstance(inference, dict) else None
+        reading_guide = _build_fallback_reading_guide(
+            paper_title=str(paper_with_url.get("paper_name") or paper_with_url.get("title") or ""),
+            sections=normalized_sections,
+            paper_type_hint=str(paper_type_hint) if paper_type_hint else None,
+        )
+    
     return {
         "paper": paper_with_url,
         "sections": normalized_sections,
@@ -319,6 +567,7 @@ def get_paper_bundle(
         "images": images,
         "references": references,
         "text_blocks": text_blocks,
+        "reading_guide": reading_guide,
     }
 
 
