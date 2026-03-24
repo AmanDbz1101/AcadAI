@@ -5,15 +5,14 @@ Handles complete extraction workflow:
 1. PDF ingestion (validation, text extraction, OCR)
 2. Metadata extraction (title, abstract, sections)
 3. Section hierarchy extraction
-4. Save results to input/ folder
+4. Save required results to output artifacts
 """
 
 import json
 import logging
 import os
-import re
 from pathlib import Path
-from typing import Optional, Dict, Any, Union
+from typing import Optional, Dict, Any
 from datetime import datetime
 
 from backend.extraction.pipelines.ingest_pipeline import IngestPipeline
@@ -23,58 +22,6 @@ from backend.extraction.persistence import PostgresPaperStore
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
-
-
-def _split_reference_entries(text: str) -> list[str]:
-    """Split a references blob into individual entries when delimiters are present."""
-    value = (text or "").strip()
-    if not value:
-        return []
-
-    para_chunks = [chunk.strip() for chunk in re.split(r"\n\s*\n", value) if chunk.strip()]
-    if len(para_chunks) >= 2:
-        first = re.sub(r"^\s*(references|bibliography|works cited)\s*:?\s*", "", para_chunks[0], flags=re.I).strip()
-        if first:
-            para_chunks[0] = first
-        return [chunk for chunk in para_chunks if chunk]
-
-    numbered_chunks = [chunk.strip() for chunk in re.split(r"(?=\n\s*\[?\d+\]?\s+)", value) if chunk.strip()]
-    if len(numbered_chunks) >= 2:
-        return numbered_chunks
-
-    return [value]
-
-
-def _extract_references_from_full_text(full_text: str) -> list[dict[str, Any]]:
-    """Fallback extraction when element labels/sections do not mark references explicitly."""
-    text = (full_text or "").strip()
-    if not text:
-        return []
-
-    match = re.search(r"\b(references|bibliography|works cited)\b", text, flags=re.I)
-    if not match:
-        return []
-
-    tail = text[match.start():].strip()
-    entries = _split_reference_entries(tail)
-
-    refs: list[dict[str, Any]] = []
-    for idx, entry in enumerate(entries):
-        value = (entry or "").strip()
-        if not value:
-            continue
-        refs.append(
-            {
-                "id": f"fulltext_ref_{idx}",
-                "page": None,
-                "text": value,
-                "label": "reference",
-                "section_id": None,
-                "section_title": "References",
-            }
-        )
-
-    return refs
 
 
 def _resolve_postgres_dsn() -> Optional[str]:
@@ -120,17 +67,21 @@ class PDFExtractor:
     
     def extract(
         self, 
-        pdf_path: Union[str, Path],
-        output_dir: Union[str, Path] = "input",
-        force_ocr: bool = False
+        pdf_path: str | Path,
+        output_dir: str | Path = "output",
+        force_ocr: bool = False,
+        save_metadata_file: bool = False,
+        save_fulltext_file: bool = False,
     ) -> Dict[str, Any]:
         """
         Extract all information from a PDF file.
         
         Args:
             pdf_path: Path to PDF file
-            output_dir: Directory to save extracted data (default: input/)
+            output_dir: Directory to save extracted data (default: output/)
             force_ocr: Force OCR regardless of text density
+            save_metadata_file: Persist <document_id>_metadata.json sidecar
+            save_fulltext_file: Persist <document_id>_fulltext.txt sidecar
             
         Returns:
             Dictionary containing:
@@ -197,48 +148,59 @@ class PDFExtractor:
         # Normalize extracted elements and split references/bibliography explicitly.
         extracted_elements = dict(processed_doc.metadata.extracted_elements or {})
         text_blocks = extracted_elements.get("text_blocks") or []
+        reference_section_id = None
+        for section in hierarchy.hierarchy.sections:
+            section_title = str(getattr(section, "title", "") or "").strip().lower()
+            if "reference" in section_title or "bibliography" in section_title or "works cited" in section_title:
+                reference_section_id = getattr(section, "section_id", None)
+                break
+
         references = []
         for block in text_blocks:
             if not isinstance(block, dict):
                 continue
             label = str(block.get("label") or "").strip().lower()
             section_name = str(block.get("section_title") or block.get("section") or "").strip().lower()
-            if (
-                label in {"reference", "bibliography"}
-                or (
-                    "reference" in section_name
-                    or "bibliography" in section_name
-                    or "works cited" in section_name
-                )
-                or re.match(r"^\s*(references|bibliography|works cited)\b", str(block.get("text") or ""), flags=re.I)
+            if label in {"reference", "bibliography"} or (
+                "reference" in section_name or "bibliography" in section_name or "works cited" in section_name
             ):
+                if label and label != "reference":
+                    block["docling_label"] = label
+                block["label"] = "reference"
+                block["section_title"] = "Reference"
+                block["section"] = "Reference"
+                if reference_section_id and not block.get("section_id"):
+                    block["section_id"] = reference_section_id
+
                 references.append(
                     {
                         "id": block.get("id"),
                         "page": block.get("page"),
                         "text": block.get("text"),
-                        "label": label,
-                        "section_id": block.get("section_id"),
-                        "section_title": block.get("section_title"),
+                        "label": "reference",
+                        "section_id": block.get("section_id") or reference_section_id,
+                        "section_title": "Reference",
                     }
                 )
-        if not references:
-            references = _extract_references_from_full_text(full_text)
         extracted_elements["references"] = references
         
-        # Save metadata (without IDs)
-        metadata_file = output_dir / f"{doc_id}_metadata.json"
+        # Build metadata payload (without IDs)
         metadata_dict = {
             "document_id": pdf_path.name,  # Use PDF filename as document_id
             "paper_title": processed_doc.metadata.title,
             "abstract": processed_doc.metadata.abstract,
+            "keywords": processed_doc.metadata.keywords,
             "sections": remove_ids_from_sections(full_sections),
             "global_stats": processed_doc.metadata.global_stats.model_dump(mode='json') if processed_doc.metadata.global_stats else {},
             "inference": processed_doc.metadata.inference.model_dump(mode='json') if processed_doc.metadata.inference else {}
         }
-        with open(metadata_file, 'w', encoding='utf-8') as f:
-            json.dump(metadata_dict, f, indent=2, ensure_ascii=False)
-        logger.info(f"Saved metadata: {metadata_file}")
+
+        metadata_file: Optional[Path] = None
+        if save_metadata_file:
+            metadata_file = output_dir / f"{doc_id}_metadata.json"
+            with open(metadata_file, 'w', encoding='utf-8') as f:
+                json.dump(metadata_dict, f, indent=2, ensure_ascii=False)
+            logger.info(f"Saved metadata: {metadata_file}")
         
         # Save hierarchy
         hierarchy_file = output_dir / f"{doc_id}_hierarchy.json"
@@ -246,11 +208,13 @@ class PDFExtractor:
             json.dump(hierarchy.model_dump(mode='json'), f, indent=2, ensure_ascii=False)
         logger.info(f"Saved hierarchy: {hierarchy_file}")
         
-        # Save full text
-        fulltext_file = output_dir / f"{doc_id}_fulltext.txt"
-        with open(fulltext_file, 'w', encoding='utf-8') as f:
-            f.write(full_text)
-        logger.info(f"Saved full text: {fulltext_file}")
+        # Save full text sidecar only when explicitly requested.
+        fulltext_file: Optional[Path] = None
+        if save_fulltext_file:
+            fulltext_file = output_dir / f"{doc_id}_fulltext.txt"
+            with open(fulltext_file, 'w', encoding='utf-8') as f:
+                f.write(full_text)
+            logger.info(f"Saved full text: {fulltext_file}")
         
         # Save complete processed document (with IDs preserved)
         complete_file = output_dir / f"{doc_id}_complete.json"
@@ -260,6 +224,7 @@ class PDFExtractor:
                 "document_id": pdf_path.name,
                 "paper_title": processed_doc.metadata.title,
                 "abstract": processed_doc.metadata.abstract,
+                "keywords": processed_doc.metadata.keywords,
                 "sections": full_sections,  # Keep IDs in complete file
                 "global_stats": processed_doc.metadata.global_stats.model_dump(mode='json') if processed_doc.metadata.global_stats else {},
                 "inference": processed_doc.metadata.inference.model_dump(mode='json') if processed_doc.metadata.inference else {}
@@ -307,6 +272,15 @@ class PDFExtractor:
                 logger.warning("PostgreSQL persistence failed: %s", exc)
         
         extraction_time = (datetime.now() - start_time).total_seconds()
+
+        files = {
+            "hierarchy": str(hierarchy_file),
+            "complete": str(complete_file),
+        }
+        if metadata_file is not None:
+            files["metadata"] = str(metadata_file)
+        if fulltext_file is not None:
+            files["fulltext"] = str(fulltext_file)
         
         result = {
             "document_id": doc_id,
@@ -325,10 +299,7 @@ class PDFExtractor:
                 "extraction_time_seconds": extraction_time
             },
             "files": {
-                "metadata": str(metadata_file),
-                "hierarchy": str(hierarchy_file),
-                "fulltext": str(fulltext_file),
-                "complete": str(complete_file)
+                **files,
             },
             "database": {
                 "enabled": bool(postgres_dsn),
@@ -344,25 +315,35 @@ class PDFExtractor:
 
 
 def extract_pdf(
-    pdf_path: Union[str, Path],
-    output_dir: Union[str, Path] = "input",
+    pdf_path: str | Path,
+    output_dir: str | Path = "output",
     groq_api_key: Optional[str] = None,
-    force_ocr: bool = False
+    force_ocr: bool = False,
+    save_metadata_file: bool = False,
+    save_fulltext_file: bool = False,
 ) -> Dict[str, Any]:
     """
     Convenience function for extracting a single PDF.
     
     Args:
         pdf_path: Path to PDF file
-        output_dir: Directory to save results (default: input/)
+        output_dir: Directory to save results (default: output/)
         groq_api_key: Groq API key
         force_ocr: Force OCR regardless of text density
+        save_metadata_file: Persist <document_id>_metadata.json sidecar
+        save_fulltext_file: Persist <document_id>_fulltext.txt sidecar
         
     Returns:
         Extraction results dictionary
     """
     extractor = PDFExtractor(groq_api_key=groq_api_key)
-    return extractor.extract(pdf_path, output_dir, force_ocr)
+    return extractor.extract(
+        pdf_path,
+        output_dir,
+        force_ocr,
+        save_metadata_file,
+        save_fulltext_file,
+    )
 
 
 if __name__ == "__main__":
@@ -373,7 +354,7 @@ if __name__ == "__main__":
         sys.exit(1)
     
     pdf_path = sys.argv[1]
-    output_dir = sys.argv[2] if len(sys.argv) > 2 else "input"
+    output_dir = sys.argv[2] if len(sys.argv) > 2 else "output"
     
     result = extract_pdf(pdf_path, output_dir)
     print(f"\n✓ Extraction completed!")

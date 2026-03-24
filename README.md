@@ -794,3 +794,16 @@ pytest --cov=backend --cov-report=term-missing
 ```
 
 The repository includes historical testing summaries in `tests/TESTING_SUMMARY.md`.
+
+pg_isready -h localhost -p 5432
+
+./.venv/bin/python -m uvicorn backend.api.app:app --host 127.0.0.1 --port 8001 --reload
+
+python3 - << 'PY'
+import urllib.request, urllib.error
+for url in ['http://127.0.0.1:8001/health','http://localhost:8080']:
+try:
+with urllib.request.urlopen(url, timeout=6) as r:
+print(url, r.status, r.headers.get('content-type'))
+except Exception as e:
+print(url, 'ERR', e)
