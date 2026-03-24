@@ -1,0 +1,161 @@
+{
+  "paper_title": "Pre-trained Models for Natural Language Processing: A Survey",
+  "reading_strategy": {
+    "method": "three_pass_method",
+    "paper_type": "survey",
+    "estimated_total_time": "2-3 hours"
+  },
+  "pass1_field_overview": {
+    "goal": "Understand the SHAPE of the field, not the detail",
+    "estimated_time": "5-10 min",
+    "steps": [
+      {
+        "step_number": 1,
+        "section_to_read": [
+          "Abstract",
+          "Introduction"
+        ],
+        "needs_figures": false,
+        "needs_tables": false,
+        "objective": "Understand the background and motivation of the survey",
+        "questions_to_answer": [
+          "What is the main focus of the survey?",
+          "What are the advantages of neural models for NLP tasks?"
+        ],
+        "expected_output": "Understand the context and purpose of the survey"
+      },
+      {
+        "step_number": 2,
+        "section_to_read": [
+          "Conclusion"
+        ],
+        "needs_figures": false,
+        "needs_tables": false,
+        "objective": "Understand the overall structure and contributions of the survey",
+        "questions_to_answer": [
+          "What are the main contributions of the survey?",
+          "What are the potential future research directions for PTMs?"
+        ],
+        "expected_output": "Understand the overall structure and contributions of the survey"
+      },
+      {
+        "step_number": 3,
+        "section_to_read": [
+          "1 Introduction",
+          "2 Background"
+        ],
+        "needs_figures": false,
+        "needs_tables": false,
+        "objective": "Understand the research gaps and future directions",
+        "questions_to_answer": [
+          "What are the limitations of current neural models for NLP tasks?",
+          "How do PTMs address these limitations?"
+        ],
+        "expected_output": "Understand the research gaps and future directions"
+      }
+    ]
+  },
+  "pass2_taxonomy_understanding": {
+    "goal": "Build a mental map of how the field is organized",
+    "estimated_time": "20-40 min",
+    "steps": [
+      {
+        "step_number": 1,
+        "section_to_read": [
+          "3 Overview of PTMs"
+        ],
+        "needs_figures": true,
+        "needs_tables": true,
+        "objective": "Understand the taxonomy of PTMs",
+        "questions_to_answer": [
+          "What are the four different perspectives for categorizing PTMs?",
+          "How do these perspectives relate to each other?"
+        ],
+        "expected_output": "Understand the taxonomy of PTMs"
+      },
+      {
+        "step_number": 2,
+        "section_to_read": [
+          "4 Extensions of PTMs"
+        ],
+        "needs_figures": true,
+        "needs_tables": true,
+        "objective": "Understand the key findings per category",
+        "questions_to_answer": [
+          "What are the main extensions of PTMs?",
+          "How do these extensions improve the performance of PTMs?"
+        ],
+        "expected_output": "Understand the key findings per category"
+      },
+      {
+        "step_number": 3,
+        "section_to_read": [
+          "5 Adapting PTMs to Downstream Tasks"
+        ],
+        "needs_figures": false,
+        "needs_tables": true,
+        "objective": "Understand the comparison tables",
+        "questions_to_answer": [
+          "How do PTMs perform on different downstream tasks?",
+          "What are the strengths and weaknesses of different PTMs?"
+        ],
+        "expected_output": "Understand the comparison tables"
+      }
+    ]
+  },
+  "pass3_research_landscape_analysis": {
+    "goal": "Use this paper as a NAVIGATION TOOL, not a linear read",
+    "estimated_time": "1-2 hrs",
+    "steps": [
+      {
+        "step_number": 1,
+        "section_to_read": [
+          "6 Resources of PTMs"
+        ],
+        "needs_figures": false,
+        "needs_tables": true,
+        "objective": "Understand the resources available for PTMs",
+        "questions_to_answer": [
+          "What are the main resources available for PTMs?",
+          "How can these resources be used for future research?"
+        ],
+        "expected_output": "Understand the resources available for PTMs"
+      },
+      {
+        "step_number": 2,
+        "section_to_read": [
+          "7 Applications"
+        ],
+        "needs_figures": true,
+        "needs_tables": false,
+        "objective": "Understand the applications of PTMs",
+        "questions_to_answer": [
+          "What are the main applications of PTMs?",
+          "How can PTMs be used in real-world scenarios?"
+        ],
+        "expected_output": "Understand the applications of PTMs"
+      },
+      {
+        "step_number": 3,
+        "section_to_read": [
+          "8 Future Directions"
+        ],
+        "needs_figures": false,
+        "needs_tables": false,
+        "objective": "Understand the future research directions for PTMs",
+        "questions_to_answer": [
+          "What are the potential future research directions for PTMs?",
+          "How can these directions be explored in future research?"
+        ],
+        "expected_output": "Understand the future research directions for PTMs"
+      }
+    ]
+  },
+  "final_user_task": {
+    "summary_task": "Summarize the main contributions and future research directions of the survey",
+    "reflection_questions": [
+      "What are the main takeaways from the survey?",
+      "How can the survey be used as a navigation tool for future research?"
+    ]
+  }
+}

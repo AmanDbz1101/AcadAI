@@ -64,6 +64,7 @@ class ExtractedMetadata(BaseModel):
     # Core metadata fields
     title: Optional[str] = Field(None, description="Paper title")
     abstract: Optional[str] = Field(None, description="Paper abstract")
+    keywords: List[str] = Field(default_factory=list, description="Paper keywords")
     sections: List[SectionInfo] = Field(default_factory=list, description="Document sections")
     
     # Document statistics
@@ -89,13 +90,13 @@ class ExtractedMetadata(BaseModel):
     
     def get_field_coverage(self) -> float:
         """Calculate percentage of core fields that were extracted."""
-        core_fields = ['title', 'abstract', 'sections']
+        core_fields = ['title', 'abstract', 'sections', 'keywords']
         extracted = sum(1 for field in core_fields if getattr(self, field))
         return extracted / len(core_fields)
     
     def is_complete(self) -> bool:
         """Check if core fields are present."""
-        return all([self.title, self.abstract, len(self.sections) > 0])
+        return all([self.title, self.abstract, len(self.sections) > 0, len(self.keywords) > 0])
 
 
 class ProcessedDocument(BaseModel):

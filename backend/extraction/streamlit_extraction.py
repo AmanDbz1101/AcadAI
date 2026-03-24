@@ -120,7 +120,7 @@ def main():
         
         output_dir = st.text_input(
             "Output Directory",
-            value="input",
+            value="output",
             help="Directory to save extracted files"
         )
         
@@ -165,7 +165,9 @@ def main():
                     result = extractor.extract(
                         pdf_path=temp_pdf,
                         output_dir=output_dir,
-                        force_ocr=force_ocr
+                        force_ocr=force_ocr,
+                        save_metadata_file=False,
+                        save_fulltext_file=False,
                     )
                     
                     st.success("✅ Extraction completed!")

@@ -198,6 +198,39 @@ class QdrantStoreManager:
         except Exception as exc:  # noqa: BLE001
             logger.debug("chunk_level index already exists or failed: %s", exc)
 
+        # section_id: exact match on canonical section numbering IDs (e.g., "3.2.1")
+        try:
+            self.client.create_payload_index(
+                collection_name=self.collection_name,
+                field_name="section_id",
+                field_schema=PayloadSchemaType.KEYWORD,
+            )
+            logger.info("QdrantStoreManager: ensured keyword index on 'section_id'")
+        except Exception as exc:  # noqa: BLE001
+            logger.debug("section_id index already exists or failed: %s", exc)
+
+        # parent_section_id: keyword for hierarchy filtering
+        try:
+            self.client.create_payload_index(
+                collection_name=self.collection_name,
+                field_name="parent_section_id",
+                field_schema=PayloadSchemaType.KEYWORD,
+            )
+            logger.info("QdrantStoreManager: ensured keyword index on 'parent_section_id'")
+        except Exception as exc:  # noqa: BLE001
+            logger.debug("parent_section_id index already exists or failed: %s", exc)
+
+        # section_path_ids: keyword array index for canonical ID-based section scoping
+        try:
+            self.client.create_payload_index(
+                collection_name=self.collection_name,
+                field_name="section_path_ids",
+                field_schema=PayloadSchemaType.KEYWORD,
+            )
+            logger.info("QdrantStoreManager: ensured keyword index on 'section_path_ids'")
+        except Exception as exc:  # noqa: BLE001
+            logger.debug("section_path_ids index already exists or failed: %s", exc)
+
     def delete_collection(self) -> None:
         """Delete the collection if it exists."""
         if self.collection_exists():

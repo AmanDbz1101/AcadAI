@@ -7,6 +7,26 @@ Modify these settings as needed for your deployment.
 import os
 from pathlib import Path
 
+try:
+    from dotenv import load_dotenv
+except ImportError:  # pragma: no cover - dotenv is optional at runtime
+    load_dotenv = None
+
+
+def _is_set(value: str | None) -> bool:
+    """Return True only for non-empty configuration values."""
+    return value is not None and value.strip() != ""
+
+
+# Load project .env before reading any environment-backed settings.
+if load_dotenv is not None:
+    _PROJECT_ROOT = Path(__file__).resolve().parent
+    _DOTENV_PATH = _PROJECT_ROOT / ".env"
+    if _DOTENV_PATH.exists():
+        load_dotenv(dotenv_path=_DOTENV_PATH, override=False)
+    else:
+        load_dotenv(override=False)
+
 # API Configuration
 API_HOST = os.getenv("API_HOST", "0.0.0.0")
 API_PORT = int(os.getenv("API_PORT", 8000))
@@ -32,7 +52,7 @@ LOG_DIR.mkdir(exist_ok=True)
 
 # Groq API Configuration
 GROQ_API_KEY = os.getenv("GROQ_API_KEY")
-if not GROQ_API_KEY:
+if not _is_set(GROQ_API_KEY):
     print("WARNING: GROQ_API_KEY not set in environment variables!")
 
 # Qdrant Vector Store Configuration
@@ -44,7 +64,7 @@ QDRANT_EMBEDDING_MODEL = os.getenv(
     "sentence-transformers/all-MiniLM-L6-v2"
 )
 
-if not QDRANT_URL or not QDRANT_API_KEY:
+if not _is_set(QDRANT_URL) or not _is_set(QDRANT_API_KEY):
     print("WARNING: QDRANT_URL or QDRANT_API_KEY not set in environment variables!")
 
 # Model cache — all HuggingFace / FlashRank weights stored here (offline-capable)
@@ -74,6 +94,7 @@ SCOPED_TOP_K = int(os.getenv("SCOPED_TOP_K", 8))
 FALLBACK_TOP_K = int(os.getenv("FALLBACK_TOP_K", 4))
 RERANKER_TOP_N = int(os.getenv("RERANKER_TOP_N", 12))    # final results after reranking
 QA_TOP_K = int(os.getenv("QA_TOP_K", 4))
+MIN_RELEVANCE_THRESHOLD = 0.35
 MAX_GUIDE_QUESTIONS = int(os.getenv("MAX_GUIDE_QUESTIONS", 6))
 MAX_REWRITE_QUERIES = int(os.getenv("MAX_REWRITE_QUERIES", 3))
 MAX_PARALLEL_QUESTIONS = int(os.getenv("MAX_PARALLEL_QUESTIONS", 6))
@@ -105,7 +126,7 @@ print(f"Configuration loaded:")
 print(f"  - API Host: {API_HOST}:{API_PORT}")
 print(f"  - Upload Directory: {UPLOAD_DIR}")
 print(f"  - Max File Size: {MAX_FILE_SIZE_MB} MB")
-print(f"  - Groq API Configured: {GROQ_API_KEY is not None}")
-print(f"  - Qdrant Configured: {QDRANT_URL is not None and QDRANT_API_KEY is not None}")
+print(f"  - Groq API Configured: {_is_set(GROQ_API_KEY)}")
+print(f"  - Qdrant Configured: {_is_set(QDRANT_URL) and _is_set(QDRANT_API_KEY)}")
 print(f"  - Qdrant Collection: {QDRANT_COLLECTION_NAME}")
 print(f"  - LangSmith Tracing: {'Enabled' if LANGCHAIN_TRACING_V2 else 'Disabled'}")

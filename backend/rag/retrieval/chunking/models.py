@@ -62,6 +62,10 @@ class Chunk(BaseModel):
         default_factory=list,
         description="Breadcrumb from root to this section, e.g. ['Model Architecture', 'Attention', 'Multi-Head Attention']",
     )
+    section_path_ids: list[str] = Field(
+        default_factory=list,
+        description="Canonical section ID ancestry for hierarchy filtering, e.g. ['3', '3.2', '3.2.1']",
+    )
     parent_section_id: Optional[str] = Field(
         None, description="ID of the immediate parent SectionNode"
     )
@@ -103,6 +107,7 @@ class Chunk(BaseModel):
             "section_level": self.section_level,
             "section_numbering": self.section_numbering,
             "section_path": self.section_path,
+            "section_path_ids": self.section_path_ids,
             "parent_section_id": self.parent_section_id,
             "page_start": self.page_start,
             "page_end": self.page_end,
