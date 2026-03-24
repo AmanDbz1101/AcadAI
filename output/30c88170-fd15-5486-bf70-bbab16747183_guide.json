@@ -3,98 +3,163 @@
   "reading_strategy": {
     "method": "three_pass_method",
     "paper_type": "theoretical",
-    "estimated_total_time": "45-60 minutes"
+    "estimated_total_time": "3-4 hours"
   },
   "pass1_quick_scan": {
-    "goal": "Understand the theorem-level claims and problem framing without reading proofs in detail.",
-    "estimated_time": "10-15 minutes",
+    "goal": "Understand what was proven and why it matters",
+    "estimated_time": "5-10 minutes",
     "steps": [
       {
         "step_number": 1,
         "section_to_read": [
           "Abstract",
-          "1 Introduction"
+          "Introduction"
         ],
         "needs_figures": false,
         "needs_tables": false,
-        "objective": "Get a fast global understanding of the paper.",
+        "objective": "Understand the problem and context",
         "questions_to_answer": [
-          "What is the core theoretical problem addressed?"
+          "What is the main problem addressed in the paper?",
+          "Why is estimating properties of unknown unitary operations important in quantum information science?"
         ],
-        "expected_output": "A concise summary of the main problem and contribution."
-      }
-    ]
-  },
-  "pass2_proof_strategy": {
-    "goal": "Identify assumptions, proof strategy, and key intermediate results.",
-    "estimated_time": "15-20 minutes",
-    "steps": [
-      {
-        "step_number": 1,
-        "section_to_read": [
-          "Abstract",
-          "1 Introduction",
-          "1.1 Our contributions",
-          "1.1.1 First result"
-        ],
-        "needs_figures": false,
-        "needs_tables": false,
-        "objective": "Understand how the core approach/argument is built.",
-        "questions_to_answer": [
-          "What is the main proof strategy or formal argument?"
-        ],
-        "expected_output": "A clear outline of the method/proof strategy and assumptions."
-      }
-    ]
-  },
-  "pass3_deep_mathematical_analysis": {
-    "goal": "Read proof details, implications, and open theoretical directions.",
-    "estimated_time": "20-25 minutes",
-    "steps": [
-      {
-        "step_number": 1,
-        "section_to_read": [
-          "Abstract",
-          "1 Introduction",
-          "1.1 Our contributions",
-          "1.1.1 First result",
-          "1.1.2 Second result",
-          "1.2 Proof techniques"
-        ],
-        "needs_figures": false,
-        "needs_tables": false,
-        "objective": "Inspect evidence depth, technical details, and limitations.",
-        "questions_to_answer": [
-          "What assumptions and limitations are stated?"
-        ],
-        "expected_output": "A judgment on the strength and boundaries of the claims."
+        "expected_output": "Understanding of the problem and its significance"
       },
       {
         "step_number": 2,
         "section_to_read": [
-          "5.2.2 The trace function",
-          "5.2.3 Irreducible representations π λ ( g ) i,j",
-          "Lemma 2."
+          "Introduction",
+          "1.1 Our contributions"
         ],
         "needs_figures": false,
         "needs_tables": false,
-        "objective": "Extract future work and unresolved questions.",
+        "objective": "Understand the contributions of the paper",
         "questions_to_answer": [
-          "What conclusions or open problems are highlighted?"
+          "What are the main contributions of the paper?",
+          "What specific functions on the unitary group are considered?"
         ],
-        "expected_output": "A short list of follow-up research questions."
+        "expected_output": "Understanding of the paper's contributions and scope"
+      },
+      {
+        "step_number": 3,
+        "section_to_read": [
+          "1.1.1 First result",
+          "1.1.2 Second result"
+        ],
+        "needs_figures": false,
+        "needs_tables": false,
+        "objective": "Understand the specific results",
+        "questions_to_answer": [
+          "What is the first result about?",
+          "What is the second result about?"
+        ],
+        "expected_output": "Understanding of the specific results"
+      }
+    ]
+  },
+  "pass2_proof_strategy": {
+    "goal": "Understand the conditions under which the results hold",
+    "estimated_time": "20-40 minutes",
+    "steps": [
+      {
+        "step_number": 1,
+        "section_to_read": [
+          "2. Preliminaries",
+          "2.1 Prerequisites from representation theory"
+        ],
+        "needs_figures": false,
+        "needs_tables": false,
+        "objective": "Understand the prerequisites from representation theory",
+        "questions_to_answer": [
+          "What is the Peter-Weyl theorem and its consequences?",
+          "What is Schur-Weyl duality and its consequences?"
+        ],
+        "expected_output": "Understanding of the representation theory background"
+      },
+      {
+        "step_number": 2,
+        "section_to_read": [
+          "2.2 Algorithms and Their Complexity"
+        ],
+        "needs_figures": false,
+        "needs_tables": false,
+        "objective": "Understand the algorithms and their complexity",
+        "questions_to_answer": [
+          "What algorithms are used for estimating functions on the unitary group?",
+          "What is the complexity of these algorithms?"
+        ],
+        "expected_output": "Understanding of the algorithms and their complexity"
+      },
+      {
+        "step_number": 3,
+        "section_to_read": [
+          "3. Lower bound",
+          "4. Upper bound"
+        ],
+        "needs_figures": false,
+        "needs_tables": false,
+        "objective": "Understand the lower and upper bounds",
+        "questions_to_answer": [
+          "What is the lower bound on the sample complexity?",
+          "What is the upper bound on the sample complexity?"
+        ],
+        "expected_output": "Understanding of the bounds on sample complexity"
+      }
+    ]
+  },
+  "pass3_deep_mathematical_analysis": {
+    "goal": "Verify the reasoning and understand where assumptions could be relaxed",
+    "estimated_time": "1-2 hours",
+    "steps": [
+      {
+        "step_number": 1,
+        "section_to_read": [
+          "3. Lower bound"
+        ],
+        "needs_figures": false,
+        "needs_tables": false,
+        "objective": "Understand the proof of the lower bound",
+        "questions_to_answer": [
+          "How is the lower bound proved?",
+          "What are the key assumptions in the proof?"
+        ],
+        "expected_output": "Understanding of the lower bound proof"
+      },
+      {
+        "step_number": 2,
+        "section_to_read": [
+          "4. Upper bound"
+        ],
+        "needs_figures": false,
+        "needs_tables": false,
+        "objective": "Understand the proof of the upper bound",
+        "questions_to_answer": [
+          "How is the upper bound proved?",
+          "What are the key assumptions in the proof?"
+        ],
+        "expected_output": "Understanding of the upper bound proof"
+      },
+      {
+        "step_number": 3,
+        "section_to_read": [
+          "5. Applications"
+        ],
+        "needs_figures": false,
+        "needs_tables": false,
+        "objective": "Understand the applications of the results",
+        "questions_to_answer": [
+          "What are the applications of the results?",
+          "How do the results improve upon previous work?"
+        ],
+        "expected_output": "Understanding of the applications and implications"
       }
     ]
   },
   "final_user_task": {
-    "summary_task": "Write a one-page synthesis covering core claims, evidence strength, and practical implications.",
+    "summary_task": "Summarize the main results and implications of the paper",
     "reflection_questions": [
-      "Which assumptions are most critical for the main results?",
-      "How does the proof strategy compare to related theoretical techniques?",
-      "What open problems naturally follow from these results?"
+      "What are the key takeaways from the paper?",
+      "How do the results relate to other work in the field?",
+      "What are the potential applications and implications of the results?"
     ]
-  },
-  "fallback": true,
-  "category": "THEORETICAL",
-  "notes": "Heuristic fallback guide generated because LLM guide generation was unavailable."
+  }
 }

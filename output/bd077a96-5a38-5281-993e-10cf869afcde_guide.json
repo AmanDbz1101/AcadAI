@@ -3,98 +3,162 @@
   "reading_strategy": {
     "method": "three_pass_method",
     "paper_type": "applied",
-    "estimated_total_time": "45-60 minutes"
+    "estimated_total_time": "2-3 hours"
   },
   "pass1_quick_scan": {
-    "goal": "Understand problem, motivation, and high-level contribution.",
-    "estimated_time": "10-15 minutes",
+    "goal": "Understand the problem and proposed solution",
+    "estimated_time": "5-10 minutes",
     "steps": [
       {
         "step_number": 1,
         "section_to_read": [
-          "Abstract",
-          "1 Introduction"
+          "Introduction",
+          "Conclusion"
         ],
         "needs_figures": false,
         "needs_tables": false,
-        "objective": "Get a fast global understanding of the paper.",
+        "objective": "Understand the research context and main contributions",
         "questions_to_answer": [
-          "What problem does this paper solve?"
+          "What sequence modeling and transduction problems does the paper address?",
+          "What is the main limitation of recurrent models?",
+          "What is the proposed Transformer model?"
         ],
-        "expected_output": "A concise summary of the main problem and contribution."
-      }
-    ]
-  },
-  "pass2_method_understanding": {
-    "goal": "Understand method design and experimental setup.",
-    "estimated_time": "15-20 minutes",
-    "steps": [
-      {
-        "step_number": 1,
-        "section_to_read": [
-          "Abstract",
-          "1 Introduction",
-          "2 Background",
-          "3 Model Architecture"
-        ],
-        "needs_figures": false,
-        "needs_tables": false,
-        "objective": "Understand how the core approach/argument is built.",
-        "questions_to_answer": [
-          "What is the proposed method or model?"
-        ],
-        "expected_output": "A clear outline of the method/proof strategy and assumptions."
-      }
-    ]
-  },
-  "pass3_deep_analysis": {
-    "goal": "Validate claims via detailed results, limitations, and failure modes.",
-    "estimated_time": "20-25 minutes",
-    "steps": [
-      {
-        "step_number": 1,
-        "section_to_read": [
-          "Abstract",
-          "1 Introduction",
-          "2 Background",
-          "3 Model Architecture",
-          "3.1 Encoder and Decoder Stacks",
-          "3.2 Attention"
-        ],
-        "needs_figures": false,
-        "needs_tables": false,
-        "objective": "Inspect evidence depth, technical details, and limitations.",
-        "questions_to_answer": [
-          "What are the key experimental findings?"
-        ],
-        "expected_output": "A judgment on the strength and boundaries of the claims."
+        "expected_output": "Understand the research context and main contributions"
       },
       {
         "step_number": 2,
         "section_to_read": [
-          "6.3 English Constituency Parsing",
-          "7 Conclusion",
-          "Attention Visualizations Input-Input Layer5"
+          "Introduction"
         ],
         "needs_figures": false,
         "needs_tables": false,
-        "objective": "Extract future work and unresolved questions.",
+        "objective": "Understand the background and motivation",
         "questions_to_answer": [
-          "What limitations or future work are discussed?"
+          "What are the limitations of recurrent neural networks?",
+          "How do attention mechanisms help in sequence modeling?"
         ],
-        "expected_output": "A short list of follow-up research questions."
+        "expected_output": "Understand the background and motivation"
+      },
+      {
+        "step_number": 3,
+        "section_to_read": [
+          "Figures 1-3",
+          "Tables 1-2"
+        ],
+        "needs_figures": true,
+        "needs_tables": true,
+        "objective": "Get an overview of the results",
+        "questions_to_answer": [
+          "What are the main results of the paper?",
+          "How does the Transformer model perform compared to other models?"
+        ],
+        "expected_output": "Get an overview of the results"
+      }
+    ]
+  },
+  "pass2_method_understanding": {
+    "goal": "Understand the methodology and evaluation setup",
+    "estimated_time": "20-40 minutes",
+    "steps": [
+      {
+        "step_number": 1,
+        "section_to_read": [
+          "3. Model Architecture"
+        ],
+        "needs_figures": true,
+        "needs_tables": false,
+        "objective": "Understand the Transformer model architecture",
+        "questions_to_answer": [
+          "What are the main components of the Transformer model?",
+          "How does the self-attention mechanism work?"
+        ],
+        "expected_output": "Understand the Transformer model architecture"
+      },
+      {
+        "step_number": 2,
+        "section_to_read": [
+          "4. Why Self-Attention"
+        ],
+        "needs_figures": false,
+        "needs_tables": false,
+        "objective": "Understand the motivation behind self-attention",
+        "questions_to_answer": [
+          "Why is self-attention used in the Transformer model?",
+          "What are the benefits of self-attention?"
+        ],
+        "expected_output": "Understand the motivation behind self-attention"
+      },
+      {
+        "step_number": 3,
+        "section_to_read": [
+          "5. Training"
+        ],
+        "needs_figures": false,
+        "needs_tables": true,
+        "objective": "Understand the training setup",
+        "questions_to_answer": [
+          "How was the Transformer model trained?",
+          "What datasets were used for training and evaluation?"
+        ],
+        "expected_output": "Understand the training setup"
+      }
+    ]
+  },
+  "pass3_deep_analysis": {
+    "goal": "Critical analysis of the methodology and results",
+    "estimated_time": "1-2 hours",
+    "steps": [
+      {
+        "step_number": 1,
+        "section_to_read": [
+          "6. Results"
+        ],
+        "needs_figures": true,
+        "needs_tables": true,
+        "objective": "Analyze the results and evaluation metrics",
+        "questions_to_answer": [
+          "What are the main results of the paper?",
+          "How does the Transformer model perform compared to other models?"
+        ],
+        "expected_output": "Analyze the results and evaluation metrics"
+      },
+      {
+        "step_number": 2,
+        "section_to_read": [
+          "7. Conclusion"
+        ],
+        "needs_figures": false,
+        "needs_tables": false,
+        "objective": "Understand the conclusions and future work",
+        "questions_to_answer": [
+          "What are the main conclusions of the paper?",
+          "What future work is proposed?"
+        ],
+        "expected_output": "Understand the conclusions and future work"
+      },
+      {
+        "step_number": 3,
+        "section_to_read": [
+          "Introduction",
+          "Conclusion"
+        ],
+        "needs_figures": false,
+        "needs_tables": false,
+        "objective": "Critically evaluate the paper",
+        "questions_to_answer": [
+          "What are the strengths and weaknesses of the paper?",
+          "What are the implications of the results?"
+        ],
+        "expected_output": "Critically evaluate the paper"
       }
     ]
   },
   "final_user_task": {
-    "summary_task": "Write a one-page synthesis covering core claims, evidence strength, and practical implications.",
+    "summary_task": "Summarize the paper in 2-3 paragraphs",
     "reflection_questions": [
-      "Which design choices seem most responsible for the reported gains?",
-      "What evidence best supports the paper's central claim?",
-      "What limitations matter most for real-world use?"
+      "What are the main contributions of the paper?",
+      "What are the implications of the results?",
+      "What are the limitations of the paper?"
     ]
-  },
-  "fallback": true,
-  "category": "APPLIED",
-  "notes": "Heuristic fallback guide generated because LLM guide generation was unavailable."
+  }
 }

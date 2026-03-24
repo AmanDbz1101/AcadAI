@@ -57,14 +57,15 @@ def _compute_mrr(retrieved_ids: list[str], relevant_ids: set[str]) -> float:
 def _evaluate_entry(
     pipeline: RetrievalPipeline,
     entry: dict[str, Any],
-) -> dict[str, Any]:
+    debug_count: int,
+) -> tuple[dict[str, Any], int]:
     """Evaluate one question and return metrics."""
     question = entry.get("question", "")
     section_id = entry.get("section_id", "")
     document_id = entry.get("document_id", "")
-    relevant_ids = set(entry.get("relevant_chunk_ids") or [])
+    relevant_ids = [str(x) for x in entry['relevant_chunk_ids']]
 
-    results = pipeline.retrieve_with_section_scope(
+    chunks = pipeline.retrieve_with_section_scope(
         query=question,
         section_id=section_id,
         document_id=document_id,
@@ -73,14 +74,21 @@ def _evaluate_entry(
     )
 
     retrieved_ids = []
-    for result in results:
-        metadata = result.metadata if isinstance(result.metadata, dict) else {}
-        chunk_id = metadata.get("chunk_id", "")
-        if chunk_id:
-            retrieved_ids.append(chunk_id)
+    for chunk in chunks:
+        if hasattr(chunk, 'metadata') and isinstance(chunk.metadata, dict):
+            cid = chunk.metadata.get('_id')
+            if cid:
+                retrieved_ids.append(str(cid))
+
+    if debug_count < 3:
+        print(f"\nDEBUG Question: {entry['question'][:60]}")
+        print(f"DEBUG relevant_chunk_ids from dataset: {entry['relevant_chunk_ids']}")
+        print(f"DEBUG retrieved chunk ids: {retrieved_ids}")
+        print(f"DEBUG first result full metadata: {chunks[0].metadata if chunks else 'no results'}")
+        debug_count += 1
 
     retrieved_set = set(retrieved_ids[:5])
-    intersection = retrieved_set & relevant_ids
+    intersection = retrieved_set & set(relevant_ids)
 
     # Metrics
     precision_at_5 = len(intersection) / 5 if retrieved_ids else 0.0
@@ -101,7 +109,7 @@ def _evaluate_entry(
         "precision_at_5": round(precision_at_5, 3),
         "recall_at_5": round(recall_at_5, 3),
         "reciprocal_rank": round(reciprocal_rank, 3),
-    }
+    }, debug_count
 
 
 def main() -> None:
@@ -115,8 +123,9 @@ def main() -> None:
     pipeline = RetrievalPipeline()
 
     results = []
+    debug_count = 0
     for idx, entry in enumerate(entries, 1):
-        result = _evaluate_entry(pipeline, entry)
+        result, debug_count = _evaluate_entry(pipeline, entry, debug_count)
         results.append(result)
         if idx % 5 == 0:
             print(f"  {idx}/{len(entries)} evaluated")

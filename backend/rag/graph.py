@@ -57,10 +57,7 @@ from rag.retrieval.config import (
     RERANKER_TOP_N,
     QA_TOP_K,
     MAX_GUIDE_QUESTIONS,
-    MAX_REWRITE_QUERIES,
     MAX_PARALLEL_QUESTIONS,
-    ENABLE_QUERY_REWRITE,
-    REWRITE_MODEL,
 )
 
 # ---------------------------------------------------------------------------
@@ -472,56 +469,6 @@ def _pick_chunk_level(question: str) -> str:
     if any(lowered.startswith(prefix) for prefix in _FACTUAL_PREFIXES):
         return "fine"
     return "coarse"
-
-
-def _rewrite_query_candidates(
-    question: str,
-    step_sections: list[str],
-    category: str,
-) -> list[str]:
-    """Rewrite one guide question into multiple retrieval-focused queries."""
-    base_question = question.strip()
-    if not base_question:
-        return []
-
-    if not ENABLE_QUERY_REWRITE:
-        return [base_question]
-
-    section_hint = ", ".join(step_sections[:6]) if step_sections else "None"
-    rewrite_prompt = f"""You optimize search queries for research paper retrieval.
-
-Return JSON only in this schema:
-{{"queries": ["...", "..."]}}
-
-Rules:
-- Produce 2-3 short keyword-dense search queries.
-- Keep each query under 18 words.
-- Preserve technical nouns and method names.
-- Avoid conversational phrasing.
-
-Paper category: {category or "UNKNOWN"}
-Question: {base_question}
-Section hint: {section_hint}
-"""
-
-    try:
-        llm = ChatGroq(model=REWRITE_MODEL, temperature=0)
-        response = llm.invoke([HumanMessage(content=rewrite_prompt)])
-        parsed = _extract_json(response.content)
-        generated = parsed.get("queries", [])
-        if not isinstance(generated, list):
-            generated = []
-    except Exception as exc:  # noqa: BLE001
-        logger.warning("Query rewrite failed; using raw question. error=%s", exc)
-        generated = []
-
-    candidates: list[str] = [base_question]
-    for query_text in generated:
-        if isinstance(query_text, str) and query_text.strip():
-            candidates.append(query_text.strip())
-
-    deduped = list(dict.fromkeys(candidates))
-    return deduped[: max(1, MAX_REWRITE_QUERIES)]
 
 
 def _result_score(result: Any) -> float:
@@ -1014,18 +961,25 @@ def _retrieve_for_question(
     question: str,
     step_sections: list[str],
     document_id: str,
-    category: str,
 ) -> tuple[list[Any], dict[str, Any]]:
     """
     Run section-aware retrieval for one question and return reranked hits.
 
     Flow:
-      1. Rewrite the question to keyword-dense retrieval variants.
-      2. Run scoped retrieval against resolved ``section_path`` values.
-      3. If scoped recall is low, run a smaller unrestricted fallback.
-      4. Merge + deduplicate candidates, then rerank once.
+            1. Use the original question as the retrieval query.
+            2. Run scoped retrieval against resolved ``section_path`` values.
+            3. If scoped recall is low, run a smaller unrestricted fallback.
+            4. Merge + deduplicate candidates, then rerank once.
     """
-    expanded_queries = _rewrite_query_candidates(question, step_sections, category)
+        base_question = question.strip()
+        if not base_question:
+                return [], {
+                        "expanded_queries": [],
+                        "resolved_sections": _resolve_section_paths(step_sections, document_id),
+                        "chunk_level": _pick_chunk_level(question),
+                }
+
+        expanded_queries = [base_question]
     chunk_level = _pick_chunk_level(question)
     resolved_sections = _resolve_section_paths(step_sections, document_id)
 
@@ -1113,9 +1067,9 @@ def retrieve_and_qa_node(state: dict) -> dict:
     Parallel retrieve-then-answer loop for guide questions.
 
     Per question:
-      1. Rewrite into retrieval-focused sub-queries.
-      2. Run section-scoped retrieval (plus fallback if needed).
-      3. Rerank once and answer from top-K chunks.
+            1. Retrieve with the original question and section scope.
+            2. Run fallback retrieval when scoped recall is low.
+            3. Rerank once and answer from top-K chunks.
 
     Questions are processed in parallel to reduce end-to-end latency.
     """
@@ -1124,7 +1078,6 @@ def retrieve_and_qa_node(state: dict) -> dict:
     question_section_pairs = state.get("question_section_pairs") or []
     user_query = (state.get("query") or "").strip()
     document_id = state.get("document_id", "")
-    category = state.get("category", "")
 
     # Build candidate pairs (guide questions preferred, direct query as fallback)
     if question_section_pairs:
@@ -1207,7 +1160,6 @@ def retrieve_and_qa_node(state: dict) -> dict:
                 question=question,
                 step_sections=step_sections,
                 document_id=document_id,
-                category=category,
             )
 
             # Optionally include figure/table chunks scoped to the same step sections.

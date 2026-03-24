@@ -88,8 +88,9 @@ class RetrievalPipeline:
         self._indexer = None
         self._reranker = None
 
-        # Cache of loaded BM25 encoders keyed by document_id
-        self._bm25_cache: dict[str, object] = {}
+        # Cache of loaded BM25 encoders keyed by document_id.
+        # A None value means "checked and missing on disk".
+        self._bm25_cache: dict[str, object | None] = {}
 
     # ── Lazy component accessors ──────────────────────────────────────────────
 
@@ -155,6 +156,9 @@ class RetrievalPipeline:
                 "sparse search will be disabled for this document",
                 pkl_path,
             )
+            # Cache missing state to avoid repeating the same warning
+            # for every retrieval call on this document.
+            self._bm25_cache[document_id] = None
             return None
 
         from rag.retrieval.embeddings.sparse_encoder import BM25SparseEncoder

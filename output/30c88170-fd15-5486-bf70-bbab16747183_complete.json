@@ -5,54 +5,125 @@
     "paper_title": "Another generalization of Hadamard test: Optimal sample complexities for learning functions on the unitary group",
     "abstract": "Estimating properties of unknown unitary operations is a fundamental task in quantum information science. While full unitary tomography requires a number of samples to the unknown unitary scaling linearly with the dimension (implying exponentially with the number of qubits), estimating specific functions of a unitary can be significantly more efficient. In this paper, we present a unified framework for the sample-efficient estimation of arbitrary square integrable functions f : U ( d ) → C , using only access to the controlled-unitary operation. We first provide a tight characterization of the optimal sample complexity when the accuracy is measured by the averaged bias over the unitary U ( d ). We then construct a sample-efficient estimation algorithm that becomes optimal under the Probably Approximately Correct (PAC) learning criterion for various classes of functions. Applications include optimal estimation of matrix elements of irreducible representations, the trace, determinant, and general polynomial functions on U ( d ). Our technique generalize the Hadamard test and leverage tools from representation theory, yielding both lower and upper bound on sample complexity",
     "keywords": [
+      "hadamard test",
       "unitary operations",
       "quantum information science",
-      "hadamard test",
       "sample-efficient estimation",
       "controlled-unitary operation",
       "probably approximately correct (pac) learning",
-      "unitary tomography",
       "representation theory",
       "irreducible representations",
-      "square integrable functions"
+      "polynomial functions"
     ],
     "sections": [
-      {
-        "original_name": "Abstract",
-        "level": 1,
-        "page_start": 2,
-        "stats": {
-          "formulas": 0,
-          "tables": 0,
-          "figures": 0,
-          "text_blocks": 0
-        }
-      },
       {
         "original_name": "1 Introduction",
         "level": 1,
         "page_start": 2,
         "stats": {
-          "formulas": 0,
+          "formulas": 9,
           "tables": 0,
           "figures": 0,
-          "text_blocks": 8
-        }
+          "text_blocks": 44
+        },
+        "sections": [
+          {
+            "original_name": "1.1 Our contributions",
+            "level": 2,
+            "page_start": 3,
+            "stats": {
+              "formulas": 5,
+              "tables": 0,
+              "figures": 0,
+              "text_blocks": 26
+            },
+            "sections": [
+              {
+                "original_name": "1.1.1 First result",
+                "level": 3,
+                "page_start": 3,
+                "stats": {
+                  "formulas": 2,
+                  "tables": 0,
+                  "figures": 0,
+                  "text_blocks": 15
+                }
+              },
+              {
+                "original_name": "1.1.2 Second result",
+                "level": 3,
+                "page_start": 4,
+                "stats": {
+                  "formulas": 3,
+                  "tables": 0,
+                  "figures": 0,
+                  "text_blocks": 11
+                }
+              }
+            ]
+          },
+          {
+            "original_name": "1.2 Proof techniques",
+            "level": 2,
+            "page_start": 5,
+            "stats": {
+              "formulas": 4,
+              "tables": 0,
+              "figures": 0,
+              "text_blocks": 10
+            }
+          },
+          {
+            "original_name": "1.3 Organization of the paper",
+            "level": 2,
+            "page_start": 6,
+            "stats": {
+              "formulas": 0,
+              "tables": 0,
+              "figures": 0,
+              "text_blocks": 0
+            }
+          }
+        ]
       },
       {
         "original_name": "1.1 Our contributions",
-        "level": 1,
+        "level": 2,
         "page_start": 3,
         "stats": {
-          "formulas": 0,
+          "formulas": 5,
           "tables": 0,
           "figures": 0,
-          "text_blocks": 0
-        }
+          "text_blocks": 26
+        },
+        "sections": [
+          {
+            "original_name": "1.1.1 First result",
+            "level": 3,
+            "page_start": 3,
+            "stats": {
+              "formulas": 2,
+              "tables": 0,
+              "figures": 0,
+              "text_blocks": 15
+            }
+          },
+          {
+            "original_name": "1.1.2 Second result",
+            "level": 3,
+            "page_start": 4,
+            "stats": {
+              "formulas": 3,
+              "tables": 0,
+              "figures": 0,
+              "text_blocks": 11
+            }
+          }
+        ]
       },
       {
         "original_name": "1.1.1 First result",
-        "level": 1,
+        "level": 3,
         "page_start": 3,
         "stats": {
           "formulas": 2,
@@ -63,7 +134,7 @@
       },
       {
         "original_name": "1.1.2 Second result",
-        "level": 1,
+        "level": 3,
         "page_start": 4,
         "stats": {
           "formulas": 3,
@@ -74,7 +145,7 @@
       },
       {
         "original_name": "1.2 Proof techniques",
-        "level": 1,
+        "level": 2,
         "page_start": 5,
         "stats": {
           "formulas": 4,
@@ -85,7 +156,7 @@
       },
       {
         "original_name": "1.3 Organization of the paper",
-        "level": 1,
+        "level": 2,
         "page_start": 6,
         "stats": {
           "formulas": 0,
@@ -99,26 +170,76 @@
         "level": 1,
         "page_start": 6,
         "stats": {
-          "formulas": 0,
+          "formulas": 18,
           "tables": 0,
           "figures": 0,
-          "text_blocks": 0
-        }
+          "text_blocks": 40
+        },
+        "sections": [
+          {
+            "original_name": "2.1 Prerequisites from representation theory",
+            "level": 2,
+            "page_start": 6,
+            "stats": {
+              "formulas": 13,
+              "tables": 0,
+              "figures": 0,
+              "text_blocks": 27
+            },
+            "sections": [
+              {
+                "original_name": "2.1.1 Peter-Weyl theorem and Schur-Weyl duality, and their consequences",
+                "level": 3,
+                "page_start": 7,
+                "stats": {
+                  "formulas": 7,
+                  "tables": 0,
+                  "figures": 0,
+                  "text_blocks": 16
+                }
+              }
+            ]
+          },
+          {
+            "original_name": "2.2 Algorithms and Their Complexity",
+            "level": 2,
+            "page_start": 8,
+            "stats": {
+              "formulas": 5,
+              "tables": 0,
+              "figures": 0,
+              "text_blocks": 13
+            }
+          }
+        ]
       },
       {
         "original_name": "2.1 Prerequisites from representation theory",
-        "level": 1,
+        "level": 2,
         "page_start": 6,
         "stats": {
-          "formulas": 6,
+          "formulas": 13,
           "tables": 0,
           "figures": 0,
-          "text_blocks": 11
-        }
+          "text_blocks": 27
+        },
+        "sections": [
+          {
+            "original_name": "2.1.1 Peter-Weyl theorem and Schur-Weyl duality, and their consequences",
+            "level": 3,
+            "page_start": 7,
+            "stats": {
+              "formulas": 7,
+              "tables": 0,
+              "figures": 0,
+              "text_blocks": 16
+            }
+          }
+        ]
       },
       {
         "original_name": "2.1.1 Peter-Weyl theorem and Schur-Weyl duality, and their consequences",
-        "level": 1,
+        "level": 3,
         "page_start": 7,
         "stats": {
           "formulas": 7,
@@ -129,7 +250,7 @@
       },
       {
         "original_name": "2.2 Algorithms and Their Complexity",
-        "level": 1,
+        "level": 2,
         "page_start": 8,
         "stats": {
           "formulas": 5,
@@ -140,17 +261,6 @@
       },
       {
         "original_name": "3 Lower bound",
-        "level": 1,
-        "page_start": 9,
-        "stats": {
-          "formulas": 0,
-          "tables": 0,
-          "figures": 0,
-          "text_blocks": 0
-        }
-      },
-      {
-        "original_name": "Proposition 2.",
         "level": 1,
         "page_start": 9,
         "stats": {
@@ -176,26 +286,155 @@
         "level": 1,
         "page_start": 15,
         "stats": {
-          "formulas": 0,
+          "formulas": 19,
           "tables": 0,
           "figures": 0,
-          "text_blocks": 0
-        }
+          "text_blocks": 35
+        },
+        "sections": [
+          {
+            "original_name": "5.1 Simpler forms of Rep ε ( f )",
+            "level": 2,
+            "page_start": 15,
+            "stats": {
+              "formulas": 8,
+              "tables": 0,
+              "figures": 0,
+              "text_blocks": 14
+            },
+            "sections": [
+              {
+                "original_name": "5.1.1 Univariate Polynomials",
+                "level": 3,
+                "page_start": 15,
+                "stats": {
+                  "formulas": 8,
+                  "tables": 0,
+                  "figures": 0,
+                  "text_blocks": 14
+                }
+              },
+              {
+                "original_name": "5.1.2 The trace function",
+                "level": 3,
+                "page_start": 16,
+                "stats": {
+                  "formulas": 0,
+                  "tables": 0,
+                  "figures": 0,
+                  "text_blocks": 0
+                }
+              },
+              {
+                "original_name": "5.1.3 The determinant det g",
+                "level": 3,
+                "page_start": 16,
+                "stats": {
+                  "formulas": 0,
+                  "tables": 0,
+                  "figures": 0,
+                  "text_blocks": 0
+                }
+              }
+            ]
+          },
+          {
+            "original_name": "5.2 Optimal PAC estimations",
+            "level": 2,
+            "page_start": 16,
+            "stats": {
+              "formulas": 11,
+              "tables": 0,
+              "figures": 0,
+              "text_blocks": 21
+            },
+            "sections": [
+              {
+                "original_name": "5.2.1 Univariate Polynomials",
+                "level": 3,
+                "page_start": 16,
+                "stats": {
+                  "formulas": 0,
+                  "tables": 0,
+                  "figures": 0,
+                  "text_blocks": 0
+                }
+              },
+              {
+                "original_name": "5.2.2 The trace function",
+                "level": 3,
+                "page_start": 16,
+                "stats": {
+                  "formulas": 5,
+                  "tables": 0,
+                  "figures": 0,
+                  "text_blocks": 12
+                }
+              },
+              {
+                "original_name": "5.2.3 Irreducible representations π λ ( g ) i,j",
+                "level": 3,
+                "page_start": 17,
+                "stats": {
+                  "formulas": 6,
+                  "tables": 0,
+                  "figures": 0,
+                  "text_blocks": 9
+                }
+              }
+            ]
+          }
+        ]
       },
       {
         "original_name": "5.1 Simpler forms of Rep ε ( f )",
-        "level": 1,
+        "level": 2,
         "page_start": 15,
         "stats": {
-          "formulas": 0,
+          "formulas": 8,
           "tables": 0,
           "figures": 0,
-          "text_blocks": 0
-        }
+          "text_blocks": 14
+        },
+        "sections": [
+          {
+            "original_name": "5.1.1 Univariate Polynomials",
+            "level": 3,
+            "page_start": 15,
+            "stats": {
+              "formulas": 8,
+              "tables": 0,
+              "figures": 0,
+              "text_blocks": 14
+            }
+          },
+          {
+            "original_name": "5.1.2 The trace function",
+            "level": 3,
+            "page_start": 16,
+            "stats": {
+              "formulas": 0,
+              "tables": 0,
+              "figures": 0,
+              "text_blocks": 0
+            }
+          },
+          {
+            "original_name": "5.1.3 The determinant det g",
+            "level": 3,
+            "page_start": 16,
+            "stats": {
+              "formulas": 0,
+              "tables": 0,
+              "figures": 0,
+              "text_blocks": 0
+            }
+          }
+        ]
       },
       {
         "original_name": "5.1.1 Univariate Polynomials",
-        "level": 1,
+        "level": 3,
         "page_start": 15,
         "stats": {
           "formulas": 8,
@@ -206,7 +445,7 @@
       },
       {
         "original_name": "5.1.2 The trace function",
-        "level": 1,
+        "level": 3,
         "page_start": 16,
         "stats": {
           "formulas": 0,
@@ -217,7 +456,7 @@
       },
       {
         "original_name": "5.1.3 The determinant det g",
-        "level": 1,
+        "level": 3,
         "page_start": 16,
         "stats": {
           "formulas": 0,
@@ -228,18 +467,53 @@
       },
       {
         "original_name": "5.2 Optimal PAC estimations",
-        "level": 1,
+        "level": 2,
         "page_start": 16,
         "stats": {
-          "formulas": 0,
+          "formulas": 11,
           "tables": 0,
           "figures": 0,
-          "text_blocks": 0
-        }
+          "text_blocks": 21
+        },
+        "sections": [
+          {
+            "original_name": "5.2.1 Univariate Polynomials",
+            "level": 3,
+            "page_start": 16,
+            "stats": {
+              "formulas": 0,
+              "tables": 0,
+              "figures": 0,
+              "text_blocks": 0
+            }
+          },
+          {
+            "original_name": "5.2.2 The trace function",
+            "level": 3,
+            "page_start": 16,
+            "stats": {
+              "formulas": 5,
+              "tables": 0,
+              "figures": 0,
+              "text_blocks": 12
+            }
+          },
+          {
+            "original_name": "5.2.3 Irreducible representations π λ ( g ) i,j",
+            "level": 3,
+            "page_start": 17,
+            "stats": {
+              "formulas": 6,
+              "tables": 0,
+              "figures": 0,
+              "text_blocks": 9
+            }
+          }
+        ]
       },
       {
         "original_name": "5.2.1 Univariate Polynomials",
-        "level": 1,
+        "level": 3,
         "page_start": 16,
         "stats": {
           "formulas": 0,
@@ -250,7 +524,7 @@
       },
       {
         "original_name": "5.2.2 The trace function",
-        "level": 1,
+        "level": 3,
         "page_start": 16,
         "stats": {
           "formulas": 5,
@@ -261,24 +535,13 @@
       },
       {
         "original_name": "5.2.3 Irreducible representations π λ ( g ) i,j",
-        "level": 1,
+        "level": 3,
         "page_start": 17,
         "stats": {
-          "formulas": 11,
+          "formulas": 6,
           "tables": 0,
           "figures": 0,
-          "text_blocks": 16
-        }
-      },
-      {
-        "original_name": "Lemma 2.",
-        "level": 1,
-        "page_start": 21,
-        "stats": {
-          "formulas": 0,
-          "tables": 0,
-          "figures": 0,
-          "text_blocks": 0
+          "text_blocks": 9
         }
       },
       {
@@ -299,11 +562,11 @@
       "total_figures": 2,
       "total_text_blocks": 248,
       "total_pages": 20,
-      "total_sections": 25
+      "total_sections": 22
     },
     "inference": {
-      "paper_type": "theoretical_research",
-      "difficulty": "advanced",
+      "paper_type": "Theoretical",
+      "difficulty": "hard",
       "math_heavy": true
     }
   },
@@ -2428,7 +2691,7 @@
         "section_title": "Reference",
         "section": "Reference",
         "docling_label": "list_item",
-        "section_id": "30c88170-fd15-5486-bf70-bbab16747183_section_24"
+        "section_id": "30c88170-fd15-5486-bf70-bbab16747183_section_21"
       },
       {
         "id": "608ce9a5bfe4d0a80c6fdb2dafb77791",
@@ -2438,7 +2701,7 @@
         "section_title": "Reference",
         "section": "Reference",
         "docling_label": "list_item",
-        "section_id": "30c88170-fd15-5486-bf70-bbab16747183_section_24"
+        "section_id": "30c88170-fd15-5486-bf70-bbab16747183_section_21"
       },
       {
         "id": "825742f61deb9545b3011d0aacd7b5b2",
@@ -2448,7 +2711,7 @@
         "section_title": "Reference",
         "section": "Reference",
         "docling_label": "list_item",
-        "section_id": "30c88170-fd15-5486-bf70-bbab16747183_section_24"
+        "section_id": "30c88170-fd15-5486-bf70-bbab16747183_section_21"
       },
       {
         "id": "f4191f9eb315c9a29f89be47c0a94141",
@@ -2458,7 +2721,7 @@
         "section_title": "Reference",
         "section": "Reference",
         "docling_label": "list_item",
-        "section_id": "30c88170-fd15-5486-bf70-bbab16747183_section_24"
+        "section_id": "30c88170-fd15-5486-bf70-bbab16747183_section_21"
       },
       {
         "id": "6c1431f83ff8b140783cb08f5d67d72e",
@@ -2468,7 +2731,7 @@
         "section_title": "Reference",
         "section": "Reference",
         "docling_label": "list_item",
-        "section_id": "30c88170-fd15-5486-bf70-bbab16747183_section_24"
+        "section_id": "30c88170-fd15-5486-bf70-bbab16747183_section_21"
       },
       {
         "id": "25527c4a6b5de5f13fca97e557f2c58a",
@@ -2478,7 +2741,7 @@
         "section_title": "Reference",
         "section": "Reference",
         "docling_label": "list_item",
-        "section_id": "30c88170-fd15-5486-bf70-bbab16747183_section_24"
+        "section_id": "30c88170-fd15-5486-bf70-bbab16747183_section_21"
       },
       {
         "id": "d161a9976f5ec8bcc578528a33a16491",
@@ -2488,7 +2751,7 @@
         "section_title": "Reference",
         "section": "Reference",
         "docling_label": "list_item",
-        "section_id": "30c88170-fd15-5486-bf70-bbab16747183_section_24"
+        "section_id": "30c88170-fd15-5486-bf70-bbab16747183_section_21"
       },
       {
         "id": "c47614619ee891d1641dfbb08727c0f9",
@@ -2498,7 +2761,7 @@
         "section_title": "Reference",
         "section": "Reference",
         "docling_label": "list_item",
-        "section_id": "30c88170-fd15-5486-bf70-bbab16747183_section_24"
+        "section_id": "30c88170-fd15-5486-bf70-bbab16747183_section_21"
       },
       {
         "id": "cb6529aba3a961eb19c966b2266c7fb7",
@@ -2508,7 +2771,7 @@
         "section_title": "Reference",
         "section": "Reference",
         "docling_label": "list_item",
-        "section_id": "30c88170-fd15-5486-bf70-bbab16747183_section_24"
+        "section_id": "30c88170-fd15-5486-bf70-bbab16747183_section_21"
       },
       {
         "id": "eed1e33f8cf9a7392e19b5f94ac2eb10",
@@ -2518,7 +2781,7 @@
         "section_title": "Reference",
         "section": "Reference",
         "docling_label": "list_item",
-        "section_id": "30c88170-fd15-5486-bf70-bbab16747183_section_24"
+        "section_id": "30c88170-fd15-5486-bf70-bbab16747183_section_21"
       },
       {
         "id": "c86d8f873da07d398280e9f6dc51ec15",
@@ -2528,7 +2791,7 @@
         "section_title": "Reference",
         "section": "Reference",
         "docling_label": "list_item",
-        "section_id": "30c88170-fd15-5486-bf70-bbab16747183_section_24"
+        "section_id": "30c88170-fd15-5486-bf70-bbab16747183_section_21"
       },
       {
         "id": "bfd678a21f74955c59a0d3f7457f7d19",
@@ -2538,7 +2801,7 @@
         "section_title": "Reference",
         "section": "Reference",
         "docling_label": "list_item",
-        "section_id": "30c88170-fd15-5486-bf70-bbab16747183_section_24"
+        "section_id": "30c88170-fd15-5486-bf70-bbab16747183_section_21"
       },
       {
         "id": "801ee56c80dff11cb3ce7f960e09ab5f",
@@ -2548,7 +2811,7 @@
         "section_title": "Reference",
         "section": "Reference",
         "docling_label": "list_item",
-        "section_id": "30c88170-fd15-5486-bf70-bbab16747183_section_24"
+        "section_id": "30c88170-fd15-5486-bf70-bbab16747183_section_21"
       },
       {
         "id": "5dff1c6bfdcb40ccf326d7967f4e1591",
@@ -2558,7 +2821,7 @@
         "section_title": "Reference",
         "section": "Reference",
         "docling_label": "list_item",
-        "section_id": "30c88170-fd15-5486-bf70-bbab16747183_section_24"
+        "section_id": "30c88170-fd15-5486-bf70-bbab16747183_section_21"
       },
       {
         "id": "f95be3137a6fb16a931c80b425e05e0a",
@@ -2568,7 +2831,7 @@
         "section_title": "Reference",
         "section": "Reference",
         "docling_label": "list_item",
-        "section_id": "30c88170-fd15-5486-bf70-bbab16747183_section_24"
+        "section_id": "30c88170-fd15-5486-bf70-bbab16747183_section_21"
       },
       {
         "id": "4858ed77a0bd027ae72a1d9118986b19",
@@ -2578,7 +2841,7 @@
         "section_title": "Reference",
         "section": "Reference",
         "docling_label": "list_item",
-        "section_id": "30c88170-fd15-5486-bf70-bbab16747183_section_24"
+        "section_id": "30c88170-fd15-5486-bf70-bbab16747183_section_21"
       },
       {
         "id": "d776362a7370223a31e10df3dee59e76",
@@ -2588,7 +2851,7 @@
         "section_title": "Reference",
         "section": "Reference",
         "docling_label": "list_item",
-        "section_id": "30c88170-fd15-5486-bf70-bbab16747183_section_24"
+        "section_id": "30c88170-fd15-5486-bf70-bbab16747183_section_21"
       },
       {
         "id": "b630855a83b08b9dfe8942020fc6e7ee",
@@ -2598,7 +2861,7 @@
         "section_title": "Reference",
         "section": "Reference",
         "docling_label": "list_item",
-        "section_id": "30c88170-fd15-5486-bf70-bbab16747183_section_24"
+        "section_id": "30c88170-fd15-5486-bf70-bbab16747183_section_21"
       },
       {
         "id": "2e778869c16e1154d986f7aa1b168945",
@@ -2608,7 +2871,7 @@
         "section_title": "Reference",
         "section": "Reference",
         "docling_label": "list_item",
-        "section_id": "30c88170-fd15-5486-bf70-bbab16747183_section_24"
+        "section_id": "30c88170-fd15-5486-bf70-bbab16747183_section_21"
       },
       {
         "id": "fb722b56058666f02f040f45fc87503f",
@@ -2618,7 +2881,7 @@
         "section_title": "Reference",
         "section": "Reference",
         "docling_label": "list_item",
-        "section_id": "30c88170-fd15-5486-bf70-bbab16747183_section_24"
+        "section_id": "30c88170-fd15-5486-bf70-bbab16747183_section_21"
       },
       {
         "id": "02f21ea3b8075ee9669a7c51dc74a147",
@@ -2628,7 +2891,7 @@
         "section_title": "Reference",
         "section": "Reference",
         "docling_label": "list_item",
-        "section_id": "30c88170-fd15-5486-bf70-bbab16747183_section_24"
+        "section_id": "30c88170-fd15-5486-bf70-bbab16747183_section_21"
       },
       {
         "id": "42e436950225c202a3267682111f984a",
@@ -2638,7 +2901,7 @@
         "section_title": "Reference",
         "section": "Reference",
         "docling_label": "list_item",
-        "section_id": "30c88170-fd15-5486-bf70-bbab16747183_section_24"
+        "section_id": "30c88170-fd15-5486-bf70-bbab16747183_section_21"
       },
       {
         "id": "71e97adae68cf13683d166b0f91e8380",
@@ -2648,7 +2911,7 @@
         "section_title": "Reference",
         "section": "Reference",
         "docling_label": "list_item",
-        "section_id": "30c88170-fd15-5486-bf70-bbab16747183_section_24"
+        "section_id": "30c88170-fd15-5486-bf70-bbab16747183_section_21"
       },
       {
         "id": "8454a2d94ea5af616a32148cb5375537",
@@ -2658,7 +2921,7 @@
         "section_title": "Reference",
         "section": "Reference",
         "docling_label": "list_item",
-        "section_id": "30c88170-fd15-5486-bf70-bbab16747183_section_24"
+        "section_id": "30c88170-fd15-5486-bf70-bbab16747183_section_21"
       },
       {
         "id": "5d513ad4b7ea69debacd0eb01c1204ec",
@@ -2668,7 +2931,7 @@
         "section_title": "Reference",
         "section": "Reference",
         "docling_label": "list_item",
-        "section_id": "30c88170-fd15-5486-bf70-bbab16747183_section_24"
+        "section_id": "30c88170-fd15-5486-bf70-bbab16747183_section_21"
       },
       {
         "id": "80e22fa324cd617ef586e611f569d79e",
@@ -2678,7 +2941,7 @@
         "section_title": "Reference",
         "section": "Reference",
         "docling_label": "list_item",
-        "section_id": "30c88170-fd15-5486-bf70-bbab16747183_section_24"
+        "section_id": "30c88170-fd15-5486-bf70-bbab16747183_section_21"
       },
       {
         "id": "369d02c523104eae94cfdb21ee9e36f0",
@@ -2688,7 +2951,7 @@
         "section_title": "Reference",
         "section": "Reference",
         "docling_label": "list_item",
-        "section_id": "30c88170-fd15-5486-bf70-bbab16747183_section_24"
+        "section_id": "30c88170-fd15-5486-bf70-bbab16747183_section_21"
       },
       {
         "id": "86d315528ddf3db83c21fc48c727e63d",
@@ -2698,7 +2961,7 @@
         "section_title": "Reference",
         "section": "Reference",
         "docling_label": "list_item",
-        "section_id": "30c88170-fd15-5486-bf70-bbab16747183_section_24"
+        "section_id": "30c88170-fd15-5486-bf70-bbab16747183_section_21"
       },
       {
         "id": "a8b26849dc195c09e41de1b0557f22ce",
@@ -2708,7 +2971,7 @@
         "section_title": "Reference",
         "section": "Reference",
         "docling_label": "list_item",
-        "section_id": "30c88170-fd15-5486-bf70-bbab16747183_section_24"
+        "section_id": "30c88170-fd15-5486-bf70-bbab16747183_section_21"
       },
       {
         "id": "2a550d70d810d4a58cf242ae0f2bdc07",
@@ -2718,7 +2981,7 @@
         "section_title": "Reference",
         "section": "Reference",
         "docling_label": "list_item",
-        "section_id": "30c88170-fd15-5486-bf70-bbab16747183_section_24"
+        "section_id": "30c88170-fd15-5486-bf70-bbab16747183_section_21"
       },
       {
         "id": "779f80f8f2a1c6423b73778320601775",
@@ -2728,7 +2991,7 @@
         "section_title": "Reference",
         "section": "Reference",
         "docling_label": "list_item",
-        "section_id": "30c88170-fd15-5486-bf70-bbab16747183_section_24"
+        "section_id": "30c88170-fd15-5486-bf70-bbab16747183_section_21"
       },
       {
         "id": "b413d817ef7b678b653421250b0b72dd",
@@ -2738,7 +3001,7 @@
         "section_title": "Reference",
         "section": "Reference",
         "docling_label": "list_item",
-        "section_id": "30c88170-fd15-5486-bf70-bbab16747183_section_24"
+        "section_id": "30c88170-fd15-5486-bf70-bbab16747183_section_21"
       },
       {
         "id": "87f122a648d5852215e804328c3f3082",
@@ -2748,7 +3011,7 @@
         "section_title": "Reference",
         "section": "Reference",
         "docling_label": "list_item",
-        "section_id": "30c88170-fd15-5486-bf70-bbab16747183_section_24"
+        "section_id": "30c88170-fd15-5486-bf70-bbab16747183_section_21"
       },
       {
         "id": "afd62f2e20a4413fe462bf41073c8a3f",
@@ -2758,7 +3021,7 @@
         "section_title": "Reference",
         "section": "Reference",
         "docling_label": "list_item",
-        "section_id": "30c88170-fd15-5486-bf70-bbab16747183_section_24"
+        "section_id": "30c88170-fd15-5486-bf70-bbab16747183_section_21"
       },
       {
         "id": "3dbcf9eb633bde2e3f82998a1f055698",
@@ -2768,7 +3031,7 @@
         "section_title": "Reference",
         "section": "Reference",
         "docling_label": "list_item",
-        "section_id": "30c88170-fd15-5486-bf70-bbab16747183_section_24"
+        "section_id": "30c88170-fd15-5486-bf70-bbab16747183_section_21"
       },
       {
         "id": "577093bbc55c906e6d45bbe0faf8977c",
@@ -2778,7 +3041,7 @@
         "section_title": "Reference",
         "section": "Reference",
         "docling_label": "list_item",
-        "section_id": "30c88170-fd15-5486-bf70-bbab16747183_section_24"
+        "section_id": "30c88170-fd15-5486-bf70-bbab16747183_section_21"
       },
       {
         "id": "6b3c129c0306522cb7f629f560321478",
@@ -2788,7 +3051,7 @@
         "section_title": "Reference",
         "section": "Reference",
         "docling_label": "list_item",
-        "section_id": "30c88170-fd15-5486-bf70-bbab16747183_section_24"
+        "section_id": "30c88170-fd15-5486-bf70-bbab16747183_section_21"
       },
       {
         "id": "c088da498b7194f1f8726642512eeae8",
@@ -2798,7 +3061,7 @@
         "section_title": "Reference",
         "section": "Reference",
         "docling_label": "list_item",
-        "section_id": "30c88170-fd15-5486-bf70-bbab16747183_section_24"
+        "section_id": "30c88170-fd15-5486-bf70-bbab16747183_section_21"
       },
       {
         "id": "1b1f519e8852563d01452b250643f984",
@@ -2808,7 +3071,7 @@
         "section_title": "Reference",
         "section": "Reference",
         "docling_label": "list_item",
-        "section_id": "30c88170-fd15-5486-bf70-bbab16747183_section_24"
+        "section_id": "30c88170-fd15-5486-bf70-bbab16747183_section_21"
       },
       {
         "id": "2a24e0c2316d99d5625b175be0fd1e5e",
@@ -2818,7 +3081,7 @@
         "section_title": "Reference",
         "section": "Reference",
         "docling_label": "list_item",
-        "section_id": "30c88170-fd15-5486-bf70-bbab16747183_section_24"
+        "section_id": "30c88170-fd15-5486-bf70-bbab16747183_section_21"
       },
       {
         "id": "9fc6b39f4b066a55b1c60a9430909e7a",
@@ -2828,7 +3091,7 @@
         "section_title": "Reference",
         "section": "Reference",
         "docling_label": "list_item",
-        "section_id": "30c88170-fd15-5486-bf70-bbab16747183_section_24"
+        "section_id": "30c88170-fd15-5486-bf70-bbab16747183_section_21"
       },
       {
         "id": "bdcec045957960e22619bf45b469e79a",
@@ -2838,7 +3101,7 @@
         "section_title": "Reference",
         "section": "Reference",
         "docling_label": "list_item",
-        "section_id": "30c88170-fd15-5486-bf70-bbab16747183_section_24"
+        "section_id": "30c88170-fd15-5486-bf70-bbab16747183_section_21"
       },
       {
         "id": "6a1ddadebe74cfbfea3c88f259d0c815",
@@ -2848,7 +3111,7 @@
         "section_title": "Reference",
         "section": "Reference",
         "docling_label": "list_item",
-        "section_id": "30c88170-fd15-5486-bf70-bbab16747183_section_24"
+        "section_id": "30c88170-fd15-5486-bf70-bbab16747183_section_21"
       },
       {
         "id": "46be21cc4aa60d175d3e3b74ab362316",
@@ -2858,7 +3121,7 @@
         "section_title": "Reference",
         "section": "Reference",
         "docling_label": "list_item",
-        "section_id": "30c88170-fd15-5486-bf70-bbab16747183_section_24"
+        "section_id": "30c88170-fd15-5486-bf70-bbab16747183_section_21"
       },
       {
         "id": "fc2adc73847e8c6eb4eb7c751180874d",
@@ -2868,7 +3131,7 @@
         "section_title": "Reference",
         "section": "Reference",
         "docling_label": "list_item",
-        "section_id": "30c88170-fd15-5486-bf70-bbab16747183_section_24"
+        "section_id": "30c88170-fd15-5486-bf70-bbab16747183_section_21"
       },
       {
         "id": "69cd5e5ec423520315e9d5b90119b00a",
@@ -2878,7 +3141,7 @@
         "section_title": "Reference",
         "section": "Reference",
         "docling_label": "list_item",
-        "section_id": "30c88170-fd15-5486-bf70-bbab16747183_section_24"
+        "section_id": "30c88170-fd15-5486-bf70-bbab16747183_section_21"
       },
       {
         "id": "88bf37bb3c9a2e71bbb228694a3e39e0",
@@ -3023,7 +3286,7 @@
         "page": 18,
         "text": "[AJV01] A. Ac´ ın, E. Jan´ e, and G. Vidal. Optimal estimation of quantum dynamics. Phys. Rev. A , 64:050302, 2001.",
         "label": "reference",
-        "section_id": "30c88170-fd15-5486-bf70-bbab16747183_section_24",
+        "section_id": "30c88170-fd15-5486-bf70-bbab16747183_section_21",
         "section_title": "Reference"
       },
       {
@@ -3031,7 +3294,7 @@
         "page": 18,
         "text": "[AS25] J. Agerskov and K. Splittorff. Quantum determinant estimation. Phys. Rev. A , 112:012407, 2025.",
         "label": "reference",
-        "section_id": "30c88170-fd15-5486-bf70-bbab16747183_section_24",
+        "section_id": "30c88170-fd15-5486-bf70-bbab16747183_section_21",
         "section_title": "Reference"
       },
       {
@@ -3039,7 +3302,7 @@
         "page": 18,
         "text": "[BBC + 01] Robert Beals, Harry Buhrman, Richard Cleve, Michele Mosca, and Ronald de Wolf. Quantum lower bounds by polynomials. Journal of the ACM (JACM) , 48(4):778-797, 2001.",
         "label": "reference",
-        "section_id": "30c88170-fd15-5486-bf70-bbab16747183_section_24",
+        "section_id": "30c88170-fd15-5486-bf70-bbab16747183_section_21",
         "section_title": "Reference"
       },
       {
@@ -3047,7 +3310,7 @@
         "page": 18,
         "text": "[BCG + 24] Sergey Bravyi, Anirban Chowdhury, David Gosset, Vojtˇ ech Havl´ ıˇ cek, and Guanyu Zhu. Quantum complexity of the kronecker coefficients. PRX Quantum , 5(1):010329, 2024.",
         "label": "reference",
-        "section_id": "30c88170-fd15-5486-bf70-bbab16747183_section_24",
+        "section_id": "30c88170-fd15-5486-bf70-bbab16747183_section_21",
         "section_title": "Reference"
       },
       {
@@ -3055,7 +3318,7 @@
         "page": 18,
         "text": "[BCH + 94] Georgia Benkart, Manish Chakrabarti, Thomas Halverson, Robert Leduc, Chanyoung Y Lee, and Jeffrey Stroomer. Tensor product representations of general linear groups and their connections with brauer algebras. Journal of Algebra , 166(3):529-567, 1994.",
         "label": "reference",
-        "section_id": "30c88170-fd15-5486-bf70-bbab16747183_section_24",
+        "section_id": "30c88170-fd15-5486-bf70-bbab16747183_section_21",
         "section_title": "Reference"
       },
       {
@@ -3063,7 +3326,7 @@
         "page": 18,
         "text": "[BGHS25] Sergey Bravyi, David Gosset, Vojtech Havlicek, and Louis Schatzki. Classical and quantum algorithms for characters of the symmetric group. arXiv preprint arXiv:2501.12579 , 2025.",
         "label": "reference",
-        "section_id": "30c88170-fd15-5486-bf70-bbab16747183_section_24",
+        "section_id": "30c88170-fd15-5486-bf70-bbab16747183_section_21",
         "section_title": "Reference"
       },
       {
@@ -3071,7 +3334,7 @@
         "page": 18,
         "text": "[BHMT02] Gilles Brassard, Peter Høyer, Michele Mosca, and Alain Tapp. Quantum amplitude amplification and estimation. Contemporary Mathematics , 305:53-74, 2002.",
         "label": "reference",
-        "section_id": "30c88170-fd15-5486-bf70-bbab16747183_section_24",
+        "section_id": "30c88170-fd15-5486-bf70-bbab16747183_section_21",
         "section_title": "Reference"
       },
       {
@@ -3079,7 +3342,7 @@
         "page": 18,
         "text": "[BNZ25] John Bostanci, Barak Nehoran, and Mark Zhandry. A general quantum duality for representations of groups with applications to quantum money, lightning, and fire. In 57th Annual Symposium on Theory of Computing , pages 201-212, 2025.",
         "label": "reference",
-        "section_id": "30c88170-fd15-5486-bf70-bbab16747183_section_24",
+        "section_id": "30c88170-fd15-5486-bf70-bbab16747183_section_21",
         "section_title": "Reference"
       },
       {
@@ -3087,7 +3350,7 @@
         "page": 18,
         "text": "[BTD03] Theodor Br¨ ocker and Tammo Tom Dieck. Representations of compact Lie groups , volume 98. Springer Science & Business Media, 2003.",
         "label": "reference",
-        "section_id": "30c88170-fd15-5486-bf70-bbab16747183_section_24",
+        "section_id": "30c88170-fd15-5486-bf70-bbab16747183_section_21",
         "section_title": "Reference"
       },
       {
@@ -3095,7 +3358,7 @@
         "page": 18,
         "text": "[CCGP + 24] Laura Clinton, Toby S. Cubitt, Raul Garcia-Patron, Ashley Montanaro, Stasja Stanisic, and Maarten Stroeks. Quantum phase estimation without controlled unitaries. arXiv preprint arXiv:2410.21517 , 2024.",
         "label": "reference",
-        "section_id": "30c88170-fd15-5486-bf70-bbab16747183_section_24",
+        "section_id": "30c88170-fd15-5486-bf70-bbab16747183_section_21",
         "section_title": "Reference"
       },
       {
@@ -3103,7 +3366,7 @@
         "page": 18,
         "text": "[CDPS04] G. Chiribella, G. M. D'Ariano, P. Perinotti, and M. F. Sacchi. Efficient use of quantum resources for the transmission of a reference frame. Phys. Rev. Lett. , 93:180503, 2004.",
         "label": "reference",
-        "section_id": "30c88170-fd15-5486-bf70-bbab16747183_section_24",
+        "section_id": "30c88170-fd15-5486-bf70-bbab16747183_section_21",
         "section_title": "Reference"
       },
       {
@@ -3111,7 +3374,7 @@
         "page": 18,
         "text": "[CDS05] G. Chiribella, G. M. D'Ariano, and M. F. Sacchi. Optimal estimation of group transformations using entanglement. Phys. Rev. A , 72:042338, Oct 2005.",
         "label": "reference",
-        "section_id": "30c88170-fd15-5486-bf70-bbab16747183_section_24",
+        "section_id": "30c88170-fd15-5486-bf70-bbab16747183_section_21",
         "section_title": "Reference"
       },
       {
@@ -3119,7 +3382,7 @@
         "page": 18,
         "text": "[Chi] Andrew M Childs. Lecture notes on quantum algorithms.",
         "label": "reference",
-        "section_id": "30c88170-fd15-5486-bf70-bbab16747183_section_24",
+        "section_id": "30c88170-fd15-5486-bf70-bbab16747183_section_21",
         "section_title": "Reference"
       },
       {
@@ -3127,7 +3390,7 @@
         "page": 18,
         "text": "[Cir24] Cristina Cirstoiu. A fourier analysis framework for approximate classical simulations of quantum circuits. arXiv preprint arXiv:2410.13856 , 2024.",
         "label": "reference",
-        "section_id": "30c88170-fd15-5486-bf70-bbab16747183_section_24",
+        "section_id": "30c88170-fd15-5486-bf70-bbab16747183_section_21",
         "section_title": "Reference"
       },
       {
@@ -3135,7 +3398,7 @@
         "page": 18,
         "text": "[DJSW07] Miroslav Dobˇ s´ ıˇ cek, G¨ oran Johansson, Vitaly Shumeiko, and G¨ oran Wendin. Arbitrary accuracy iterative quantum phase estimation algorithm using a single ancillary qubit: A two-qubit benchmark. Phys. Rev. A , 76(3):030306, 2007.",
         "label": "reference",
-        "section_id": "30c88170-fd15-5486-bf70-bbab16747183_section_24",
+        "section_id": "30c88170-fd15-5486-bf70-bbab16747183_section_21",
         "section_title": "Reference"
       },
       {
@@ -3143,7 +3406,7 @@
         "page": 18,
         "text": "[EGH + 11] Pavel I Etingof, Oleg Golberg, Sebastian Hensel, Tiankai Liu, Alex Schwendner, Dmitry Vaintrob, and Elena Yudovina. Introduction to representation theory , volume 59. American Mathematical Soc., 2011.",
         "label": "reference",
-        "section_id": "30c88170-fd15-5486-bf70-bbab16747183_section_24",
+        "section_id": "30c88170-fd15-5486-bf70-bbab16747183_section_21",
         "section_title": "Reference"
       },
       {
@@ -3151,7 +3414,7 @@
         "page": 18,
         "text": "[FEK25] Paul K Faehrmann, Jens Eisert, and Richard Kueng. In the shadow of the hadamard test: Using the garbage state for good and further modifications. arXiv preprint arXiv:2505.15913 , 2025.",
         "label": "reference",
-        "section_id": "30c88170-fd15-5486-bf70-bbab16747183_section_24",
+        "section_id": "30c88170-fd15-5486-bf70-bbab16747183_section_21",
         "section_title": "Reference"
       },
       {
@@ -3159,7 +3422,7 @@
         "page": 18,
         "text": "[FH13] William Fulton and Joe Harris. Representation theory: a first course , volume 129. Springer Science & Business Media, 2013.",
         "label": "reference",
-        "section_id": "30c88170-fd15-5486-bf70-bbab16747183_section_24",
+        "section_id": "30c88170-fd15-5486-bf70-bbab16747183_section_21",
         "section_title": "Reference"
       },
       {
@@ -3167,7 +3430,7 @@
         "page": 19,
         "text": "[Gri25] Dmitry A. Grinko. Mixed Schur-Weyl duality in quantum information . PhD thesis, Ph. D. thesis, University of Amsterdam, 2025.",
         "label": "reference",
-        "section_id": "30c88170-fd15-5486-bf70-bbab16747183_section_24",
+        "section_id": "30c88170-fd15-5486-bf70-bbab16747183_section_21",
         "section_title": "Reference"
       },
       {
@@ -3175,7 +3438,7 @@
         "page": 19,
         "text": "[GSLW19] Andr´ as Gily´ en, Yuan Su, Guang Hao Low, and Nathan Wiebe. Quantum singular value transformation and beyond: exponential improvements for quantum matrix arithmetics. In 51st annual symposium on theory of computing , pages 193-204, 2019.",
         "label": "reference",
-        "section_id": "30c88170-fd15-5486-bf70-bbab16747183_section_24",
+        "section_id": "30c88170-fd15-5486-bf70-bbab16747183_section_21",
         "section_title": "Reference"
       },
       {
@@ -3183,7 +3446,7 @@
         "page": 19,
         "text": "[GST24] Zuzana Gavorov´ a, Matan Seidel, and Yonathan Touati. Topological obstructions to quantum computation with unitary oracles. Phys. Rev. A , 109:032625, 2024.",
         "label": "reference",
-        "section_id": "30c88170-fd15-5486-bf70-bbab16747183_section_24",
+        "section_id": "30c88170-fd15-5486-bf70-bbab16747183_section_21",
         "section_title": "Reference"
       },
       {
@@ -3191,7 +3454,7 @@
         "page": 19,
         "text": "[Hay06] Masahito Hayashi. Parallel treatment of estimation of su (2) and phase estimation. Physics Letters A , 354(3):183-189, 2006.",
         "label": "reference",
-        "section_id": "30c88170-fd15-5486-bf70-bbab16747183_section_24",
+        "section_id": "30c88170-fd15-5486-bf70-bbab16747183_section_21",
         "section_title": "Reference"
       },
       {
@@ -3199,7 +3462,7 @@
         "page": 19,
         "text": "[Hay16] Masahito Hayashi. Quantum information theory . Springer, 2016.",
         "label": "reference",
-        "section_id": "30c88170-fd15-5486-bf70-bbab16747183_section_24",
+        "section_id": "30c88170-fd15-5486-bf70-bbab16747183_section_21",
         "section_title": "Reference"
       },
       {
@@ -3207,7 +3470,7 @@
         "page": 19,
         "text": "[Hel69] Carl W Helstrom. Quantum detection and estimation theory. Journal of Statistical Physics , 1(2):231252, 1969.",
         "label": "reference",
-        "section_id": "30c88170-fd15-5486-bf70-bbab16747183_section_24",
+        "section_id": "30c88170-fd15-5486-bf70-bbab16747183_section_21",
         "section_title": "Reference"
       },
       {
@@ -3215,7 +3478,7 @@
         "page": 19,
         "text": "[HKOT23] Jeongwan Haah, Robin Kothari, Ryan O'Donnell, and Ewin Tang. Query-optimal estimation of unitary channels in diamond distance. In 64th Annual Symposium on Foundations of Computer Science , pages 363-390, 2023.",
         "label": "reference",
-        "section_id": "30c88170-fd15-5486-bf70-bbab16747183_section_24",
+        "section_id": "30c88170-fd15-5486-bf70-bbab16747183_section_21",
         "section_title": "Reference"
       },
       {
@@ -3223,7 +3486,7 @@
         "page": 19,
         "text": "[Jor09] Stephen P. Jordan. Fast quantum algorithms for approximating some irreducible representations of groups. 2009.",
         "label": "reference",
-        "section_id": "30c88170-fd15-5486-bf70-bbab16747183_section_24",
+        "section_id": "30c88170-fd15-5486-bf70-bbab16747183_section_21",
         "section_title": "Reference"
       },
       {
@@ -3231,7 +3494,7 @@
         "page": 19,
         "text": "[Kit95] A Yu Kitaev. Quantum measurements and the abelian stabilizer problem. arXiv preprint quantph/9511026 , 1995.",
         "label": "reference",
-        "section_id": "30c88170-fd15-5486-bf70-bbab16747183_section_24",
+        "section_id": "30c88170-fd15-5486-bf70-bbab16747183_section_21",
         "section_title": "Reference"
       },
       {
@@ -3239,7 +3502,7 @@
         "page": 19,
         "text": "[KLY15] Shelby Kimmel, Guang Hao Low, and Theodore J Yoder. Robust calibration of a universal single-qubit gate set via robust phase estimation. Phys. Rev. A , 92(6):062315, 2015.",
         "label": "reference",
-        "section_id": "30c88170-fd15-5486-bf70-bbab16747183_section_24",
+        "section_id": "30c88170-fd15-5486-bf70-bbab16747183_section_21",
         "section_title": "Reference"
       },
       {
@@ -3247,7 +3510,7 @@
         "page": 19,
         "text": "[LC98] Erich Leo Lehmann and George Casella. Theory of point estimation . Springer, 1998.",
         "label": "reference",
-        "section_id": "30c88170-fd15-5486-bf70-bbab16747183_section_24",
+        "section_id": "30c88170-fd15-5486-bf70-bbab16747183_section_21",
         "section_title": "Reference"
       },
       {
@@ -3255,7 +3518,7 @@
         "page": 19,
         "text": "[LH25] Mart´ ın Larocca and Vojtech Havlicek. Quantum algorithms for representation-theoretic multiplicities. Phys. Rev. Lett. , 135:010602, 2025.",
         "label": "reference",
-        "section_id": "30c88170-fd15-5486-bf70-bbab16747183_section_24",
+        "section_id": "30c88170-fd15-5486-bf70-bbab16747183_section_21",
         "section_title": "Reference"
       },
       {
@@ -3263,7 +3526,7 @@
         "page": 19,
         "text": "[LSS + 20] Yiping Lu, Jun Yan Sim, Jun Suzuki, Berthold-Georg Englert, and Hui Khoon Ng. Direct estimation of minimum gate fidelity. Phys. Rev. A , 102:022410, 2020.",
         "label": "reference",
-        "section_id": "30c88170-fd15-5486-bf70-bbab16747183_section_24",
+        "section_id": "30c88170-fd15-5486-bf70-bbab16747183_section_21",
         "section_title": "Reference"
       },
       {
@@ -3271,7 +3534,7 @@
         "page": 19,
         "text": "[MdW23] Nikhil S. Mande and Ronald de Wolf. Tight Bounds for Quantum Phase Estimation and Related Problems. In 31st Annual European Symposium on Algorithms , volume 274, pages 81:1-81:16, 2023.",
         "label": "reference",
-        "section_id": "30c88170-fd15-5486-bf70-bbab16747183_section_24",
+        "section_id": "30c88170-fd15-5486-bf70-bbab16747183_section_21",
         "section_title": "Reference"
       },
       {
@@ -3279,7 +3542,7 @@
         "page": 19,
         "text": "[Mec19] Elizabeth S Meckes. The random matrix theory of the classical compact groups , volume 218. Cambridge University Press, 2019.",
         "label": "reference",
-        "section_id": "30c88170-fd15-5486-bf70-bbab16747183_section_24",
+        "section_id": "30c88170-fd15-5486-bf70-bbab16747183_section_21",
         "section_title": "Reference"
       },
       {
@@ -3287,7 +3550,7 @@
         "page": 19,
         "text": "[MS14] Iman Marvian and Robert W Spekkens. A generalization of schur-weyl duality with applications in quantum estimation. Communications in Mathematical Physics , 331(2):431-475, 2014.",
         "label": "reference",
-        "section_id": "30c88170-fd15-5486-bf70-bbab16747183_section_24",
+        "section_id": "30c88170-fd15-5486-bf70-bbab16747183_section_21",
         "section_title": "Reference"
       },
       {
@@ -3295,7 +3558,7 @@
         "page": 19,
         "text": "[NC10] Michael A. Nielsen and Isaac L. Chuang. Quantum Computation and Quantum Information: 10th Anniversary Edition . Cambridge University Press, 10th edition, 2010.",
         "label": "reference",
-        "section_id": "30c88170-fd15-5486-bf70-bbab16747183_section_24",
+        "section_id": "30c88170-fd15-5486-bf70-bbab16747183_section_21",
         "section_title": "Reference"
       },
       {
@@ -3303,7 +3566,7 @@
         "page": 19,
         "text": "[Ngu23] Quynh T Nguyen. The mixed schur transform: efficient quantum circuit and applications. arXiv preprint arXiv:2310.01613 , 2023.",
         "label": "reference",
-        "section_id": "30c88170-fd15-5486-bf70-bbab16747183_section_24",
+        "section_id": "30c88170-fd15-5486-bf70-bbab16747183_section_21",
         "section_title": "Reference"
       },
       {
@@ -3311,7 +3574,7 @@
         "page": 19,
         "text": "[Pan25] Greta Panova. Polynomial time classical versus quantum algorithms for representation theoretic multiplicities. arXiv preprint arXiv:2502.20253 , 2025.",
         "label": "reference",
-        "section_id": "30c88170-fd15-5486-bf70-bbab16747183_section_24",
+        "section_id": "30c88170-fd15-5486-bf70-bbab16747183_section_21",
         "section_title": "Reference"
       },
       {
@@ -3319,7 +3582,7 @@
         "page": 19,
         "text": "[PW27] F. Peter and H. Weyl. Die vollst¨ andigkeit der primitiven darstellungen einer geschlossenen kontinuierlichen gruppe. Mathematische Annalen , 97(1):737-755, 1927.",
         "label": "reference",
-        "section_id": "30c88170-fd15-5486-bf70-bbab16747183_section_24",
+        "section_id": "30c88170-fd15-5486-bf70-bbab16747183_section_21",
         "section_title": "Reference"
       },
       {
@@ -3327,7 +3590,7 @@
         "page": 20,
         "text": "[SHF13] Krysta M Svore, Matthew Hastings, and Michael Freedman. Faster phase estimation. Quantum Information and Computation , 14:306-328, 2013.",
         "label": "reference",
-        "section_id": "30c88170-fd15-5486-bf70-bbab16747183_section_24",
+        "section_id": "30c88170-fd15-5486-bf70-bbab16747183_section_21",
         "section_title": "Reference"
       },
       {
@@ -3335,7 +3598,7 @@
         "page": 20,
         "text": "[SY23] Adrian She and Henry Yuen. Unitary property testing lower bounds by polynomials. In 14th Innovations in Theoretical Computer Science Conference , 2023.",
         "label": "reference",
-        "section_id": "30c88170-fd15-5486-bf70-bbab16747183_section_24",
+        "section_id": "30c88170-fd15-5486-bf70-bbab16747183_section_21",
         "section_title": "Reference"
       },
       {
@@ -3343,7 +3606,7 @@
         "page": 20,
         "text": "[TW25] Ewin Tang and John Wright. Are controlled unitaries helpful? arXiv preprint arXiv:2508.00055 , 2025.",
         "label": "reference",
-        "section_id": "30c88170-fd15-5486-bf70-bbab16747183_section_24",
+        "section_id": "30c88170-fd15-5486-bf70-bbab16747183_section_21",
         "section_title": "Reference"
       },
       {
@@ -3351,7 +3614,7 @@
         "page": 20,
         "text": "[vACGN23] Joran van Apeldoorn, Arjan Cornelissen, Andr´ as Gily´ en, and Giacomo Nannicini. Quantum tomography using state-preparation unitaries. In 34th Annual Symposium on Discrete Algorithms , pages 1265-1318, 2023.",
         "label": "reference",
-        "section_id": "30c88170-fd15-5486-bf70-bbab16747183_section_24",
+        "section_id": "30c88170-fd15-5486-bf70-bbab16747183_section_21",
         "section_title": "Reference"
       },
       {
@@ -3359,7 +3622,7 @@
         "page": 20,
         "text": "[WBP + 24] Iria W. Wang, Robin Brown, Taylor L. Patti, Anima Anandkumar, Marco Pavone, and Susanne F. Yelin. Sum-of-squares inspired quantum metaheuristic for polynomial optimization with the hadamard test and approximate amplitude constraints. arXiv preprint arXiv:2408.07774 , 2024.",
         "label": "reference",
-        "section_id": "30c88170-fd15-5486-bf70-bbab16747183_section_24",
+        "section_id": "30c88170-fd15-5486-bf70-bbab16747183_section_21",
         "section_title": "Reference"
       },
       {
@@ -3367,7 +3630,7 @@
         "page": 20,
         "text": "[WRZ + 21] Bujiao Wu, Maharshi Ray, Liming Zhao, Xiaoming Sun, and Patrick Rebentrost. Quantum-classical algorithms for skewed linear systems with an optimized hadamard test. Phys. Rev. A , 103:042422, 2021.",
         "label": "reference",
-        "section_id": "30c88170-fd15-5486-bf70-bbab16747183_section_24",
+        "section_id": "30c88170-fd15-5486-bf70-bbab16747183_section_21",
         "section_title": "Reference"
       },
       {
@@ -3375,7 +3638,7 @@
         "page": 20,
         "text": "[YRC20] Yuxiang Yang, Renato Renner, and Giulio Chiribella. Optimal universal programming of unitary gates. Phys. Rev. Lett. , 125(21):210501, 2020.",
         "label": "reference",
-        "section_id": "30c88170-fd15-5486-bf70-bbab16747183_section_24",
+        "section_id": "30c88170-fd15-5486-bf70-bbab16747183_section_21",
         "section_title": "Reference"
       },
       {
@@ -3383,7 +3646,7 @@
         "page": 20,
         "text": "[ZBQ + 25] Alexander I. Zenchuk, Georgii A. Bochkin, Wentao Qi, Asutosh Kumar, and Junde Wu. Quantum algorithms for calculating determinant and inverse of matrix and solving linear algebraic systems. Quantum Information & Computation , 25(2):195-215, 2025.",
         "label": "reference",
-        "section_id": "30c88170-fd15-5486-bf70-bbab16747183_section_24",
+        "section_id": "30c88170-fd15-5486-bf70-bbab16747183_section_21",
         "section_title": "Reference"
       }
     ]
