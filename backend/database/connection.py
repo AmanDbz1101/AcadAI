@@ -8,7 +8,7 @@ a singleton engine + session factory, plus a context manager helper.
 import logging
 import os
 from contextlib import contextmanager
-from typing import Generator
+from typing import Generator, Optional
 
 from sqlalchemy import create_engine, text
 from sqlalchemy.orm import Session, sessionmaker
@@ -63,7 +63,7 @@ class DatabaseConnection:
             sess.add(some_record)
     """
 
-    def __init__(self, database_url: str | None = None):
+    def __init__(self, database_url: Optional[str] = None):
         self._url = database_url or _build_database_url()
         self._engine = create_engine(
             self._url,
@@ -128,7 +128,7 @@ class DatabaseConnection:
 # Module-level convenience (lazy singleton)
 # ---------------------------------------------------------------------------
 
-_default_connection: DatabaseConnection | None = None
+_default_connection: Optional[DatabaseConnection] = None
 
 
 def get_db_connection() -> DatabaseConnection:
