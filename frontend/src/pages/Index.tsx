@@ -359,6 +359,7 @@ const Index = () => {
         onFileUpload={handleFileUploaded}
         isUploading={uploadPaperMutation.isPending}
         uploadError={uploadError}
+        readingGuide={paperBundleQuery.data?.reading_guide ?? null}
       />
       <PaperViewer
         ref={viewerRef}

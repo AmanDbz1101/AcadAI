@@ -6,11 +6,13 @@ Handles complete extraction workflow:
 2. Metadata extraction (title, abstract, sections)
 3. Section hierarchy extraction
 4. Save required results to output artifacts
+5. Generate reading guide via LangGraph workflow
 """
 
 import json
 import logging
 import os
+import sys
 from pathlib import Path
 from typing import Optional, Dict, Any
 from datetime import datetime
@@ -43,6 +45,65 @@ def _resolve_postgres_dsn() -> Optional[str]:
         return f"postgresql://{user}:{password}@{host}:{port}/{dbname}"
 
     return f"postgresql://{user}@{host}:{port}/{dbname}"
+
+
+def _generate_reading_guide(
+    title: str,
+    abstract: str,
+    sections: list[Dict[str, Any]],
+    full_text: str,
+) -> Optional[Dict[str, Any]]:
+    """
+    Generate a reading guide using the LangGraph workflow.
+    
+    Args:
+        title: Paper title
+        abstract: Paper abstract
+        sections: List of extracted sections
+        full_text: Complete paper text
+        
+    Returns:
+        Reading guide dict or None if generation fails
+    """
+    try:
+        # Import here to avoid circular imports and allow optional usage
+        _BACKEND_DIR = Path(__file__).resolve().parent.parent
+        _PROJECT_ROOT = _BACKEND_DIR.parent
+        for _p in (_PROJECT_ROOT, _BACKEND_DIR):
+            if str(_p) not in sys.path:
+                sys.path.insert(0, str(_p))
+        
+        from rag.graph import get_agent
+        
+        logger.info("Generating reading guide via LangGraph workflow...")
+        
+        # Initialize the agent
+        agent = get_agent()
+        
+        # Prepare state with extracted information
+        state = {
+            "title": title,
+            "abstract": abstract,
+            "sections": sections,
+            "full_text": full_text,
+            "errors": [],
+        }
+        
+        # Run the workflow - it will go through extraction (skipped since we have metadata),
+        # categorization, and then the appropriate guide node
+        result_state = agent.invoke(state)
+        
+        reading_guide = result_state.get("reading_guide")
+        if reading_guide:
+            logger.info("✅ Reading guide generated successfully")
+            return reading_guide
+        else:
+            logger.warning("⚠️  Reading guide not generated (workflow completed but no guide in state)")
+            return None
+            
+    except Exception as exc:
+        logger.error(f"Failed to generate reading guide: {exc}", exc_info=True)
+        return None
 
 
 class PDFExtractor:
@@ -238,6 +299,20 @@ class PDFExtractor:
         # Persist to PostgreSQL when configured.
         db_result = None
         postgres_dsn = _resolve_postgres_dsn()
+        
+        # Generate reading guide
+        logger.info("Generating reading guide...")
+        reading_guide = _generate_reading_guide(
+            title=processed_doc.metadata.title or "",
+            abstract=processed_doc.metadata.abstract or "",
+            sections=[s.model_dump(mode='json', exclude_none=True) for s in processed_doc.metadata.sections],
+            full_text=full_text,
+        )
+        if reading_guide:
+            logger.info("✅ Reading guide generated and will be stored with paper")
+        else:
+            logger.warning("⚠️  Reading guide generation failed, paper will be stored without guide")
+        
         if postgres_dsn:
             try:
                 store = PostgresPaperStore(postgres_dsn)
@@ -254,6 +329,7 @@ class PDFExtractor:
                     metadata_json=metadata_dict,
                     sections=section_payload,
                     extracted_elements=extracted_elements,
+                    reading_guide=reading_guide,
                 )
 
                 if db_result.stored:
@@ -289,6 +365,7 @@ class PDFExtractor:
             "extracted_elements": extracted_elements,
             "hierarchy": hierarchy.model_dump(mode='json'),
             "full_text": full_text,
+            "reading_guide": reading_guide,
             "stats": {
                 "pages": processed_doc.metadata.global_stats.total_pages if processed_doc.metadata.global_stats else 0,
                 "sections": processed_doc.metadata.global_stats.total_sections if processed_doc.metadata.global_stats else 0,
@@ -307,6 +384,7 @@ class PDFExtractor:
                 "paper_id": db_result.paper_id if db_result else None,
                 "paper_name": db_result.paper_name if db_result else None,
                 "reason": db_result.reason if db_result else "postgres_not_configured",
+                "reading_guide_stored": bool(reading_guide),
             },
         }
         
