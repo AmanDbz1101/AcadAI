@@ -52,6 +52,7 @@ class PaperRecord(Base):
     source_pdf_path: Mapped[Optional[str]] = mapped_column(Text)
     document_uuid: Mapped[Optional[str]] = mapped_column(Text)
     metadata_json: Mapped[dict] = mapped_column(JSONB, nullable=False, default=dict)
+    reading_guide: Mapped[Optional[dict]] = mapped_column(JSONB, nullable=True, default=None)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
     updated_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), server_default=func.now(), onupdate=func.now()
@@ -348,6 +349,15 @@ class PostgresPaperStore:
         """Create required tables and indexes if they do not exist."""
         Base.metadata.create_all(self._engine)
 
+        # Backward-compatible migration for existing deployments where
+        # the papers table was created before the reading_guide column existed.
+        with self._engine.begin() as conn:
+            conn.execute(
+                text(
+                    "ALTER TABLE papers ADD COLUMN IF NOT EXISTS reading_guide JSONB"
+                )
+            )
+
     def persist_extraction(
         self,
         *,
@@ -360,6 +370,7 @@ class PostgresPaperStore:
         metadata_json: Dict[str, Any],
         sections: List[Dict[str, Any]],
         extracted_elements: Dict[str, List[Dict[str, Any]]],
+        reading_guide: Optional[Dict[str, Any]] = None,
     ) -> PersistResult:
         """
         Persist one extraction result if the paper has not been stored yet.
@@ -404,6 +415,7 @@ class PostgresPaperStore:
                 source_pdf_path=source_pdf_path,
                 document_uuid=document_uuid,
                 metadata_json=metadata_json or {},
+                reading_guide=reading_guide,
             )
             session.add(paper)
             session.flush()
@@ -686,6 +698,7 @@ class PostgresPaperStore:
             return self._to_dict(row) if row else None
 
     def list_papers(self, limit: int = 100) -> List[Dict[str, Any]]:
+        self.ensure_schema()
         with self._Session() as session:
             rows = (
                 session.query(PaperRecord)
@@ -706,6 +719,7 @@ class PostgresPaperStore:
             ]
 
     def list_papers_for_user(self, user_id: int, limit: int = 100) -> List[Dict[str, Any]]:
+        self.ensure_schema()
         with self._Session() as session:
             rows = (
                 session.query(PaperRecord)
@@ -824,6 +838,7 @@ class PostgresPaperStore:
             return row is not None
 
     def get_paper_by_id(self, paper_id: int) -> Optional[Dict[str, Any]]:
+        self.ensure_schema()
         with self._Session() as session:
             row = session.query(PaperRecord).filter(PaperRecord.id == paper_id).first()
             return self._to_dict(row) if row else None
