@@ -3,162 +3,121 @@
   "reading_strategy": {
     "method": "three_pass_method",
     "paper_type": "applied",
-    "estimated_total_time": "2-3 hours"
+    "estimated_total_time": "60-90 minutes"
   },
   "pass1_quick_scan": {
-    "goal": "Understand the problem and proposed solution",
-    "estimated_time": "5-10 minutes",
+    "goal": "Understand the overall structure and key contributions",
+    "estimated_time": "10-15 minutes",
     "steps": [
       {
         "step_number": 1,
         "section_to_read": [
-          "Introduction",
-          "Conclusion"
+          "1 Introduction"
         ],
+        "relevant_figure_ids": [],
+        "relevant_table_ids": [],
         "needs_figures": false,
         "needs_tables": false,
-        "objective": "Understand the research context and main contributions",
+        "objective": "Understand the research context and problem statement",
         "questions_to_answer": [
-          "What sequence modeling and transduction problems does the paper address?",
-          "What is the main limitation of recurrent models?",
-          "What is the proposed Transformer model?"
+          "What is the primary problem that the Attention Is All You Need paper aims to address in the field of deep learning?",
+          "How does the paper's proposed approach differ from traditional sequence-to-sequence models with encoder-decoder structures?",
+          "What is the key contribution of the Attention Is All You Need paper in terms of improving the efficiency of neural machine translation models?"
         ],
-        "expected_output": "Understand the research context and main contributions"
-      },
-      {
-        "step_number": 2,
-        "section_to_read": [
-          "Introduction"
-        ],
-        "needs_figures": false,
-        "needs_tables": false,
-        "objective": "Understand the background and motivation",
-        "questions_to_answer": [
-          "What are the limitations of recurrent neural networks?",
-          "How do attention mechanisms help in sequence modeling?"
-        ],
-        "expected_output": "Understand the background and motivation"
-      },
-      {
-        "step_number": 3,
-        "section_to_read": [
-          "Figures 1-3",
-          "Tables 1-2"
-        ],
-        "needs_figures": true,
-        "needs_tables": true,
-        "objective": "Get an overview of the results",
-        "questions_to_answer": [
-          "What are the main results of the paper?",
-          "How does the Transformer model perform compared to other models?"
-        ],
-        "expected_output": "Get an overview of the results"
+        "expected_output": "Summary of the research context and problem statement"
       }
     ]
   },
   "pass2_method_understanding": {
-    "goal": "Understand the methodology and evaluation setup",
-    "estimated_time": "20-40 minutes",
+    "goal": "Understand the model architecture and training",
+    "estimated_time": "20-30 minutes",
     "steps": [
       {
         "step_number": 1,
         "section_to_read": [
-          "3. Model Architecture"
+          "3 Model Architecture"
         ],
+        "relevant_figure_ids": [
+          "224fe8dda46fcfb50fa3dcfda9520dd2"
+        ],
+        "relevant_table_ids": [],
         "needs_figures": true,
         "needs_tables": false,
         "objective": "Understand the Transformer model architecture",
         "questions_to_answer": [
-          "What are the main components of the Transformer model?",
-          "How does the self-attention mechanism work?"
+          "Which specific claim in section 3 Model Architecture most directly achieves this step objective?",
+          "Which paper-specific evidence best supports the stated expected output for step 1?",
+          "Which paper-specific evidence best supports the stated expected output for step 1?"
         ],
-        "expected_output": "Understand the Transformer model architecture"
+        "expected_output": "Description of the Transformer model architecture"
       },
       {
         "step_number": 2,
         "section_to_read": [
-          "4. Why Self-Attention"
+          "5 Training"
         ],
-        "needs_figures": false,
-        "needs_tables": false,
-        "objective": "Understand the motivation behind self-attention",
-        "questions_to_answer": [
-          "Why is self-attention used in the Transformer model?",
-          "What are the benefits of self-attention?"
-        ],
-        "expected_output": "Understand the motivation behind self-attention"
-      },
-      {
-        "step_number": 3,
-        "section_to_read": [
-          "5. Training"
+        "relevant_figure_ids": [],
+        "relevant_table_ids": [
+          "8470418306dcd6e0bb89309a8a583968"
         ],
         "needs_figures": false,
         "needs_tables": true,
-        "objective": "Understand the training setup",
+        "objective": "Understand the training process",
         "questions_to_answer": [
-          "How was the Transformer model trained?",
-          "What datasets were used for training and evaluation?"
+          "What is the time complexity of the self-attention mechanism in the model architecture?",
+          "How does the maximum path length vary across different layer types during the training process?",
+          "What is the effect of sequence length n on the complexity per layer of the convolutional layer type?"
         ],
-        "expected_output": "Understand the training setup"
+        "expected_output": "Description of the training process"
       }
     ]
   },
   "pass3_deep_analysis": {
-    "goal": "Critical analysis of the methodology and results",
-    "estimated_time": "1-2 hours",
+    "goal": "Analyze the results and conclusion",
+    "estimated_time": "30-45 minutes",
     "steps": [
       {
         "step_number": 1,
         "section_to_read": [
-          "6. Results"
+          "6 Results"
+        ],
+        "relevant_figure_ids": [
+          "3dae6155f0a8b74110fff10bfcbbb25b"
+        ],
+        "relevant_table_ids": [
+          "e89268e9c3cff453095f105dcbd3f6c8"
         ],
         "needs_figures": true,
         "needs_tables": true,
-        "objective": "Analyze the results and evaluation metrics",
+        "objective": "Analyze the results",
         "questions_to_answer": [
-          "What are the main results of the paper?",
-          "How does the Transformer model perform compared to other models?"
+          "What is the BLEU score achieved by the Transformer model on the English-to-German newstest2014 test?",
+          "How does the training cost of the Transformer model compare to that of the GNMT + RL model on the English-to-French task?",
+          "What is the relative training cost of the ByteNet model compared to the Deep-Att + PosUnk model on the English-to-German task?"
         ],
-        "expected_output": "Analyze the results and evaluation metrics"
+        "expected_output": "Summary of the results"
       },
       {
         "step_number": 2,
         "section_to_read": [
-          "7. Conclusion"
+          "7 Conclusion"
         ],
+        "relevant_figure_ids": [],
+        "relevant_table_ids": [],
         "needs_figures": false,
         "needs_tables": false,
-        "objective": "Understand the conclusions and future work",
+        "objective": "Understand the conclusion and future work",
         "questions_to_answer": [
-          "What are the main conclusions of the paper?",
-          "What future work is proposed?"
+          "What are the key findings presented in the conclusion of the Attention Is All You Need paper?",
+          "How do the authors of Attention Is All You Need propose to extend their work in future research?",
+          "What potential applications or improvements are highlighted in the conclusion of the Attention Is All You Need paper?"
         ],
-        "expected_output": "Understand the conclusions and future work"
-      },
-      {
-        "step_number": 3,
-        "section_to_read": [
-          "Introduction",
-          "Conclusion"
-        ],
-        "needs_figures": false,
-        "needs_tables": false,
-        "objective": "Critically evaluate the paper",
-        "questions_to_answer": [
-          "What are the strengths and weaknesses of the paper?",
-          "What are the implications of the results?"
-        ],
-        "expected_output": "Critically evaluate the paper"
+        "expected_output": "Summary of the conclusion and future work"
       }
     ]
   },
   "final_user_task": {
-    "summary_task": "Summarize the paper in 2-3 paragraphs",
-    "reflection_questions": [
-      "What are the main contributions of the paper?",
-      "What are the implications of the results?",
-      "What are the limitations of the paper?"
-    ]
+    "summary_task": "Summarize the key contributions and findings of the paper",
+    "reflection_questions": []
   }
 }

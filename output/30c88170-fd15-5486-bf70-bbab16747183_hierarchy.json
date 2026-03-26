@@ -10,12 +10,8 @@
         "parent_id": null,
         "page_start": 2,
         "page_end": 2,
-        "has_subsections": true,
-        "child_section_ids": [
-          "30c88170-fd15-5486-bf70-bbab16747183_section_1",
-          "30c88170-fd15-5486-bf70-bbab16747183_section_4",
-          "30c88170-fd15-5486-bf70-bbab16747183_section_5"
-        ],
+        "has_subsections": false,
+        "child_section_ids": [],
         "font_size": null,
         "is_bold": null,
         "reading_order": 0
@@ -23,16 +19,13 @@
       {
         "section_id": "30c88170-fd15-5486-bf70-bbab16747183_section_1",
         "title": "Our contributions",
-        "level": 2,
+        "level": 1,
         "numbering": "1.1",
-        "parent_id": "30c88170-fd15-5486-bf70-bbab16747183_section_0",
+        "parent_id": null,
         "page_start": 3,
         "page_end": 3,
-        "has_subsections": true,
-        "child_section_ids": [
-          "30c88170-fd15-5486-bf70-bbab16747183_section_2",
-          "30c88170-fd15-5486-bf70-bbab16747183_section_3"
-        ],
+        "has_subsections": false,
+        "child_section_ids": [],
         "font_size": null,
         "is_bold": null,
         "reading_order": 1
@@ -40,9 +33,9 @@
       {
         "section_id": "30c88170-fd15-5486-bf70-bbab16747183_section_2",
         "title": "First result",
-        "level": 3,
+        "level": 1,
         "numbering": "1.1.1",
-        "parent_id": "30c88170-fd15-5486-bf70-bbab16747183_section_1",
+        "parent_id": null,
         "page_start": 3,
         "page_end": 3,
         "has_subsections": false,
@@ -54,9 +47,9 @@
       {
         "section_id": "30c88170-fd15-5486-bf70-bbab16747183_section_3",
         "title": "Second result",
-        "level": 3,
+        "level": 1,
         "numbering": "1.1.2",
-        "parent_id": "30c88170-fd15-5486-bf70-bbab16747183_section_1",
+        "parent_id": null,
         "page_start": 4,
         "page_end": 4,
         "has_subsections": false,
@@ -68,9 +61,9 @@
       {
         "section_id": "30c88170-fd15-5486-bf70-bbab16747183_section_4",
         "title": "Proof techniques",
-        "level": 2,
+        "level": 1,
         "numbering": "1.2",
-        "parent_id": "30c88170-fd15-5486-bf70-bbab16747183_section_0",
+        "parent_id": null,
         "page_start": 5,
         "page_end": 5,
         "has_subsections": false,
@@ -82,9 +75,9 @@
       {
         "section_id": "30c88170-fd15-5486-bf70-bbab16747183_section_5",
         "title": "Organization of the paper",
-        "level": 2,
+        "level": 1,
         "numbering": "1.3",
-        "parent_id": "30c88170-fd15-5486-bf70-bbab16747183_section_0",
+        "parent_id": null,
         "page_start": 6,
         "page_end": 6,
         "has_subsections": false,
@@ -101,11 +94,8 @@
         "parent_id": null,
         "page_start": 6,
         "page_end": 6,
-        "has_subsections": true,
-        "child_section_ids": [
-          "30c88170-fd15-5486-bf70-bbab16747183_section_7",
-          "30c88170-fd15-5486-bf70-bbab16747183_section_9"
-        ],
+        "has_subsections": false,
+        "child_section_ids": [],
         "font_size": null,
         "is_bold": null,
         "reading_order": 6
@@ -113,15 +103,13 @@
       {
         "section_id": "30c88170-fd15-5486-bf70-bbab16747183_section_7",
         "title": "Prerequisites from representation theory",
-        "level": 2,
+        "level": 1,
         "numbering": "2.1",
-        "parent_id": "30c88170-fd15-5486-bf70-bbab16747183_section_6",
+        "parent_id": null,
         "page_start": 6,
         "page_end": 6,
-        "has_subsections": true,
-        "child_section_ids": [
-          "30c88170-fd15-5486-bf70-bbab16747183_section_8"
-        ],
+        "has_subsections": false,
+        "child_section_ids": [],
         "font_size": null,
         "is_bold": null,
         "reading_order": 7
@@ -129,9 +117,9 @@
       {
         "section_id": "30c88170-fd15-5486-bf70-bbab16747183_section_8",
         "title": "Peter-Weyl theorem and Schur-Weyl duality, and their consequences",
-        "level": 3,
+        "level": 1,
         "numbering": "2.1.1",
-        "parent_id": "30c88170-fd15-5486-bf70-bbab16747183_section_7",
+        "parent_id": null,
         "page_start": 7,
         "page_end": 7,
         "has_subsections": false,
@@ -143,9 +131,9 @@
       {
         "section_id": "30c88170-fd15-5486-bf70-bbab16747183_section_9",
         "title": "Algorithms and Their Complexity",
-        "level": 2,
+        "level": 1,
         "numbering": "2.2",
-        "parent_id": "30c88170-fd15-5486-bf70-bbab16747183_section_6",
+        "parent_id": null,
         "page_start": 8,
         "page_end": 8,
         "has_subsections": false,
@@ -190,11 +178,8 @@
         "parent_id": null,
         "page_start": 15,
         "page_end": 15,
-        "has_subsections": true,
-        "child_section_ids": [
-          "30c88170-fd15-5486-bf70-bbab16747183_section_13",
-          "30c88170-fd15-5486-bf70-bbab16747183_section_17"
-        ],
+        "has_subsections": false,
+        "child_section_ids": [],
         "font_size": null,
         "is_bold": null,
         "reading_order": 12
@@ -202,17 +187,13 @@
       {
         "section_id": "30c88170-fd15-5486-bf70-bbab16747183_section_13",
         "title": "Simpler forms of Rep ε ( f )",
-        "level": 2,
+        "level": 1,
         "numbering": "5.1",
-        "parent_id": "30c88170-fd15-5486-bf70-bbab16747183_section_12",
+        "parent_id": null,
         "page_start": 15,
         "page_end": 15,
-        "has_subsections": true,
-        "child_section_ids": [
-          "30c88170-fd15-5486-bf70-bbab16747183_section_14",
-          "30c88170-fd15-5486-bf70-bbab16747183_section_15",
-          "30c88170-fd15-5486-bf70-bbab16747183_section_16"
-        ],
+        "has_subsections": false,
+        "child_section_ids": [],
         "font_size": null,
         "is_bold": null,
         "reading_order": 13
@@ -220,9 +201,9 @@
       {
         "section_id": "30c88170-fd15-5486-bf70-bbab16747183_section_14",
         "title": "Univariate Polynomials",
-        "level": 3,
+        "level": 1,
         "numbering": "5.1.1",
-        "parent_id": "30c88170-fd15-5486-bf70-bbab16747183_section_13",
+        "parent_id": null,
         "page_start": 15,
         "page_end": 15,
         "has_subsections": false,
@@ -234,9 +215,9 @@
       {
         "section_id": "30c88170-fd15-5486-bf70-bbab16747183_section_15",
         "title": "The trace function",
-        "level": 3,
+        "level": 1,
         "numbering": "5.1.2",
-        "parent_id": "30c88170-fd15-5486-bf70-bbab16747183_section_13",
+        "parent_id": null,
         "page_start": 16,
         "page_end": 16,
         "has_subsections": false,
@@ -248,9 +229,9 @@
       {
         "section_id": "30c88170-fd15-5486-bf70-bbab16747183_section_16",
         "title": "The determinant det g",
-        "level": 3,
+        "level": 1,
         "numbering": "5.1.3",
-        "parent_id": "30c88170-fd15-5486-bf70-bbab16747183_section_13",
+        "parent_id": null,
         "page_start": 16,
         "page_end": 16,
         "has_subsections": false,
@@ -262,17 +243,13 @@
       {
         "section_id": "30c88170-fd15-5486-bf70-bbab16747183_section_17",
         "title": "Optimal PAC estimations",
-        "level": 2,
+        "level": 1,
         "numbering": "5.2",
-        "parent_id": "30c88170-fd15-5486-bf70-bbab16747183_section_12",
+        "parent_id": null,
         "page_start": 16,
         "page_end": 16,
-        "has_subsections": true,
-        "child_section_ids": [
-          "30c88170-fd15-5486-bf70-bbab16747183_section_18",
-          "30c88170-fd15-5486-bf70-bbab16747183_section_19",
-          "30c88170-fd15-5486-bf70-bbab16747183_section_20"
-        ],
+        "has_subsections": false,
+        "child_section_ids": [],
         "font_size": null,
         "is_bold": null,
         "reading_order": 17
@@ -280,9 +257,9 @@
       {
         "section_id": "30c88170-fd15-5486-bf70-bbab16747183_section_18",
         "title": "Univariate Polynomials",
-        "level": 3,
+        "level": 1,
         "numbering": "5.2.1",
-        "parent_id": "30c88170-fd15-5486-bf70-bbab16747183_section_17",
+        "parent_id": null,
         "page_start": 16,
         "page_end": 16,
         "has_subsections": false,
@@ -294,9 +271,9 @@
       {
         "section_id": "30c88170-fd15-5486-bf70-bbab16747183_section_19",
         "title": "The trace function",
-        "level": 3,
+        "level": 1,
         "numbering": "5.2.2",
-        "parent_id": "30c88170-fd15-5486-bf70-bbab16747183_section_17",
+        "parent_id": null,
         "page_start": 16,
         "page_end": 16,
         "has_subsections": false,
@@ -308,9 +285,9 @@
       {
         "section_id": "30c88170-fd15-5486-bf70-bbab16747183_section_20",
         "title": "Irreducible representations π λ ( g ) i,j",
-        "level": 3,
+        "level": 1,
         "numbering": "5.2.3",
-        "parent_id": "30c88170-fd15-5486-bf70-bbab16747183_section_17",
+        "parent_id": null,
         "page_start": 17,
         "page_end": 17,
         "has_subsections": false,
@@ -336,17 +313,33 @@
     ],
     "root_sections": [
       "30c88170-fd15-5486-bf70-bbab16747183_section_0",
+      "30c88170-fd15-5486-bf70-bbab16747183_section_1",
+      "30c88170-fd15-5486-bf70-bbab16747183_section_2",
+      "30c88170-fd15-5486-bf70-bbab16747183_section_3",
+      "30c88170-fd15-5486-bf70-bbab16747183_section_4",
+      "30c88170-fd15-5486-bf70-bbab16747183_section_5",
       "30c88170-fd15-5486-bf70-bbab16747183_section_6",
+      "30c88170-fd15-5486-bf70-bbab16747183_section_7",
+      "30c88170-fd15-5486-bf70-bbab16747183_section_8",
+      "30c88170-fd15-5486-bf70-bbab16747183_section_9",
       "30c88170-fd15-5486-bf70-bbab16747183_section_10",
       "30c88170-fd15-5486-bf70-bbab16747183_section_11",
       "30c88170-fd15-5486-bf70-bbab16747183_section_12",
+      "30c88170-fd15-5486-bf70-bbab16747183_section_13",
+      "30c88170-fd15-5486-bf70-bbab16747183_section_14",
+      "30c88170-fd15-5486-bf70-bbab16747183_section_15",
+      "30c88170-fd15-5486-bf70-bbab16747183_section_16",
+      "30c88170-fd15-5486-bf70-bbab16747183_section_17",
+      "30c88170-fd15-5486-bf70-bbab16747183_section_18",
+      "30c88170-fd15-5486-bf70-bbab16747183_section_19",
+      "30c88170-fd15-5486-bf70-bbab16747183_section_20",
       "30c88170-fd15-5486-bf70-bbab16747183_section_21"
     ],
     "total_sections": 22,
-    "max_depth": 3,
+    "max_depth": 1,
     "detection_method": "docling+heuristics",
     "confidence_score": 0.9772727272727273
   },
-  "processing_time_seconds": 0.0007562637329101562,
+  "processing_time_seconds": 0.0004801750183105469,
   "warnings": []
 }

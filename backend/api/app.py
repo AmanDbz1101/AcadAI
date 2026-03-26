@@ -20,8 +20,12 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse
 from pydantic import BaseModel
 
+from langchain_groq import ChatGroq
+from langchain_core.messages import HumanMessage
+
 from backend.extraction.extraction import extract_pdf
 from backend.extraction.persistence import PostgresPaperStore
+from backend.rag.prompts import qa_prompt
 
 
 AUTH_SECRET_KEY = os.getenv("AUTH_SECRET_KEY", "dev-auth-secret-change-me")
@@ -145,6 +149,25 @@ def _make_store() -> PostgresPaperStore:
     return PostgresPaperStore(_resolve_postgres_dsn())
 
 
+<<<<<<< HEAD
+def _build_qa_context_from_chunks(chunks: List[Dict[str, Any]], max_chunks: int = 2) -> str:
+    context_parts: List[str] = []
+    for idx, chunk in enumerate(chunks[:max_chunks], 1):
+        content = str(chunk.get("content") or chunk.get("text") or "").strip()
+        metadata = chunk.get("metadata") or {}
+        section_title = str(metadata.get("section_title") or metadata.get("section") or "").strip()
+        if not content:
+            continue
+        if section_title:
+            context_parts.append(f"[{idx}] Section: {section_title}\n{content}")
+        else:
+            context_parts.append(f"[{idx}]\n{content}")
+    return "\n\n".join(context_parts)
+
+
+class GenerateAnswerRequest(BaseModel):
+    force_regenerate: bool = False
+=======
 def _pick_sections_by_keywords(
     sections: List[Dict[str, Any]],
     keywords: List[str],
@@ -376,6 +399,7 @@ def _build_fallback_reading_guide(
             ],
         },
     }
+>>>>>>> origin/main
 
 
 app = FastAPI(title="ResearchAgent Backend API", version="1.0.0")
@@ -588,7 +612,7 @@ def get_paper_pdf(
     
     if not store.user_has_access_to_paper(user_id=user_id, paper_id=paper_id):
         raise HTTPException(status_code=403, detail="You do not have access to this paper")
-    
+
     paper = store.get_paper_by_id(paper_id)
     if not paper:
         raise HTTPException(status_code=404, detail="Paper not found")
@@ -742,6 +766,30 @@ def get_paper_pdf(
     )
 
 
+@app.get("/api/papers/{paper_id}/guide")
+def get_paper_guide(
+    paper_id: int,
+    authorization: Optional[str] = Header(default=None, alias="Authorization"),
+) -> Dict[str, Any]:
+    user_id = _require_auth_user_id(authorization)
+    store = _make_store()
+
+    if not store.user_has_access_to_paper(user_id=user_id, paper_id=paper_id):
+        raise HTTPException(status_code=403, detail="You do not have access to this paper")
+
+    paper = store.get_paper_by_id(paper_id)
+    if not paper:
+        raise HTTPException(status_code=404, detail="Paper not found")
+
+    guide_row = store.get_paper_guide_for_paper_id(paper_id)
+    questions = store.list_paper_questions_for_paper_id(paper_id)
+    return {
+        "paper": paper,
+        "guide": guide_row,
+        "questions": questions,
+    }
+
+
 @app.post("/api/papers/upload")
 def upload_paper(
     file: UploadFile = File(...),
@@ -806,3 +854,84 @@ def upload_paper(
             file.file.close()
         except Exception:
             pass
+
+
+@app.get("/api/papers/{paper_id}/questions")
+def get_paper_questions(paper_id: int) -> Dict[str, Any]:
+    store = _make_store()
+    paper = store.get_paper_by_id(paper_id)
+    if not paper:
+        raise HTTPException(status_code=404, detail="Paper not found")
+
+    questions = store.list_paper_questions_for_paper_id(paper_id)
+    return {"paper": paper, "questions": questions}
+
+
+@app.post("/api/papers/{paper_id}/questions/{question_id}/generate")
+def generate_answer_for_question(
+    paper_id: int,
+    question_id: int,
+    payload: GenerateAnswerRequest,
+) -> Dict[str, Any]:
+    store = _make_store()
+
+    paper = store.get_paper_by_id(paper_id)
+    if not paper:
+        raise HTTPException(status_code=404, detail="Paper not found")
+
+    try:
+        claimed = store.claim_question_for_generation(
+            paper_id=paper_id,
+            question_id=question_id,
+            force_regenerate=payload.force_regenerate,
+        )
+    except ValueError as exc:
+        if str(exc) == "question_not_found":
+            raise HTTPException(status_code=404, detail="Question not found") from exc
+        if str(exc) == "question_running":
+            raise HTTPException(status_code=409, detail="Question answer generation already running") from exc
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
+
+    if claimed.get("status") == "completed" and claimed.get("answer_text") and not payload.force_regenerate:
+        return {"paper": paper, "question": claimed}
+
+    question_text = str(claimed.get("question_text") or "").strip()
+    retrieval_payload = claimed.get("retrieval_payload_json") or {}
+    chunks = retrieval_payload.get("chunks") or []
+    context = _build_qa_context_from_chunks(chunks)
+
+    try:
+        if not context:
+            answer = "No relevant content found."
+            confidence = "LOW"
+        else:
+            llm = ChatGroq(
+                model=os.getenv("QA_ANSWER_MODEL", "llama-3.3-70b-versatile"),
+                temperature=0.3,
+            )
+            prompt = qa_prompt(
+                query=question_text,
+                context=context,
+                metadata={
+                    "paper_title": paper.get("title") or paper.get("paper_name") or "",
+                    "category": (retrieval_payload.get("category") or ""),
+                },
+            )
+            response = llm.invoke([HumanMessage(content=prompt)])
+            answer = str(response.content or "").strip()
+            confidence = "HIGH" if len(answer) > 100 else "MEDIUM"
+
+        question_row = store.complete_paper_question(
+            paper_id=paper_id,
+            question_id=question_id,
+            answer_text=answer,
+            confidence=confidence,
+        )
+        return {"paper": paper, "question": question_row}
+    except Exception as exc:  # noqa: BLE001
+        store.fail_paper_question(
+            paper_id=paper_id,
+            question_id=question_id,
+            error_message=str(exc),
+        )
+        raise HTTPException(status_code=500, detail=f"Answer generation failed: {exc}") from exc

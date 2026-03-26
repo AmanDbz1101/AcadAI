@@ -1,0 +1,123 @@
+{
+  "paper_title": "Attention Is All You Need",
+  "reading_strategy": {
+    "method": "three_pass_method",
+    "paper_type": "applied",
+    "estimated_total_time": "60-90 minutes"
+  },
+  "pass1_quick_scan": {
+    "goal": "Understand the overall structure and key contributions",
+    "estimated_time": "10-15 minutes",
+    "steps": [
+      {
+        "step_number": 1,
+        "section_to_read": [
+          "1 Introduction"
+        ],
+        "relevant_figure_ids": [],
+        "relevant_table_ids": [],
+        "needs_figures": false,
+        "needs_tables": false,
+        "objective": "Understand the research context and problem statement",
+        "questions_to_answer": [
+          "What is the primary problem that the Attention Is All You Need paper aims to address in the field of deep learning?",
+          "How does the paper's proposed approach differ from traditional sequence-to-sequence models with encoder-decoder structures?",
+          "What is the key contribution of the Attention Is All You Need paper in terms of improving the efficiency of neural machine translation models?"
+        ],
+        "expected_output": "Summary of the research context and problem statement"
+      }
+    ]
+  },
+  "pass2_method_understanding": {
+    "goal": "Understand the model architecture and training",
+    "estimated_time": "20-30 minutes",
+    "steps": [
+      {
+        "step_number": 1,
+        "section_to_read": [
+          "3 Model Architecture"
+        ],
+        "relevant_figure_ids": [
+          "224fe8dda46fcfb50fa3dcfda9520dd2"
+        ],
+        "relevant_table_ids": [],
+        "needs_figures": true,
+        "needs_tables": false,
+        "objective": "Understand the Transformer model architecture",
+        "questions_to_answer": [
+          "Which specific claim in section 3 Model Architecture most directly achieves this step objective?",
+          "Which paper-specific evidence best supports the stated expected output for step 1?",
+          "Which paper-specific evidence best supports the stated expected output for step 1?"
+        ],
+        "expected_output": "Description of the Transformer model architecture"
+      },
+      {
+        "step_number": 2,
+        "section_to_read": [
+          "5 Training"
+        ],
+        "relevant_figure_ids": [],
+        "relevant_table_ids": [
+          "8470418306dcd6e0bb89309a8a583968"
+        ],
+        "needs_figures": false,
+        "needs_tables": true,
+        "objective": "Understand the training process",
+        "questions_to_answer": [
+          "What is the time complexity of the self-attention mechanism in the model architecture?",
+          "How does the maximum path length vary across different layer types during the training process?",
+          "What is the effect of sequence length n on the complexity per layer of the convolutional layer type?"
+        ],
+        "expected_output": "Description of the training process"
+      }
+    ]
+  },
+  "pass3_deep_analysis": {
+    "goal": "Analyze the results and conclusion",
+    "estimated_time": "30-45 minutes",
+    "steps": [
+      {
+        "step_number": 1,
+        "section_to_read": [
+          "6 Results"
+        ],
+        "relevant_figure_ids": [
+          "3dae6155f0a8b74110fff10bfcbbb25b"
+        ],
+        "relevant_table_ids": [
+          "e89268e9c3cff453095f105dcbd3f6c8"
+        ],
+        "needs_figures": true,
+        "needs_tables": true,
+        "objective": "Analyze the results",
+        "questions_to_answer": [
+          "What is the BLEU score achieved by the Transformer model on the English-to-German newstest2014 test?",
+          "How does the training cost of the Transformer model compare to that of the GNMT + RL model on the English-to-French task?",
+          "What is the relative training cost of the ByteNet model compared to the Deep-Att + PosUnk model on the English-to-German task?"
+        ],
+        "expected_output": "Summary of the results"
+      },
+      {
+        "step_number": 2,
+        "section_to_read": [
+          "7 Conclusion"
+        ],
+        "relevant_figure_ids": [],
+        "relevant_table_ids": [],
+        "needs_figures": false,
+        "needs_tables": false,
+        "objective": "Understand the conclusion and future work",
+        "questions_to_answer": [
+          "What are the key findings presented in the conclusion of the Attention Is All You Need paper?",
+          "How do the authors of Attention Is All You Need propose to extend their work in future research?",
+          "What potential applications or improvements are highlighted in the conclusion of the Attention Is All You Need paper?"
+        ],
+        "expected_output": "Summary of the conclusion and future work"
+      }
+    ]
+  },
+  "final_user_task": {
+    "summary_task": "Summarize the key contributions and findings of the paper",
+    "reflection_questions": []
+  }
+}

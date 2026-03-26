@@ -76,6 +76,12 @@ class PaperRecord(Base):
     user_links: Mapped[list["UserPaperRecord"]] = relationship(
         back_populates="paper", cascade="all, delete-orphan"
     )
+    guides: Mapped[list["PaperGuideRecord"]] = relationship(
+        back_populates="paper", cascade="all, delete-orphan"
+    )
+    questions: Mapped[list["PaperQuestionRecord"]] = relationship(
+        back_populates="paper", cascade="all, delete-orphan"
+    )
 
 
 class UserRecord(Base):
@@ -255,6 +261,56 @@ class UserPaperRecord(Base):
 
     user: Mapped[UserRecord] = relationship(back_populates="paper_links")
     paper: Mapped[PaperRecord] = relationship(back_populates="user_links")
+class PaperGuideRecord(Base):
+    __tablename__ = "paper_guides"
+    __table_args__ = (
+        UniqueConstraint("paper_id", name="uq_paper_guides_paper_id"),
+        Index("idx_paper_guides_paper_id", "paper_id"),
+    )
+
+    id: Mapped[int] = mapped_column(BigInteger, primary_key=True, autoincrement=True)
+    paper_id: Mapped[int] = mapped_column(
+        BigInteger, ForeignKey("papers.id", ondelete="CASCADE"), nullable=False
+    )
+    document_uuid: Mapped[Optional[str]] = mapped_column(Text)
+    guide_json: Mapped[dict] = mapped_column(JSONB, nullable=False, default=dict)
+    guide_plan_json: Mapped[dict] = mapped_column(JSONB, nullable=False, default=dict)
+    guide_file_path: Mapped[Optional[str]] = mapped_column(Text)
+    guide_plan_file_path: Mapped[Optional[str]] = mapped_column(Text)
+    question_section_pairs_json: Mapped[list] = mapped_column(JSONB, nullable=False, default=list)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), server_default=func.now(), onupdate=func.now()
+    )
+
+    paper: Mapped[PaperRecord] = relationship(back_populates="guides")
+
+
+class PaperQuestionRecord(Base):
+    __tablename__ = "paper_questions"
+    __table_args__ = (
+        Index("idx_paper_questions_paper_id", "paper_id"),
+        Index("idx_paper_questions_status", "status"),
+    )
+
+    id: Mapped[int] = mapped_column(BigInteger, primary_key=True, autoincrement=True)
+    paper_id: Mapped[int] = mapped_column(
+        BigInteger, ForeignKey("papers.id", ondelete="CASCADE"), nullable=False
+    )
+    document_uuid: Mapped[Optional[str]] = mapped_column(Text)
+    question_text: Mapped[str] = mapped_column(Text, nullable=False)
+    scoped_sections_json: Mapped[list] = mapped_column(JSONB, nullable=False, default=list)
+    retrieval_payload_json: Mapped[dict] = mapped_column(JSONB, nullable=False, default=dict)
+    status: Mapped[str] = mapped_column(Text, nullable=False, default="pending")
+    answer_text: Mapped[Optional[str]] = mapped_column(Text)
+    confidence: Mapped[Optional[str]] = mapped_column(Text)
+    error_message: Mapped[Optional[str]] = mapped_column(Text)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), server_default=func.now(), onupdate=func.now()
+    )
+
+    paper: Mapped[PaperRecord] = relationship(back_populates="questions")
 
 
 @dataclass
@@ -917,3 +973,190 @@ class PostgresPaperStore:
                 .all()
             )
             return [self._to_dict(r) for r in rows]
+
+    def upsert_paper_guide(
+        self,
+        *,
+        paper_id: int,
+        document_uuid: Optional[str],
+        guide_json: Dict[str, Any],
+        guide_plan_json: Optional[Dict[str, Any]] = None,
+        guide_file_path: Optional[str] = None,
+        guide_plan_file_path: Optional[str] = None,
+        question_section_pairs: Optional[List[Dict[str, Any]]] = None,
+    ) -> Dict[str, Any]:
+        self.ensure_schema()
+        with self._Session() as session:
+            row = (
+                session.query(PaperGuideRecord)
+                .filter(PaperGuideRecord.paper_id == paper_id)
+                .first()
+            )
+            if row is None:
+                row = PaperGuideRecord(paper_id=paper_id)
+                session.add(row)
+
+            row.document_uuid = document_uuid
+            row.guide_json = guide_json or {}
+            row.guide_plan_json = guide_plan_json or {}
+            row.guide_file_path = guide_file_path
+            row.guide_plan_file_path = guide_plan_file_path
+            row.question_section_pairs_json = question_section_pairs or []
+            session.commit()
+            session.refresh(row)
+            return self._to_dict(row)
+
+    def get_paper_guide_for_paper_id(self, paper_id: int) -> Optional[Dict[str, Any]]:
+        with self._Session() as session:
+            row = (
+                session.query(PaperGuideRecord)
+                .filter(PaperGuideRecord.paper_id == paper_id)
+                .first()
+            )
+            return self._to_dict(row) if row else None
+
+    def replace_paper_questions(
+        self,
+        *,
+        paper_id: int,
+        document_uuid: Optional[str],
+        questions: List[Dict[str, Any]],
+    ) -> List[Dict[str, Any]]:
+        self.ensure_schema()
+        with self._Session() as session:
+            session.query(PaperQuestionRecord).filter(PaperQuestionRecord.paper_id == paper_id).delete()
+
+            created: List[PaperQuestionRecord] = []
+            for item in questions or []:
+                row = PaperQuestionRecord(
+                    paper_id=paper_id,
+                    document_uuid=document_uuid,
+                    question_text=str(item.get("question_text") or "").strip(),
+                    scoped_sections_json=item.get("scoped_sections") or [],
+                    retrieval_payload_json=item.get("retrieval_payload") or {},
+                    status=str(item.get("status") or "pending"),
+                    answer_text=item.get("answer_text"),
+                    confidence=item.get("confidence"),
+                    error_message=item.get("error_message"),
+                )
+                if not row.question_text:
+                    continue
+                session.add(row)
+                created.append(row)
+
+            session.commit()
+            for row in created:
+                session.refresh(row)
+            return [self._to_dict(r) for r in created]
+
+    def list_paper_questions_for_paper_id(self, paper_id: int) -> List[Dict[str, Any]]:
+        with self._Session() as session:
+            rows = (
+                session.query(PaperQuestionRecord)
+                .filter(PaperQuestionRecord.paper_id == paper_id)
+                .order_by(PaperQuestionRecord.id.asc())
+                .all()
+            )
+            return [self._to_dict(r) for r in rows]
+
+    def get_paper_question_for_paper_id(self, paper_id: int, question_id: int) -> Optional[Dict[str, Any]]:
+        with self._Session() as session:
+            row = (
+                session.query(PaperQuestionRecord)
+                .filter(
+                    PaperQuestionRecord.paper_id == paper_id,
+                    PaperQuestionRecord.id == question_id,
+                )
+                .first()
+            )
+            return self._to_dict(row) if row else None
+
+    def claim_question_for_generation(
+        self,
+        *,
+        paper_id: int,
+        question_id: int,
+        force_regenerate: bool = False,
+    ) -> Dict[str, Any]:
+        with self._Session() as session:
+            row = (
+                session.query(PaperQuestionRecord)
+                .filter(
+                    PaperQuestionRecord.paper_id == paper_id,
+                    PaperQuestionRecord.id == question_id,
+                )
+                .with_for_update()
+                .first()
+            )
+            if row is None:
+                raise ValueError("question_not_found")
+
+            if row.status == "running":
+                raise ValueError("question_running")
+
+            if row.status == "completed" and not force_regenerate and row.answer_text:
+                return self._to_dict(row)
+
+            row.status = "running"
+            row.error_message = None
+            if force_regenerate:
+                row.answer_text = None
+                row.confidence = None
+            session.commit()
+            session.refresh(row)
+            return self._to_dict(row)
+
+    def complete_paper_question(
+        self,
+        *,
+        paper_id: int,
+        question_id: int,
+        answer_text: str,
+        confidence: Optional[str],
+    ) -> Dict[str, Any]:
+        with self._Session() as session:
+            row = (
+                session.query(PaperQuestionRecord)
+                .filter(
+                    PaperQuestionRecord.paper_id == paper_id,
+                    PaperQuestionRecord.id == question_id,
+                )
+                .with_for_update()
+                .first()
+            )
+            if row is None:
+                raise ValueError("question_not_found")
+
+            row.status = "completed"
+            row.answer_text = answer_text
+            row.confidence = confidence
+            row.error_message = None
+            session.commit()
+            session.refresh(row)
+            return self._to_dict(row)
+
+    def fail_paper_question(
+        self,
+        *,
+        paper_id: int,
+        question_id: int,
+        error_message: str,
+    ) -> Dict[str, Any]:
+        with self._Session() as session:
+            row = (
+                session.query(PaperQuestionRecord)
+                .filter(
+                    PaperQuestionRecord.paper_id == paper_id,
+                    PaperQuestionRecord.id == question_id,
+                )
+                .with_for_update()
+                .first()
+            )
+            if row is None:
+                raise ValueError("question_not_found")
+
+            row.status = "failed"
+            row.error_message = error_message
+            session.commit()
+            session.refresh(row)
+            return self._to_dict(row)

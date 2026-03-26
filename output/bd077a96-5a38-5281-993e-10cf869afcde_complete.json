@@ -3,7 +3,7 @@
   "metadata": {
     "document_id": "attention.pdf",
     "paper_title": "Attention Is All You Need",
-    "abstract": "Not provided in the given context. Please provide the abstract section or the opening paragraphs to infer the abstract",
+    "abstract": "Not provided in the given context. Please provide the abstract section or the opening paragraphs to extract the abstract",
     "keywords": [
       "attention mechanism",
       "transformer model",
@@ -11,7 +11,7 @@
       "neural networks",
       "machine translation",
       "self-attention",
-      "sequence-to-sequence models"
+      "sequence-to-sequence"
     ],
     "sections": [
       {
