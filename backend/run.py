@@ -37,6 +37,7 @@ from __future__ import annotations
 import argparse
 import json
 import logging
+import os
 import sys
 from pathlib import Path
 from typing import Any, Dict, Optional
@@ -56,6 +57,7 @@ for _p in (_PROJECT_ROOT, _BACKEND_DIR):
 # Project-level config (GROQ_API_KEY, LOG_LEVEL, …)
 # ---------------------------------------------------------------------------
 from config import GROQ_API_KEY, LOG_LEVEL  # noqa: E402 – import after path setup
+from backend.extraction.persistence import PostgresPaperStore  # noqa: E402
 
 # ---------------------------------------------------------------------------
 # RAG unified graph (handles extraction + categorization + Q&A/summary)
@@ -74,6 +76,102 @@ logging.basicConfig(
     datefmt="%H:%M:%S",
 )
 logger = logging.getLogger(__name__)
+
+
+def _resolve_postgres_dsn() -> Optional[str]:
+    explicit = os.getenv("POSTGRES_DSN")
+    if explicit:
+        return explicit
+
+    host = os.getenv("POSTGRES_HOST") or os.getenv("PGHOST") or os.getenv("PG_HOST")
+    port = os.getenv("POSTGRES_PORT") or os.getenv("PGPORT") or os.getenv("PG_PORT")
+    dbname = os.getenv("POSTGRES_DB") or os.getenv("PGDATABASE") or os.getenv("PG_DB")
+    user = os.getenv("POSTGRES_USER") or os.getenv("PGUSER") or os.getenv("PG_USER")
+    password = os.getenv("POSTGRES_PASSWORD") or os.getenv("PGPASSWORD") or os.getenv("PG_PASSWORD")
+
+    if not all([host, port, dbname, user]):
+        return None
+
+    if password:
+        return f"postgresql://{user}:{password}@{host}:{port}/{dbname}"
+    return f"postgresql://{user}@{host}:{port}/{dbname}"
+
+
+def _persist_deferred_guide_questions(result: Dict[str, Any], pdf_path: Path) -> None:
+    dsn = _resolve_postgres_dsn()
+    if not dsn:
+        return
+
+    guide = result.get("reading_guide") or {}
+    if not guide:
+        return
+
+    paper_id = result.get("db_paper_id")
+    store = PostgresPaperStore(dsn)
+    store.ensure_schema()
+
+    if paper_id is None:
+        title = (result.get("title") or "").strip() or pdf_path.stem
+        paper = store.get_paper_by_name(title)
+        if not paper:
+            logger.warning("Deferred guide persistence skipped: paper not found in DB for title '%s'", title)
+            return
+        paper_id = int(paper["id"])
+
+    question_section_pairs = result.get("question_section_pairs") or []
+    per_question_results = result.get("per_question_results") or []
+    qa_results = result.get("qa_results") or []
+
+    by_question_payload: Dict[str, Dict[str, Any]] = {}
+    for payload in per_question_results:
+        question = str(payload.get("question") or "").strip()
+        if question and question not in by_question_payload:
+            by_question_payload[question] = payload
+
+    by_question_answer: Dict[str, Dict[str, Any]] = {}
+    for entry in qa_results:
+        question = str(entry.get("question") or "").strip()
+        if question and question not in by_question_answer:
+            by_question_answer[question] = entry
+
+    questions_to_store: list[dict[str, Any]] = []
+    for pair in question_section_pairs:
+        question_text = str(pair.get("question") or "").strip()
+        if not question_text:
+            continue
+
+        payload = by_question_payload.get(question_text) or {}
+        answer_row = by_question_answer.get(question_text) or {}
+        answer_text = answer_row.get("answer")
+        status = str(answer_row.get("status") or ("completed" if answer_text else "pending"))
+
+        questions_to_store.append(
+            {
+                "question_text": question_text,
+                "scoped_sections": pair.get("sections") or [],
+                "retrieval_payload": payload,
+                "status": status,
+                "answer_text": answer_text,
+                "confidence": answer_row.get("confidence"),
+                "error_message": None,
+            }
+        )
+
+    store.upsert_paper_guide(
+        paper_id=int(paper_id),
+        document_uuid=result.get("document_id"),
+        guide_json=guide,
+        guide_plan_json=result.get("reading_guide_plan") or {},
+        guide_file_path=result.get("guide_file_path"),
+        guide_plan_file_path=result.get("guide_plan_file_path"),
+        question_section_pairs=question_section_pairs,
+    )
+
+    store.replace_paper_questions(
+        paper_id=int(paper_id),
+        document_uuid=result.get("document_id"),
+        questions=questions_to_store,
+    )
 
 
 # ---------------------------------------------------------------------------
@@ -140,6 +238,7 @@ class PaperAnalysisPipeline:
         query: Optional[str] = None,
         summarize: bool = False,
         store_in_db: bool = False,
+        defer_answer_generation: Optional[bool] = None,
     ) -> Dict[str, Any]:
         """
         Run the full pipeline on a single PDF.
@@ -160,6 +259,10 @@ class PaperAnalysisPipeline:
             If *True*, persist rich Docling data (text blocks, sections,
             tables, figures, formulas with bounding boxes) to PostgreSQL.
             Requires ``enable_db=True`` when constructing the pipeline.
+        defer_answer_generation:
+            When true, guide-question retrieval payloads are prepared but answers
+            are not generated immediately. If omitted, defaults to true when
+            no direct user query is provided.
 
         Returns
         -------
@@ -180,11 +283,15 @@ class PaperAnalysisPipeline:
         if not pdf_path.exists():
             raise FileNotFoundError(f"PDF not found: {pdf_path}")
 
+        if defer_answer_generation is None:
+            defer_answer_generation = not bool(query)
+
         # Prepare initial state
         initial_state = {
             "pdf_path": str(pdf_path),
             "force_ocr": force_ocr,
             "query": query,
+            "defer_answer_generation": defer_answer_generation,
             "errors": [],
         }
 
@@ -214,6 +321,12 @@ class PaperAnalysisPipeline:
         
         if result.get("errors"):
             logger.warning(f"Errors encountered: {result['errors']}")
+
+        # Persist guide/question payloads for deferred one-click answer generation.
+        try:
+            _persist_deferred_guide_questions(result, pdf_path)
+        except Exception as exc:
+            logger.warning("Deferred guide/question persistence failed: %s", exc)
 
         # --- Optional DB ingestion ---
         if store_in_db:

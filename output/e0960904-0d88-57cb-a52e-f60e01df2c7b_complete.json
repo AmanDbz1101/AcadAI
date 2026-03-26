@@ -3,17 +3,17 @@
   "metadata": {
     "document_id": "survey.pdf",
     "paper_title": "Pre-trained Models for Natural Language Processing: A Survey",
-    "abstract": "Recently, the emergence of pre-trained models (PTMs) has brought natural language processing (NLP) to a new era. In this survey, we provide a comprehensive review of PTMs for NLP. We first briefly introduce language representation learning and its research progress. Then we systematically categorize existing PTMs based on a taxonomy from four different perspectives. Next, we describe how to adapt the knowledge of PTMs to downstream tasks. Finally, we outline some potential directions of PTMs for future research",
+    "abstract": "Recently, the emergence of pre-trained models (PTMs) * has brought natural language processing (NLP) to a new era. In this survey, we provide a comprehensive review of PTMs for NLP. We first briefly introduce language representation learning and its research progress. Then we systematically categorize existing PTMs based on a taxonomy from four di erent perspectives. Next, we describe how to adapt the knowledge of PTMs to downstream tasks. Finally, we outline some potential directions of PTMs for future research. This survey is purposed to be a hands-on guide for understanding, using, and developing PTMs for various NLP tasks",
     "keywords": [
       "pre-trained models",
       "natural language processing",
       "language representation learning",
       "neural networks",
       "deep learning",
-      "self-supervised learning",
-      "language modeling",
       "distributed representation",
-      "word embedding"
+      "word embedding",
+      "self-supervised learning",
+      "language modelling"
     ],
     "sections": [
       {

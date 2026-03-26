@@ -9,11 +9,10 @@
       "unitary operations",
       "quantum information science",
       "sample-efficient estimation",
-      "controlled-unitary operation",
       "probably approximately correct (pac) learning",
       "representation theory",
       "irreducible representations",
-      "polynomial functions"
+      "unitary group"
     ],
     "sections": [
       {
@@ -21,109 +20,26 @@
         "level": 1,
         "page_start": 2,
         "stats": {
-          "formulas": 9,
+          "formulas": 0,
           "tables": 0,
           "figures": 0,
-          "text_blocks": 44
-        },
-        "sections": [
-          {
-            "original_name": "1.1 Our contributions",
-            "level": 2,
-            "page_start": 3,
-            "stats": {
-              "formulas": 5,
-              "tables": 0,
-              "figures": 0,
-              "text_blocks": 26
-            },
-            "sections": [
-              {
-                "original_name": "1.1.1 First result",
-                "level": 3,
-                "page_start": 3,
-                "stats": {
-                  "formulas": 2,
-                  "tables": 0,
-                  "figures": 0,
-                  "text_blocks": 15
-                }
-              },
-              {
-                "original_name": "1.1.2 Second result",
-                "level": 3,
-                "page_start": 4,
-                "stats": {
-                  "formulas": 3,
-                  "tables": 0,
-                  "figures": 0,
-                  "text_blocks": 11
-                }
-              }
-            ]
-          },
-          {
-            "original_name": "1.2 Proof techniques",
-            "level": 2,
-            "page_start": 5,
-            "stats": {
-              "formulas": 4,
-              "tables": 0,
-              "figures": 0,
-              "text_blocks": 10
-            }
-          },
-          {
-            "original_name": "1.3 Organization of the paper",
-            "level": 2,
-            "page_start": 6,
-            "stats": {
-              "formulas": 0,
-              "tables": 0,
-              "figures": 0,
-              "text_blocks": 0
-            }
-          }
-        ]
+          "text_blocks": 8
+        }
       },
       {
         "original_name": "1.1 Our contributions",
-        "level": 2,
+        "level": 1,
         "page_start": 3,
         "stats": {
-          "formulas": 5,
+          "formulas": 0,
           "tables": 0,
           "figures": 0,
-          "text_blocks": 26
-        },
-        "sections": [
-          {
-            "original_name": "1.1.1 First result",
-            "level": 3,
-            "page_start": 3,
-            "stats": {
-              "formulas": 2,
-              "tables": 0,
-              "figures": 0,
-              "text_blocks": 15
-            }
-          },
-          {
-            "original_name": "1.1.2 Second result",
-            "level": 3,
-            "page_start": 4,
-            "stats": {
-              "formulas": 3,
-              "tables": 0,
-              "figures": 0,
-              "text_blocks": 11
-            }
-          }
-        ]
+          "text_blocks": 0
+        }
       },
       {
         "original_name": "1.1.1 First result",
-        "level": 3,
+        "level": 1,
         "page_start": 3,
         "stats": {
           "formulas": 2,
@@ -134,7 +50,7 @@
       },
       {
         "original_name": "1.1.2 Second result",
-        "level": 3,
+        "level": 1,
         "page_start": 4,
         "stats": {
           "formulas": 3,
@@ -145,7 +61,7 @@
       },
       {
         "original_name": "1.2 Proof techniques",
-        "level": 2,
+        "level": 1,
         "page_start": 5,
         "stats": {
           "formulas": 4,
@@ -156,7 +72,7 @@
       },
       {
         "original_name": "1.3 Organization of the paper",
-        "level": 2,
+        "level": 1,
         "page_start": 6,
         "stats": {
           "formulas": 0,
@@ -170,76 +86,26 @@
         "level": 1,
         "page_start": 6,
         "stats": {
-          "formulas": 18,
+          "formulas": 0,
           "tables": 0,
           "figures": 0,
-          "text_blocks": 40
-        },
-        "sections": [
-          {
-            "original_name": "2.1 Prerequisites from representation theory",
-            "level": 2,
-            "page_start": 6,
-            "stats": {
-              "formulas": 13,
-              "tables": 0,
-              "figures": 0,
-              "text_blocks": 27
-            },
-            "sections": [
-              {
-                "original_name": "2.1.1 Peter-Weyl theorem and Schur-Weyl duality, and their consequences",
-                "level": 3,
-                "page_start": 7,
-                "stats": {
-                  "formulas": 7,
-                  "tables": 0,
-                  "figures": 0,
-                  "text_blocks": 16
-                }
-              }
-            ]
-          },
-          {
-            "original_name": "2.2 Algorithms and Their Complexity",
-            "level": 2,
-            "page_start": 8,
-            "stats": {
-              "formulas": 5,
-              "tables": 0,
-              "figures": 0,
-              "text_blocks": 13
-            }
-          }
-        ]
+          "text_blocks": 0
+        }
       },
       {
         "original_name": "2.1 Prerequisites from representation theory",
-        "level": 2,
+        "level": 1,
         "page_start": 6,
         "stats": {
-          "formulas": 13,
+          "formulas": 6,
           "tables": 0,
           "figures": 0,
-          "text_blocks": 27
-        },
-        "sections": [
-          {
-            "original_name": "2.1.1 Peter-Weyl theorem and Schur-Weyl duality, and their consequences",
-            "level": 3,
-            "page_start": 7,
-            "stats": {
-              "formulas": 7,
-              "tables": 0,
-              "figures": 0,
-              "text_blocks": 16
-            }
-          }
-        ]
+          "text_blocks": 11
+        }
       },
       {
         "original_name": "2.1.1 Peter-Weyl theorem and Schur-Weyl duality, and their consequences",
-        "level": 3,
+        "level": 1,
         "page_start": 7,
         "stats": {
           "formulas": 7,
@@ -250,7 +116,7 @@
       },
       {
         "original_name": "2.2 Algorithms and Their Complexity",
-        "level": 2,
+        "level": 1,
         "page_start": 8,
         "stats": {
           "formulas": 5,
@@ -286,155 +152,26 @@
         "level": 1,
         "page_start": 15,
         "stats": {
-          "formulas": 19,
+          "formulas": 0,
           "tables": 0,
           "figures": 0,
-          "text_blocks": 35
-        },
-        "sections": [
-          {
-            "original_name": "5.1 Simpler forms of Rep ε ( f )",
-            "level": 2,
-            "page_start": 15,
-            "stats": {
-              "formulas": 8,
-              "tables": 0,
-              "figures": 0,
-              "text_blocks": 14
-            },
-            "sections": [
-              {
-                "original_name": "5.1.1 Univariate Polynomials",
-                "level": 3,
-                "page_start": 15,
-                "stats": {
-                  "formulas": 8,
-                  "tables": 0,
-                  "figures": 0,
-                  "text_blocks": 14
-                }
-              },
-              {
-                "original_name": "5.1.2 The trace function",
-                "level": 3,
-                "page_start": 16,
-                "stats": {
-                  "formulas": 0,
-                  "tables": 0,
-                  "figures": 0,
-                  "text_blocks": 0
-                }
-              },
-              {
-                "original_name": "5.1.3 The determinant det g",
-                "level": 3,
-                "page_start": 16,
-                "stats": {
-                  "formulas": 0,
-                  "tables": 0,
-                  "figures": 0,
-                  "text_blocks": 0
-                }
-              }
-            ]
-          },
-          {
-            "original_name": "5.2 Optimal PAC estimations",
-            "level": 2,
-            "page_start": 16,
-            "stats": {
-              "formulas": 11,
-              "tables": 0,
-              "figures": 0,
-              "text_blocks": 21
-            },
-            "sections": [
-              {
-                "original_name": "5.2.1 Univariate Polynomials",
-                "level": 3,
-                "page_start": 16,
-                "stats": {
-                  "formulas": 0,
-                  "tables": 0,
-                  "figures": 0,
-                  "text_blocks": 0
-                }
-              },
-              {
-                "original_name": "5.2.2 The trace function",
-                "level": 3,
-                "page_start": 16,
-                "stats": {
-                  "formulas": 5,
-                  "tables": 0,
-                  "figures": 0,
-                  "text_blocks": 12
-                }
-              },
-              {
-                "original_name": "5.2.3 Irreducible representations π λ ( g ) i,j",
-                "level": 3,
-                "page_start": 17,
-                "stats": {
-                  "formulas": 6,
-                  "tables": 0,
-                  "figures": 0,
-                  "text_blocks": 9
-                }
-              }
-            ]
-          }
-        ]
+          "text_blocks": 0
+        }
       },
       {
         "original_name": "5.1 Simpler forms of Rep ε ( f )",
-        "level": 2,
+        "level": 1,
         "page_start": 15,
         "stats": {
-          "formulas": 8,
+          "formulas": 0,
           "tables": 0,
           "figures": 0,
-          "text_blocks": 14
-        },
-        "sections": [
-          {
-            "original_name": "5.1.1 Univariate Polynomials",
-            "level": 3,
-            "page_start": 15,
-            "stats": {
-              "formulas": 8,
-              "tables": 0,
-              "figures": 0,
-              "text_blocks": 14
-            }
-          },
-          {
-            "original_name": "5.1.2 The trace function",
-            "level": 3,
-            "page_start": 16,
-            "stats": {
-              "formulas": 0,
-              "tables": 0,
-              "figures": 0,
-              "text_blocks": 0
-            }
-          },
-          {
-            "original_name": "5.1.3 The determinant det g",
-            "level": 3,
-            "page_start": 16,
-            "stats": {
-              "formulas": 0,
-              "tables": 0,
-              "figures": 0,
-              "text_blocks": 0
-            }
-          }
-        ]
+          "text_blocks": 0
+        }
       },
       {
         "original_name": "5.1.1 Univariate Polynomials",
-        "level": 3,
+        "level": 1,
         "page_start": 15,
         "stats": {
           "formulas": 8,
@@ -445,7 +182,7 @@
       },
       {
         "original_name": "5.1.2 The trace function",
-        "level": 3,
+        "level": 1,
         "page_start": 16,
         "stats": {
           "formulas": 0,
@@ -456,7 +193,7 @@
       },
       {
         "original_name": "5.1.3 The determinant det g",
-        "level": 3,
+        "level": 1,
         "page_start": 16,
         "stats": {
           "formulas": 0,
@@ -467,53 +204,18 @@
       },
       {
         "original_name": "5.2 Optimal PAC estimations",
-        "level": 2,
+        "level": 1,
         "page_start": 16,
         "stats": {
-          "formulas": 11,
+          "formulas": 0,
           "tables": 0,
           "figures": 0,
-          "text_blocks": 21
-        },
-        "sections": [
-          {
-            "original_name": "5.2.1 Univariate Polynomials",
-            "level": 3,
-            "page_start": 16,
-            "stats": {
-              "formulas": 0,
-              "tables": 0,
-              "figures": 0,
-              "text_blocks": 0
-            }
-          },
-          {
-            "original_name": "5.2.2 The trace function",
-            "level": 3,
-            "page_start": 16,
-            "stats": {
-              "formulas": 5,
-              "tables": 0,
-              "figures": 0,
-              "text_blocks": 12
-            }
-          },
-          {
-            "original_name": "5.2.3 Irreducible representations π λ ( g ) i,j",
-            "level": 3,
-            "page_start": 17,
-            "stats": {
-              "formulas": 6,
-              "tables": 0,
-              "figures": 0,
-              "text_blocks": 9
-            }
-          }
-        ]
+          "text_blocks": 0
+        }
       },
       {
         "original_name": "5.2.1 Univariate Polynomials",
-        "level": 3,
+        "level": 1,
         "page_start": 16,
         "stats": {
           "formulas": 0,
@@ -524,7 +226,7 @@
       },
       {
         "original_name": "5.2.2 The trace function",
-        "level": 3,
+        "level": 1,
         "page_start": 16,
         "stats": {
           "formulas": 5,
@@ -535,7 +237,7 @@
       },
       {
         "original_name": "5.2.3 Irreducible representations π λ ( g ) i,j",
-        "level": 3,
+        "level": 1,
         "page_start": 17,
         "stats": {
           "formulas": 6,

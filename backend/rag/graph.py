@@ -42,14 +42,18 @@ from rag.prompts import (
     categorizer_prompt,
     qa_prompt,
     summarizer_prompt,
-    applied_guide_prompt,
-    theoretical_guide_prompt,
-    survey_guide_prompt,
+    applied_guide_planner_prompt,
+    theoretical_guide_planner_prompt,
+    survey_guide_planner_prompt,
+    guide_step_question_prompt,
 )
 from rag.guide_models import (
     AppliedReadingGuide,
     TheoreticalReadingGuide,
     SurveyReadingGuide,
+    AppliedReadingGuidePlan,
+    TheoreticalReadingGuidePlan,
+    SurveyReadingGuidePlan,
 )
 from rag.retrieval.config import (
     SCOPED_TOP_K,
@@ -63,6 +67,23 @@ from rag.retrieval.config import (
 # ---------------------------------------------------------------------------
 # Guide helper: extract questions_to_answer and sections_to_read from any guide
 # ---------------------------------------------------------------------------
+
+_GUIDE_PASS_KEYS = (
+    "pass1_quick_scan",
+    "pass2_method_understanding",
+    "pass3_deep_analysis",
+    "pass1_field_overview",
+    "pass2_taxonomy_understanding",
+    "pass3_research_landscape_analysis",
+    "pass2_proof_strategy",
+    "pass3_deep_mathematical_analysis",
+)
+_GUIDE_VALIDATION_ATTEMPTS = 2
+_GUIDE_MAX_SECTIONS_PER_STEP = 3
+_ABSTRACT_HEADING = "Abstract"
+_GROQ_QGEN_MODEL = os.getenv("GROQ_QGEN_MODEL", "llama-3.3-70b-versatile")
+_QUESTION_GEN_ATTEMPTS = 3
+_QUESTIONS_PER_STEP = 3
 
 def _extract_guide_retrieval_info(guide_json: dict) -> list[dict]:
     """
@@ -85,19 +106,7 @@ def _extract_guide_retrieval_info(guide_json: dict) -> list[dict]:
     pairs: list[dict] = []
     seen_questions: set[str] = set()
 
-    # All known pass keys across the three guide models
-    pass_keys = [
-        "pass1_quick_scan",
-        "pass2_method_understanding",
-        "pass3_deep_analysis",
-        "pass1_field_overview",
-        "pass2_taxonomy_understanding",
-        "pass3_research_landscape_analysis",
-        "pass2_proof_strategy",
-        "pass3_deep_mathematical_analysis",
-    ]
-
-    for key in pass_keys:
+    for key in _GUIDE_PASS_KEYS:
         reading_pass = guide_json.get(key)
         if not reading_pass:
             continue
@@ -301,6 +310,443 @@ def _flatten_section_headings(sections: list[dict[str, Any]] | None) -> list[str
 
     _walk(sections)
     return headings
+
+
+def _flatten_leaf_section_headings(sections: list[dict[str, Any]] | None) -> list[str]:
+    """Return only leaf-level section headings in source order."""
+    if not sections:
+        return []
+
+    leaves: list[str] = []
+    seen: set[str] = set()
+
+    def _walk(nodes: list[dict[str, Any]]) -> None:
+        for node in nodes:
+            if not isinstance(node, dict):
+                continue
+
+            children = node.get("sections")
+            if isinstance(children, list) and children:
+                _walk(children)
+                continue
+
+            heading = str(node.get("original_name") or node.get("title") or "").strip()
+            if heading and heading not in seen:
+                seen.add(heading)
+                leaves.append(heading)
+
+    _walk(sections)
+    return leaves
+
+
+def _iter_guide_passes(guide_json: dict[str, Any]):
+    """Yield guide pass key and pass dict for known pass keys present in output."""
+    for pass_key in _GUIDE_PASS_KEYS:
+        pass_payload = guide_json.get(pass_key)
+        if isinstance(pass_payload, dict):
+            yield pass_key, pass_payload
+
+
+def _iter_guide_steps(guide_json: dict[str, Any]):
+    """Yield (pass_key, pass_payload, step_payload) for all known guide pass steps."""
+    for pass_key, pass_payload in _iter_guide_passes(guide_json):
+        steps = pass_payload.get("steps") or []
+        if not isinstance(steps, list):
+            continue
+        for step in steps:
+            if isinstance(step, dict):
+                yield pass_key, pass_payload, step
+
+
+def _normalize_id_list(values: Any) -> list[str]:
+    """Normalize arbitrary value into a de-duplicated list of non-empty strings."""
+    if not isinstance(values, list):
+        return []
+    normalized: list[str] = []
+    seen: set[str] = set()
+    for value in values:
+        if not isinstance(value, str):
+            continue
+        cleaned = value.strip()
+        if not cleaned or cleaned in seen:
+            continue
+        seen.add(cleaned)
+        normalized.append(cleaned)
+    return normalized
+
+
+def _strip_image_data_uri(text: str, max_chars: int = 600) -> str:
+    """Remove large inline image payloads and keep concise text for prompts."""
+    if not isinstance(text, str):
+        return ""
+    cleaned = re.sub(r"!\[Image\]\(data:image/[^)]*\)", "", text)
+    cleaned = " ".join(cleaned.split())
+    if len(cleaned) <= max_chars:
+        return cleaned
+    return cleaned[:max_chars].rsplit(" ", 1)[0].rstrip() + "..."
+
+
+def _extract_visual_context(document_id: str, sections: list[dict[str, Any]]) -> dict[str, Any]:
+    """Collect section->visual ID mapping and concise figure/table summaries from complete extraction output."""
+    section_visual_map: dict[str, dict[str, list[str]]] = {}
+    available_figure_ids: list[str] = []
+    available_table_ids: list[str] = []
+    figure_summaries: dict[str, str] = {}
+    table_summaries: dict[str, str] = {}
+
+    for section in _flatten_section_headings(sections):
+        section_visual_map[section] = {"figure_ids": [], "table_ids": []}
+
+    complete_path = Path("output") / f"{document_id}_complete.json"
+    if not complete_path.exists():
+        return {
+            "available_figure_ids": available_figure_ids,
+            "available_table_ids": available_table_ids,
+            "section_visual_map": section_visual_map,
+            "figure_summaries": figure_summaries,
+            "table_summaries": table_summaries,
+        }
+
+    try:
+        with complete_path.open("r", encoding="utf-8") as fh:
+            complete = json.load(fh)
+    except Exception as exc:  # noqa: BLE001
+        logger.warning("Failed to parse visual context from %s: %s", complete_path, exc)
+        return {
+            "available_figure_ids": available_figure_ids,
+            "available_table_ids": available_table_ids,
+            "section_visual_map": section_visual_map,
+            "figure_summaries": figure_summaries,
+            "table_summaries": table_summaries,
+        }
+
+    metadata_sections = (
+        (complete.get("metadata") or {}).get("sections")
+        if isinstance(complete, dict)
+        else []
+    ) or []
+
+    for node in metadata_sections:
+        if not isinstance(node, dict):
+            continue
+        section_name = str(node.get("original_name") or node.get("title") or "").strip()
+        if not section_name:
+            continue
+        stats = node.get("stats") or {}
+        figure_ids = _normalize_id_list(stats.get("figure_ids"))
+        table_ids = _normalize_id_list(stats.get("table_ids"))
+        if section_name not in section_visual_map:
+            section_visual_map[section_name] = {"figure_ids": [], "table_ids": []}
+        section_visual_map[section_name]["figure_ids"] = figure_ids
+        section_visual_map[section_name]["table_ids"] = table_ids
+
+    extracted_elements = complete.get("extracted_elements") if isinstance(complete, dict) else {}
+    figures = (extracted_elements or {}).get("figures") or []
+    tables = (extracted_elements or {}).get("tables") or []
+
+    for figure in figures:
+        if not isinstance(figure, dict):
+            continue
+        fig_id = str(figure.get("id") or "").strip()
+        if not fig_id:
+            continue
+        if fig_id not in available_figure_ids:
+            available_figure_ids.append(fig_id)
+        summary = _strip_image_data_uri(str(figure.get("caption") or figure.get("text") or ""))
+        if summary:
+            figure_summaries[fig_id] = summary
+
+    for table in tables:
+        if not isinstance(table, dict):
+            continue
+        table_id = str(table.get("id") or "").strip()
+        if not table_id:
+            continue
+        if table_id not in available_table_ids:
+            available_table_ids.append(table_id)
+        summary = _strip_image_data_uri(str(table.get("text") or table.get("markdown") or ""))
+        if summary:
+            table_summaries[table_id] = summary
+
+    return {
+        "available_figure_ids": available_figure_ids,
+        "available_table_ids": available_table_ids,
+        "section_visual_map": section_visual_map,
+        "figure_summaries": figure_summaries,
+        "table_summaries": table_summaries,
+    }
+
+
+def _enforce_planner_skeleton(
+    guide_json: dict[str, Any],
+    section_visual_map: dict[str, dict[str, list[str]]],
+) -> dict[str, Any]:
+    """Ensure Agent 1 output remains a skeleton with empty questions and normalized visual IDs."""
+    for _, _, step in _iter_guide_steps(guide_json):
+        raw_sections = step.get("section_to_read")
+        sections = [s for s in raw_sections if isinstance(s, str) and s.strip()] if isinstance(raw_sections, list) else []
+        step["section_to_read"] = sections
+
+        # Force empty questions in planner output.
+        step["questions_to_answer"] = []
+
+        figure_ids = _normalize_id_list(step.get("relevant_figure_ids"))
+        table_ids = _normalize_id_list(step.get("relevant_table_ids"))
+
+        if not figure_ids and sections:
+            for section_name in sections:
+                figure_ids.extend(section_visual_map.get(section_name, {}).get("figure_ids", []))
+            figure_ids = _normalize_id_list(figure_ids)
+
+        if not table_ids and sections:
+            for section_name in sections:
+                table_ids.extend(section_visual_map.get(section_name, {}).get("table_ids", []))
+            table_ids = _normalize_id_list(table_ids)
+
+        step["relevant_figure_ids"] = figure_ids
+        step["relevant_table_ids"] = table_ids
+        step["needs_figures"] = bool(step.get("needs_figures", False) or figure_ids)
+        step["needs_tables"] = bool(step.get("needs_tables", False) or table_ids)
+
+    return guide_json
+
+
+def _invoke_groq_question_agent(prompt: str) -> str:
+    """Call Groq (Agent 2) and return raw text response."""
+    llm = ChatGroq(model=_GROQ_QGEN_MODEL, temperature=0.1)
+    response = llm.invoke([HumanMessage(content=prompt)])
+    return str(getattr(response, "content", "") or "").strip()
+
+
+def _parse_json_array_strings(raw_text: str) -> list[str]:
+    """Parse first JSON array in text and return a string list."""
+    stripped = raw_text.strip()
+    start = stripped.find("[")
+    end = stripped.rfind("]")
+    if start == -1 or end == -1 or end <= start:
+        return []
+    candidate = stripped[start : end + 1]
+    try:
+        payload = json.loads(candidate)
+    except Exception:  # noqa: BLE001
+        return []
+    if not isinstance(payload, list):
+        return []
+    return [str(item).strip() for item in payload if isinstance(item, str) and item.strip()]
+
+
+def _normalize_single_question(question: str) -> str:
+    """Normalize whitespace and trailing punctuation to a single question form."""
+    cleaned = " ".join(question.strip().split())
+    cleaned = cleaned.rstrip(" .!;:")
+    return f"{cleaned}?" if cleaned and not cleaned.endswith("?") else cleaned
+
+
+def _is_strict_single_question(question: str) -> bool:
+    """Strict validator: one standalone question, no compound 'and' clauses."""
+    if not isinstance(question, str):
+        return False
+    q = " ".join(question.strip().split())
+    if len(q) < 20:
+        return False
+    if q.count("?") != 1:
+        return False
+    if not q.endswith("?"):
+        return False
+    # Reject obvious compound questions.
+    if re.search(r"\band\b", q, flags=re.IGNORECASE):
+        return False
+    # Avoid multi-part style punctuation.
+    if ";" in q or "??" in q:
+        return False
+    return True
+
+
+def _generate_step_questions_with_groq(
+    *,
+    category: str,
+    title: str,
+    abstract: str,
+    pass_key: str,
+    pass_goal: str,
+    step: dict[str, Any],
+    figure_summaries: dict[str, str],
+    table_summaries: dict[str, str],
+) -> list[str]:
+    """Agent 2 generation loop with strict single-question validation and retries."""
+    step_number = int(step.get("step_number") or 0)
+    section_to_read = [s for s in (step.get("section_to_read") or []) if isinstance(s, str)]
+    objective = str(step.get("objective") or "").strip()
+    expected_output = str(step.get("expected_output") or "").strip()
+    figure_ids = _normalize_id_list(step.get("relevant_figure_ids"))
+    table_ids = _normalize_id_list(step.get("relevant_table_ids"))
+
+    figure_context = [f"{fid}: {figure_summaries.get(fid, '')}" for fid in figure_ids if figure_summaries.get(fid)]
+    table_context = [f"{tid}: {table_summaries.get(tid, '')}" for tid in table_ids if table_summaries.get(tid)]
+
+    for attempt in range(1, _QUESTION_GEN_ATTEMPTS + 1):
+        prompt = guide_step_question_prompt(
+            category=category,
+            title=title,
+            abstract=abstract,
+            pass_key=pass_key,
+            pass_goal=pass_goal,
+            step_number=step_number,
+            section_to_read=section_to_read,
+            objective=objective,
+            expected_output=expected_output,
+            figure_summaries=figure_context,
+            table_summaries=table_context,
+        )
+
+        try:
+            raw = _invoke_groq_question_agent(prompt)
+        except Exception as exc:  # noqa: BLE001
+            logger.warning("Agent 2 (Groq) call failed on attempt %d: %s", attempt, exc)
+            continue
+
+        candidates = _parse_json_array_strings(raw)
+        normalized = [_normalize_single_question(q) for q in candidates]
+        strict = [q for q in normalized if _is_strict_single_question(q)]
+
+        # De-duplicate while preserving order.
+        strict = list(dict.fromkeys(strict))
+        if len(strict) >= _QUESTIONS_PER_STEP:
+            return strict[:_QUESTIONS_PER_STEP]
+
+    # Deterministic fallback that still satisfies strict single-question constraints.
+    fallback_questions = []
+    for section in section_to_read[:_QUESTIONS_PER_STEP]:
+        fq = _normalize_single_question(
+            f"Which specific claim in section {section} most directly achieves this step objective"
+        )
+        if _is_strict_single_question(fq):
+            fallback_questions.append(fq)
+
+    while len(fallback_questions) < _QUESTIONS_PER_STEP:
+        extra = _normalize_single_question(
+            f"Which paper-specific evidence best supports the stated expected output for step {step_number}"
+        )
+        if _is_strict_single_question(extra):
+            fallback_questions.append(extra)
+        else:
+            fallback_questions.append("Which concrete paper detail should be extracted to satisfy this step?")
+
+    return fallback_questions[:_QUESTIONS_PER_STEP]
+
+
+def _is_intentional_revisit_step(step: dict[str, Any]) -> bool:
+    """Return True when step wording explicitly indicates a deliberate revisit."""
+    text = " ".join(
+        str(step.get(field) or "")
+        for field in ("objective", "expected_output")
+    ).lower()
+    revisit_markers = (
+        "revisit",
+        "re-read",
+        "read again",
+        "return to",
+        "after reading",
+        "cross-check",
+        "compare",
+        "deepen",
+        "synthesize",
+    )
+    return any(marker in text for marker in revisit_markers)
+
+
+def _prune_nonessential_section_repetition(guide_json: dict[str, Any]) -> dict[str, Any]:
+    """Remove repeated section assignments unless step explicitly requires a revisit."""
+    pruned = json.loads(json.dumps(guide_json))
+    global_seen: set[str] = set()
+
+    for _, pass_payload in _iter_guide_passes(pruned):
+        steps = pass_payload.get("steps") or []
+        if not isinstance(steps, list):
+            continue
+
+        pass_seen: set[str] = set()
+        for step in steps:
+            if not isinstance(step, dict):
+                continue
+            raw_sections = step.get("section_to_read") or []
+            if not isinstance(raw_sections, list):
+                step["section_to_read"] = []
+                continue
+
+            allow_revisit = _is_intentional_revisit_step(step)
+            filtered: list[str] = []
+            step_seen: set[str] = set()
+
+            for section in raw_sections:
+                if not isinstance(section, str):
+                    continue
+                cleaned = section.strip()
+                if not cleaned or _is_reference_heading(cleaned):
+                    continue
+
+                norm = _normalize_section_name(cleaned)
+                if not norm or norm in step_seen:
+                    continue
+
+                if norm in global_seen and not allow_revisit:
+                    continue
+
+                filtered.append(cleaned)
+                step_seen.add(norm)
+                pass_seen.add(norm)
+                global_seen.add(norm)
+
+            step["section_to_read"] = filtered
+
+    return pruned
+
+
+def _validate_section_repetition_policy(guide_json: dict[str, Any]) -> dict[str, Any]:
+    """Validate that repeated sections only appear in explicit revisit steps."""
+    duplicate_within_pass: set[str] = set()
+    duplicate_global_nonrevisit: set[str] = set()
+    global_seen: set[str] = set()
+
+    for _, pass_payload in _iter_guide_passes(guide_json):
+        pass_seen: set[str] = set()
+        steps = pass_payload.get("steps") or []
+        if not isinstance(steps, list):
+            continue
+
+        for step in steps:
+            if not isinstance(step, dict):
+                continue
+
+            allow_revisit = _is_intentional_revisit_step(step)
+            raw_sections = step.get("section_to_read") or []
+            if not isinstance(raw_sections, list):
+                continue
+
+            local_seen: set[str] = set()
+            for section in raw_sections:
+                if not isinstance(section, str):
+                    continue
+                norm = _normalize_section_name(section.strip())
+                if not norm:
+                    continue
+                if norm in local_seen:
+                    continue
+                local_seen.add(norm)
+
+                if norm in pass_seen and not allow_revisit:
+                    duplicate_within_pass.add(norm)
+                if norm in global_seen and not allow_revisit:
+                    duplicate_global_nonrevisit.add(norm)
+
+                pass_seen.add(norm)
+                global_seen.add(norm)
+
+    return {
+        "valid": not duplicate_within_pass and not duplicate_global_nonrevisit,
+        "duplicate_within_pass_sections": sorted(duplicate_within_pass),
+        "duplicate_global_sections": sorted(duplicate_global_nonrevisit),
+    }
 
 
 def _build_heading_pattern(heading: str) -> re.Pattern[str]:
@@ -684,8 +1130,11 @@ def _build_fallback_guide_data(
         if not _is_reference_heading(heading)
     ]
 
+    if _ABSTRACT_HEADING not in headings:
+        headings = [_ABSTRACT_HEADING, *headings]
+
     if not headings:
-        headings = ["Abstract", "Introduction", "Conclusion"]
+        headings = [_ABSTRACT_HEADING, "Introduction", "Conclusion"]
 
     questions = _fallback_questions_for_label(label)
     question_section_pairs: list[dict[str, Any]] = []
@@ -774,32 +1223,83 @@ def _build_fallback_guide_data(
             "What limitations matter most for real-world use?",
         ]
 
+    def _split_sections_for_steps(values: list[str], step_count: int = 9) -> list[list[str]]:
+        if not values:
+            return [[] for _ in range(step_count)]
+        groups: list[list[str]] = [[] for _ in range(step_count)]
+        for idx, section in enumerate(values):
+            groups[idx % step_count].append(section)
+        return groups
+
+    step_sections = _split_sections_for_steps(headings, step_count=9)
+
+    expanded_pairs: list[dict[str, Any]] = []
+    while len(expanded_pairs) < 9:
+        for pair in question_section_pairs:
+            if len(expanded_pairs) >= 9:
+                break
+            expanded_pairs.append(dict(pair))
+    question_section_pairs = expanded_pairs
+
+    for idx, pair in enumerate(question_section_pairs):
+        pair["sections"] = step_sections[idx]
+
     pass1_steps = [
         _mk_step(
             1,
             question_section_pairs[0],
             "Get a fast global understanding of the paper.",
             "A concise summary of the main problem and contribution.",
-        )
+        ),
+        _mk_step(
+            2,
+            question_section_pairs[1],
+            "Map the paper context and terminology.",
+            "A high-level map of scope and key concepts.",
+        ),
+        _mk_step(
+            3,
+            question_section_pairs[2],
+            "Identify headline claims and outcomes.",
+            "A short checklist of major claims to verify later.",
+        ),
     ]
     pass2_steps = [
         _mk_step(
             1,
-            question_section_pairs[1],
+            question_section_pairs[3],
             "Understand how the core approach/argument is built.",
             "A clear outline of the method/proof strategy and assumptions.",
-        )
+        ),
+        _mk_step(
+            2,
+            question_section_pairs[4],
+            "Trace implementation or derivation details.",
+            "A concrete understanding of intermediate components.",
+        ),
+        _mk_step(
+            3,
+            question_section_pairs[5],
+            "Connect design choices to reported behavior.",
+            "A cause-effect view of why the approach works.",
+        ),
     ]
     pass3_steps = [
         _mk_step(
             1,
-            question_section_pairs[2],
+            question_section_pairs[6],
             "Inspect evidence depth, technical details, and limitations.",
             "A judgment on the strength and boundaries of the claims.",
         ),
         _mk_step(
             2,
-            question_section_pairs[3],
+            question_section_pairs[7],
+            "Stress-test assumptions and generalization.",
+            "A list of caveats and transferability risks.",
+        ),
+        _mk_step(
+            3,
+            question_section_pairs[8],
             "Extract future work and unresolved questions.",
             "A short list of follow-up research questions.",
         ),
@@ -810,21 +1310,21 @@ def _build_fallback_guide_data(
         "reading_strategy": {
             "method": "three_pass_method",
             "paper_type": label.lower(),
-            "estimated_total_time": "45-60 minutes",
+            "estimated_total_time": "2-3 hours",
         },
         pass1_key: {
             "goal": pass1_goal,
-            "estimated_time": "10-15 minutes",
+            "estimated_time": "5-10 min",
             "steps": pass1_steps,
         },
         pass2_key: {
             "goal": pass2_goal,
-            "estimated_time": "15-20 minutes",
+            "estimated_time": "20-40 min",
             "steps": pass2_steps,
         },
         pass3_key: {
             "goal": pass3_goal,
-            "estimated_time": "20-25 minutes",
+            "estimated_time": "1-2 hrs",
             "steps": pass3_steps,
         },
         "final_user_task": {
@@ -885,6 +1385,8 @@ def extraction_node(state: dict) -> dict:
             "sections": metadata.get("sections", []),
             "hierarchy": result["hierarchy"],
             "extraction_files": result.get("files", {}),
+            "database": result.get("database", {}),
+            "db_paper_id": ((result.get("database") or {}).get("paper_id")),
         }
         
     except Exception as exc:
@@ -971,15 +1473,15 @@ def _retrieve_for_question(
             3. If scoped recall is low, run a smaller unrestricted fallback.
             4. Merge + deduplicate candidates, then rerank once.
     """
-        base_question = question.strip()
-        if not base_question:
-                return [], {
-                        "expanded_queries": [],
-                        "resolved_sections": _resolve_section_paths(step_sections, document_id),
-                        "chunk_level": _pick_chunk_level(question),
-                }
+    base_question = question.strip()
+    if not base_question:
+        return [], {
+            "expanded_queries": [],
+            "resolved_sections": _resolve_section_paths(step_sections, document_id),
+            "chunk_level": _pick_chunk_level(question),
+        }
 
-        expanded_queries = [base_question]
+    expanded_queries = [base_question]
     chunk_level = _pick_chunk_level(question)
     resolved_sections = _resolve_section_paths(step_sections, document_id)
 
@@ -1078,6 +1580,7 @@ def retrieve_and_qa_node(state: dict) -> dict:
     question_section_pairs = state.get("question_section_pairs") or []
     user_query = (state.get("query") or "").strip()
     document_id = state.get("document_id", "")
+    defer_answer_generation = bool(state.get("defer_answer_generation", False))
 
     # Build candidate pairs (guide questions preferred, direct query as fallback)
     if question_section_pairs:
@@ -1213,8 +1716,9 @@ def retrieve_and_qa_node(state: dict) -> dict:
                 logger.warning("    No chunks for Q%d — skipping LLM call", idx)
                 return idx, per_question_result, {
                     "question": question,
-                    "answer": "No relevant content found.",
-                    "confidence": "LOW",
+                    "answer": None if defer_answer_generation else "No relevant content found.",
+                    "confidence": None if defer_answer_generation else "LOW",
+                    "status": "pending" if defer_answer_generation else "completed",
                 }
 
             context = _build_qa_context(top_hits)
@@ -1222,8 +1726,18 @@ def retrieve_and_qa_node(state: dict) -> dict:
                 logger.warning("    No non-reference context for Q%d — using fallback", idx)
                 return idx, per_question_result, {
                     "question": question,
-                    "answer": _build_extractive_fallback_answer(top_hits),
-                    "confidence": "LOW",
+                    "answer": None if defer_answer_generation else _build_extractive_fallback_answer(top_hits),
+                    "confidence": None if defer_answer_generation else "LOW",
+                    "status": "pending" if defer_answer_generation else "completed",
+                }
+
+            if defer_answer_generation:
+                logger.info("      → Deferred answer generation for Q%d (retrieval payload prepared)", idx)
+                return idx, per_question_result, {
+                    "question": question,
+                    "answer": None,
+                    "confidence": None,
+                    "status": "pending",
                 }
 
             if rate_limit_event.is_set():
@@ -1235,6 +1749,7 @@ def retrieve_and_qa_node(state: dict) -> dict:
                     "question": question,
                     "answer": _build_extractive_fallback_answer(top_hits),
                     "confidence": "LOW",
+                    "status": "completed",
                 }
 
             logger.info("      → Generating answer for Q%d…", idx)
@@ -1262,6 +1777,7 @@ def retrieve_and_qa_node(state: dict) -> dict:
                 "question": question,
                 "answer": answer,
                 "confidence": confidence,
+                "status": "completed",
             }
 
         ordered_results: dict[int, tuple[dict, dict]] = {}
@@ -1289,8 +1805,9 @@ def retrieve_and_qa_node(state: dict) -> dict:
                     }
                     qa_result = {
                         "question": failed_pair.get("question", ""),
-                        "answer": "An error occurred while generating the answer.",
-                        "confidence": "LOW",
+                        "answer": None if defer_answer_generation else "An error occurred while generating the answer.",
+                        "confidence": None if defer_answer_generation else "LOW",
+                        "status": "pending" if defer_answer_generation else "failed",
                     }
 
                 ordered_results[out_idx] = (per_question_result, qa_result)
@@ -1313,7 +1830,10 @@ def retrieve_and_qa_node(state: dict) -> dict:
                 retrieval_queries.append(per_question_result["question"])
         retrieval_queries = list(dict.fromkeys(retrieval_queries))
 
-        logger.info("Retrieve-and-QA complete: %d answers generated", len(qa_results))
+        if defer_answer_generation:
+            logger.info("Retrieve-and-QA complete: %d question payload(s) prepared for deferred answering", len(qa_results))
+        else:
+            logger.info("Retrieve-and-QA complete: %d answers generated", len(qa_results))
         return {
             **state,
             "per_question_results": per_question_results,
@@ -1389,19 +1909,21 @@ def _run_guide_node(
     state: dict,
     label: str,
     guide_model_cls,
-    prompt_fn,
+    planner_model_cls,
+    planner_prompt_fn,
 ) -> dict:
     """
-    Generic helper called by all three guide nodes.
+    Generic helper for two-agent guide generation.
 
     Parameters
     ----------
     state         : current workflow state
     label         : human-readable label for logging (e.g. "APPLIED")
-    guide_model_cls : Pydantic model class for structured output
-    prompt_fn     : function(title, abstract, sections, num_figures, num_tables[, introduction, conclusion]) → str
+    guide_model_cls : Pydantic model class for final guide output
+    planner_model_cls : Agent 1 planner skeleton model class
+    planner_prompt_fn : Agent 1 planner prompt function
     """
-    logger.info("📖 Guide node [%s]: generating reading guide…", label)
+    logger.info("📖 Guide node [%s]: Agent 1 planner + Agent 2 question generation…", label)
 
     title = state.get("title", "")
     abstract = state.get("abstract", "")
@@ -1418,33 +1940,138 @@ def _run_guide_node(
     try:
         num_figures = sum(s.get("stats", {}).get("figures", 0) for s in sections)
         num_tables = sum(s.get("stats", {}).get("tables", 0) for s in sections)
+        visual_context = _extract_visual_context(document_id=document_id, sections=sections)
 
-        llm = ChatGroq(model="llama-3.3-70b-versatile", temperature=0.1)
-        structured_llm = llm.with_structured_output(guide_model_cls)
+        # Agent 1 planner: structured skeleton generation.
+        planner_llm = ChatGroq(model="llama-3.3-70b-versatile", temperature=0.1)
+        structured_planner_llm = planner_llm.with_structured_output(planner_model_cls)
 
-        prompt_kwargs = {
+        planner_prompt_kwargs = {
             "title": title,
             "abstract": abstract,
             "sections": sections,
             "num_figures": num_figures,
             "num_tables": num_tables,
+            "available_figure_ids": visual_context["available_figure_ids"],
+            "available_table_ids": visual_context["available_table_ids"],
+            "section_visual_index_json": json.dumps(
+                visual_context["section_visual_map"],
+                ensure_ascii=False,
+            ),
         }
 
-        prompt_parameters = inspect.signature(prompt_fn).parameters
+        prompt_parameters = inspect.signature(planner_prompt_fn).parameters
         if "introduction" in prompt_parameters or "conclusion" in prompt_parameters:
             introduction, conclusion = _extract_intro_conclusion_context(
                 full_text=full_text,
                 sections=sections,
             )
             if "introduction" in prompt_parameters:
-                prompt_kwargs["introduction"] = introduction
+                planner_prompt_kwargs["introduction"] = introduction
             if "conclusion" in prompt_parameters:
-                prompt_kwargs["conclusion"] = conclusion
+                planner_prompt_kwargs["conclusion"] = conclusion
 
-        prompt = prompt_fn(**prompt_kwargs)
+        planner_prompt = planner_prompt_fn(**planner_prompt_kwargs)
 
-        guide_model = structured_llm.invoke(prompt)
-        guide_json = guide_model.model_dump()
+        planner_json: dict[str, Any] | None = None
+        validation_report: dict[str, Any] | None = None
+        attempt_prompt = planner_prompt
+
+        for attempt in range(1, _GUIDE_VALIDATION_ATTEMPTS + 1):
+            planner_model = structured_planner_llm.invoke(attempt_prompt)
+            planner_json = planner_model.model_dump()
+            planner_json = _enforce_planner_skeleton(
+                guide_json=planner_json,
+                section_visual_map=visual_context["section_visual_map"],
+            )
+            planner_json = _prune_nonessential_section_repetition(planner_json)
+            validation_report = _validate_section_repetition_policy(planner_json)
+
+            if validation_report["valid"]:
+                break
+
+            logger.warning(
+                "Agent 1 planner [%s] repetition validation failed (attempt %d/%d): "
+                "duplicates_within_pass=%d, duplicates_global=%d",
+                label,
+                attempt,
+                _GUIDE_VALIDATION_ATTEMPTS,
+                len(validation_report["duplicate_within_pass_sections"]),
+                len(validation_report["duplicate_global_sections"]),
+            )
+
+            if attempt < _GUIDE_VALIDATION_ATTEMPTS:
+                attempt_prompt = (
+                    f"{planner_prompt}\n\n"
+                    "VALIDATION FEEDBACK FROM PREVIOUS DRAFT:\n"
+                    f"- Duplicate sections within same pass: {json.dumps(validation_report['duplicate_within_pass_sections'], ensure_ascii=False)}\n"
+                    f"- Duplicate sections across passes (without explicit revisit intent): {json.dumps(validation_report['duplicate_global_sections'], ensure_ascii=False)}\n"
+                    "Return a corrected planner skeleton JSON that follows the three-pass method, avoids unnecessary repetition, and keeps questions_to_answer empty."
+                )
+
+        if planner_json is None:
+            raise ValueError("Guide planner returned no output")
+
+        if validation_report is None or not validation_report["valid"]:
+            logger.warning(
+                "Agent 1 planner [%s] still had unnecessary repeats after retries; applying deterministic pruning",
+                label,
+            )
+            planner_json = _prune_nonessential_section_repetition(planner_json)
+            planner_json = _enforce_planner_skeleton(
+                guide_json=planner_json,
+                section_visual_map=visual_context["section_visual_map"],
+            )
+
+        # Agent 2: generate per-step questions in parallel using Groq.
+        step_refs: list[tuple[str, int, str]] = []
+        for pass_key, pass_payload in _iter_guide_passes(planner_json):
+            pass_goal = str(pass_payload.get("goal") or "").strip()
+            steps = pass_payload.get("steps") or []
+            if not isinstance(steps, list):
+                continue
+            for step_idx, _ in enumerate(steps):
+                step_refs.append((pass_key, step_idx, pass_goal))
+
+        if step_refs:
+            workers = max(1, min(len(step_refs), MAX_PARALLEL_QUESTIONS))
+            logger.info("Agent 2 question generation [%s]: %d step(s), %d worker(s)", label, len(step_refs), workers)
+
+            def _generate_for_step(ref: tuple[str, int, str]) -> tuple[str, int, list[str]]:
+                pass_key, step_idx, pass_goal = ref
+                step = planner_json.get(pass_key, {}).get("steps", [])[step_idx]
+                questions = _generate_step_questions_with_groq(
+                    category=label,
+                    title=title,
+                    abstract=abstract,
+                    pass_key=pass_key,
+                    pass_goal=pass_goal,
+                    step=step,
+                    figure_summaries=visual_context["figure_summaries"],
+                    table_summaries=visual_context["table_summaries"],
+                )
+                return pass_key, step_idx, questions
+
+            with ThreadPoolExecutor(max_workers=workers) as pool:
+                futures = {pool.submit(_generate_for_step, ref): ref for ref in step_refs}
+                for future in as_completed(futures):
+                    pass_key, step_idx, questions = future.result()
+                    planner_json[pass_key]["steps"][step_idx]["questions_to_answer"] = questions
+
+        output_dir = Path("output")
+        output_dir.mkdir(exist_ok=True)
+        guide_plan_path = output_dir / f"{document_id}_guide_plan.json"
+        with open(guide_plan_path, "w", encoding="utf-8") as f:
+            json.dump(planner_json, f, indent=2, ensure_ascii=False)
+        logger.info("✅ Reading guide plan saved to: %s", guide_plan_path)
+
+        guide_json = planner_json
+
+        # Final shape validation against full reading guide schema.
+        try:
+            guide_json = guide_model_cls(**guide_json).model_dump()
+        except Exception as exc:  # noqa: BLE001
+            logger.warning("Final guide schema coercion [%s] skipped due to validation issue: %s", label, exc)
 
         # Extract per-question (question, step_sections) pairs from the guide
         question_section_pairs = _extract_guide_retrieval_info(guide_json)
@@ -1457,8 +2084,6 @@ def _run_guide_node(
         )
 
         # Persist guide to disk
-        output_dir = Path("output")
-        output_dir.mkdir(exist_ok=True)
         guide_path = output_dir / f"{document_id}_guide.json"
         with open(guide_path, "w", encoding="utf-8") as f:
             json.dump(guide_json, f, indent=2, ensure_ascii=False)
@@ -1466,6 +2091,8 @@ def _run_guide_node(
 
         return {
             **state,
+            "reading_guide_plan": planner_json,
+            "guide_plan_file_path": str(guide_plan_path),
             "reading_guide": guide_json,
             "guide_file_path": str(guide_path),
             "question_section_pairs": question_section_pairs,
@@ -1490,12 +2117,18 @@ def _run_guide_node(
 
             output_dir = Path("output")
             output_dir.mkdir(exist_ok=True)
+            guide_plan_path = output_dir / f"{document_id}_guide_plan.json"
+            with open(guide_plan_path, "w", encoding="utf-8") as f:
+                json.dump(guide_json, f, indent=2, ensure_ascii=False)
+
             guide_path = output_dir / f"{document_id}_guide.json"
             with open(guide_path, "w", encoding="utf-8") as f:
                 json.dump(guide_json, f, indent=2, ensure_ascii=False)
 
             return {
                 **state,
+                "reading_guide_plan": guide_json,
+                "guide_plan_file_path": str(guide_plan_path),
                 "reading_guide": guide_json,
                 "guide_file_path": str(guide_path),
                 "question_section_pairs": question_section_pairs,
@@ -1516,7 +2149,8 @@ def applied_guide_node(state: dict) -> dict:
         state,
         label="APPLIED",
         guide_model_cls=AppliedReadingGuide,
-        prompt_fn=applied_guide_prompt,
+        planner_model_cls=AppliedReadingGuidePlan,
+        planner_prompt_fn=applied_guide_planner_prompt,
     )
 
 
@@ -1526,7 +2160,8 @@ def theoretical_guide_node(state: dict) -> dict:
         state,
         label="THEORETICAL",
         guide_model_cls=TheoreticalReadingGuide,
-        prompt_fn=theoretical_guide_prompt,
+        planner_model_cls=TheoreticalReadingGuidePlan,
+        planner_prompt_fn=theoretical_guide_planner_prompt,
     )
 
 
@@ -1536,7 +2171,8 @@ def survey_guide_node(state: dict) -> dict:
         state,
         label="SURVEY",
         guide_model_cls=SurveyReadingGuide,
-        prompt_fn=survey_guide_prompt,
+        planner_model_cls=SurveyReadingGuidePlan,
+        planner_prompt_fn=survey_guide_planner_prompt,
     )
 
 

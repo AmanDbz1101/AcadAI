@@ -70,6 +70,10 @@ class AgentState(BaseModel):
     pdf_path: Optional[str] = Field(None, description="Path to PDF file (workflow entry point)")
     force_ocr: bool = Field(False, description="Force OCR regardless of text density")
     query: Optional[str] = Field(None, description="User query for Q&A (optional)")
+    defer_answer_generation: Optional[bool] = Field(
+        None,
+        description="When true, retrieval is prepared but answer generation is deferred until explicit trigger",
+    )
     
     # === Extraction outputs ===
     document_id: Optional[str] = Field(None, description="Unique document identifier")
@@ -79,6 +83,8 @@ class AgentState(BaseModel):
     sections: Optional[list[dict[str, Any]]] = Field(None, description="Extracted sections with stats")
     hierarchy: Optional[dict[str, Any]] = Field(None, description="Section hierarchy tree")
     extraction_files: Optional[dict[str, str]] = Field(None, description="Extraction artifact file paths")
+    database: Optional[dict[str, Any]] = Field(None, description="Extraction database persistence metadata")
+    db_paper_id: Optional[int] = Field(None, description="Database paper id resolved during extraction persistence")
     
     # === Categorization outputs ===
     category: Optional[PaperCategory] = Field(None, description="Paper category classification")

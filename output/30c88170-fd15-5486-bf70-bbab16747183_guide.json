@@ -6,38 +6,84 @@
     "estimated_total_time": "3-4 hours"
   },
   "pass1_quick_scan": {
-    "goal": "Understand what was proven and why it matters",
+    "goal": "Understand the main contributions and significance of the paper",
     "estimated_time": "5-10 minutes",
     "steps": [
       {
         "step_number": 1,
         "section_to_read": [
-          "Abstract",
-          "Introduction"
+          "Abstract"
         ],
         "needs_figures": false,
         "needs_tables": false,
-        "objective": "Understand the problem and context",
+        "objective": "Understand the paper's main claim",
         "questions_to_answer": [
           "What is the main problem addressed in the paper?",
-          "Why is estimating properties of unknown unitary operations important in quantum information science?"
+          "What is the significance of estimating properties of unknown unitary operations?"
         ],
-        "expected_output": "Understanding of the problem and its significance"
+        "expected_output": "Understand the paper's context and main contribution"
       },
       {
         "step_number": 2,
         "section_to_read": [
-          "Introduction",
+          "1 Introduction"
+        ],
+        "needs_figures": false,
+        "needs_tables": false,
+        "objective": "Understand the motivation and background",
+        "questions_to_answer": [
+          "What are the key challenges in estimating unitary operations?",
+          "How does this paper relate to previous work?"
+        ],
+        "expected_output": "Understand the motivation and context of the paper"
+      },
+      {
+        "step_number": 3,
+        "section_to_read": [
           "1.1 Our contributions"
         ],
         "needs_figures": false,
         "needs_tables": false,
-        "objective": "Understand the contributions of the paper",
+        "objective": "Understand the paper's contributions",
         "questions_to_answer": [
           "What are the main contributions of the paper?",
-          "What specific functions on the unitary group are considered?"
+          "How do they relate to previous work?"
         ],
-        "expected_output": "Understanding of the paper's contributions and scope"
+        "expected_output": "Understand the paper's main contributions"
+      }
+    ]
+  },
+  "pass2_proof_strategy": {
+    "goal": "Understand the conditions and assumptions under which the results hold",
+    "estimated_time": "20-40 minutes",
+    "steps": [
+      {
+        "step_number": 1,
+        "section_to_read": [
+          "2 Preliminaries"
+        ],
+        "needs_figures": false,
+        "needs_tables": false,
+        "objective": "Understand the preliminary concepts and notation",
+        "questions_to_answer": [
+          "What are the key concepts and notation used in the paper?",
+          "How do they relate to the main contributions?"
+        ],
+        "expected_output": "Understand the preliminary concepts and notation"
+      },
+      {
+        "step_number": 2,
+        "section_to_read": [
+          "2.1.1 Peter-Weyl theorem and Schur-Weyl duality, and their consequences"
+        ],
+        "needs_figures": false,
+        "needs_tables": false,
+        "objective": "Understand the key theorems and their implications",
+        "questions_to_answer": [
+          "What is the Peter-Weyl theorem and its significance?",
+          "How does it relate to the main contributions?"
+        ],
+        "expected_output": "Understand the key theorems and their implications"
       },
       {
         "step_number": 3,
@@ -47,62 +93,12 @@
         ],
         "needs_figures": false,
         "needs_tables": false,
-        "objective": "Understand the specific results",
+        "objective": "Understand the specific results and their implications",
         "questions_to_answer": [
-          "What is the first result about?",
-          "What is the second result about?"
+          "What are the specific results presented in the paper?",
+          "How do they relate to the main contributions?"
         ],
-        "expected_output": "Understanding of the specific results"
-      }
-    ]
-  },
-  "pass2_proof_strategy": {
-    "goal": "Understand the conditions under which the results hold",
-    "estimated_time": "20-40 minutes",
-    "steps": [
-      {
-        "step_number": 1,
-        "section_to_read": [
-          "2. Preliminaries",
-          "2.1 Prerequisites from representation theory"
-        ],
-        "needs_figures": false,
-        "needs_tables": false,
-        "objective": "Understand the prerequisites from representation theory",
-        "questions_to_answer": [
-          "What is the Peter-Weyl theorem and its consequences?",
-          "What is Schur-Weyl duality and its consequences?"
-        ],
-        "expected_output": "Understanding of the representation theory background"
-      },
-      {
-        "step_number": 2,
-        "section_to_read": [
-          "2.2 Algorithms and Their Complexity"
-        ],
-        "needs_figures": false,
-        "needs_tables": false,
-        "objective": "Understand the algorithms and their complexity",
-        "questions_to_answer": [
-          "What algorithms are used for estimating functions on the unitary group?",
-          "What is the complexity of these algorithms?"
-        ],
-        "expected_output": "Understanding of the algorithms and their complexity"
-      },
-      {
-        "step_number": 3,
-        "section_to_read": [
-          "3. Lower bound",
-          "4. Upper bound"
-        ],
-        "needs_figures": false,
-        "needs_tables": false,
-        "objective": "Understand the lower and upper bounds",
-        "questions_to_answer": [
-          "What is the lower bound on the sample complexity?",
-          "What is the upper bound on the sample complexity?"
-        ],
-        "expected_output": "Understanding of the bounds on sample complexity"
+        "expected_output": "Understand the specific results and their implications"
       }
     ]
   },
@@ -113,52 +109,105 @@
       {
         "step_number": 1,
         "section_to_read": [
-          "3. Lower bound"
+          "3 Lower bound"
         ],
         "needs_figures": false,
         "needs_tables": false,
-        "objective": "Understand the proof of the lower bound",
+        "objective": "Understand the lower bound proof",
         "questions_to_answer": [
-          "How is the lower bound proved?",
-          "What are the key assumptions in the proof?"
+          "What is the lower bound proof and its significance?",
+          "How does it relate to the main contributions?"
         ],
-        "expected_output": "Understanding of the lower bound proof"
+        "expected_output": "Understand the lower bound proof"
       },
       {
         "step_number": 2,
         "section_to_read": [
-          "4. Upper bound"
+          "4 Upper bound"
         ],
         "needs_figures": false,
         "needs_tables": false,
-        "objective": "Understand the proof of the upper bound",
+        "objective": "Understand the upper bound proof",
         "questions_to_answer": [
-          "How is the upper bound proved?",
-          "What are the key assumptions in the proof?"
+          "What is the upper bound proof and its significance?",
+          "How does it relate to the main contributions?"
         ],
-        "expected_output": "Understanding of the upper bound proof"
+        "expected_output": "Understand the upper bound proof"
       },
       {
         "step_number": 3,
         "section_to_read": [
-          "5. Applications"
+          "5 Applications",
+          "5.1 Simpler forms of Rep ε (f)",
+          "5.1.1 Univariate Polynomials",
+          "5.1.2 The trace function",
+          "5.1.3 The determinant det g"
         ],
         "needs_figures": false,
         "needs_tables": false,
-        "objective": "Understand the applications of the results",
+        "objective": "Understand the applications and examples",
         "questions_to_answer": [
-          "What are the applications of the results?",
-          "How do the results improve upon previous work?"
+          "What are the applications and examples presented in the paper?",
+          "How do they relate to the main contributions?"
         ],
-        "expected_output": "Understanding of the applications and implications"
+        "expected_output": "Understand the applications and examples"
+      },
+      {
+        "step_number": 4,
+        "section_to_read": [
+          "5.2 Optimal PAC estimations",
+          "5.2.3 Irreducible representations π λ (g) i,j"
+        ],
+        "needs_figures": false,
+        "needs_tables": false,
+        "objective": "Understand the optimal PAC estimations",
+        "questions_to_answer": [
+          "What are the optimal PAC estimations presented in the paper?",
+          "How do they relate to the main contributions?"
+        ],
+        "expected_output": "Understand the optimal PAC estimations"
+      },
+      {
+        "step_number": 5,
+        "section_to_read": [
+          "1.2 Proof techniques",
+          "1.3 Organization of the paper",
+          "2.1 Prerequisites from representation theory"
+        ],
+        "needs_figures": false,
+        "needs_tables": false,
+        "objective": "Cover remaining sections that were not assigned earlier.",
+        "questions_to_answer": [
+          "What is the key claim or finding in section '1.2 Proof techniques'?",
+          "What is the key claim or finding in section '1.3 Organization of the paper'?",
+          "What is the key claim or finding in section '2.1 Prerequisites from representation theory'?"
+        ],
+        "expected_output": "A concise understanding of these remaining sections."
+      },
+      {
+        "step_number": 6,
+        "section_to_read": [
+          "2.2 Algorithms and Their Complexity",
+          "5.1 Simpler forms of Rep ε ( f )",
+          "5.2.3 Irreducible representations π λ ( g ) i,j"
+        ],
+        "needs_figures": false,
+        "needs_tables": false,
+        "objective": "Cover remaining sections that were not assigned earlier.",
+        "questions_to_answer": [
+          "What is the key claim or finding in section '2.2 Algorithms and Their Complexity'?",
+          "What is the key claim or finding in section '5.1 Simpler forms of Rep ε ( f )'?",
+          "What is the key claim or finding in section '5.2.3 Irreducible representations π λ ( g ) i,j'?"
+        ],
+        "expected_output": "A concise understanding of these remaining sections."
       }
     ]
   },
   "final_user_task": {
-    "summary_task": "Summarize the main results and implications of the paper",
+    "summary_task": "Summarize the main contributions and implications of the paper",
     "reflection_questions": [
       "What are the key takeaways from the paper?",
-      "How do the results relate to other work in the field?",
+      "How do the results relate to previous work?",
       "What are the potential applications and implications of the results?"
     ]
   }

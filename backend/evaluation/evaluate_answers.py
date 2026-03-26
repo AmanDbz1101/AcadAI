@@ -1,4 +1,4 @@
-"""Evaluate answer generation using RAGAS metrics (Faithfulness, Answer Relevancy, Context Precision)."""
+"""Evaluate answer generation with a custom LLM-as-judge scoring pass."""
 
 from __future__ import annotations
 
@@ -6,6 +6,7 @@ import json
 import os
 import sys
 import time
+import re
 from pathlib import Path
 from typing import Any
 
@@ -13,27 +14,6 @@ try:
     from dotenv import load_dotenv
 except ImportError:  # pragma: no cover - optional dependency
     load_dotenv = None
-
-# Install check for RAGAS
-try:
-    import datasets
-    from ragas import evaluate
-    from ragas.metrics import faithfulness, answer_relevancy, context_precision
-    from ragas.llms import LangchainLLMWrapper
-    from ragas.embeddings import LangchainEmbeddingsWrapper
-except ImportError as e:
-    print("❌ RAGAS dependencies are required for this evaluation.")
-    print("\nInstall with:")
-    print("  pip install ragas datasets langchain-groq")
-    print("\nOr run:")
-    print("  pip install -r evaluation/requirements_eval.txt")
-    sys.exit(1)
-
-# Import HuggingFace embeddings with fallback
-try:
-    from langchain_huggingface import HuggingFaceEmbeddings
-except ImportError:
-    from langchain_community.embeddings import HuggingFaceEmbeddings  # type: ignore[import-not-found]
 
 from langchain_groq import ChatGroq
 from langchain_core.messages import HumanMessage
@@ -68,14 +48,15 @@ GROQ_API_KEYS = [k for k in GROQ_API_KEYS if k]  # remove None values
 current_key_index = 0
 
 
-def get_llm(key_index: int) -> ChatGroq:
+def get_llm(key_index: int, model: str | None = None) -> ChatGroq:
+    selected_model = model or JUDGE_MODEL
     if GROQ_API_KEYS:
         return ChatGroq(
-            model=JUDGE_MODEL,
+            model=selected_model,
             api_key=GROQ_API_KEYS[key_index % len(GROQ_API_KEYS)],
             temperature=0.3,
         )
-    return ChatGroq(model=JUDGE_MODEL, temperature=0.3)
+    return ChatGroq(model=selected_model, temperature=0.3)
 
 
 def _is_rate_limit_error(exc: Exception) -> bool:
@@ -119,7 +100,7 @@ def _invoke_with_key_failover(
 
     for _ in range(max_attempts):
         try:
-            llm = get_llm(current_key_index)
+            llm = get_llm(current_key_index, model=model)
             response = llm.invoke([HumanMessage(content=prompt)])
             return str(response.content).strip()
         except Exception as exc:  # noqa: BLE001
@@ -189,48 +170,83 @@ def _result_score(result: Any) -> float:
         return 0.0
 
 
-def _metric_values(results: Any, metric_name: str) -> list[float]:
-    """Return per-sample metric values from different RAGAS result formats."""
-    metric_data: Any = None
-
-    # Dict-like shape: {"faithfulness": [...]}
-    if isinstance(results, dict):
-        metric_data = results.get(metric_name)
-
-    # Fallback for EvaluationResult objects that support indexing.
-    if metric_data is None:
-        try:
-            metric_data = results[metric_name]
-        except Exception:  # noqa: BLE001
-            metric_data = None
-
-    # Object shapes used by some RAGAS versions.
-    if hasattr(metric_data, "scores"):
-        metric_data = getattr(metric_data, "scores")
-    elif hasattr(metric_data, "score"):
-        metric_data = [getattr(metric_data, "score")]
-
-    if metric_data is None:
-        return []
-
-    if not isinstance(metric_data, (list, tuple)):
-        metric_data = [metric_data]
-
-    values: list[float] = []
-    for item in metric_data:
-        try:
-            values.append(float(item))
-        except Exception:  # noqa: BLE001
-            continue
-
-    return values
-
-
 def _safe_mean(values: list[float]) -> float:
     """Return average or 0.0 for empty lists."""
     if not values:
         return 0.0
     return sum(values) / len(values)
+
+
+def _build_judge_prompt(question: str, context: str, answer: str) -> str:
+    return f"""You are evaluating a question answering system.
+
+Question: {question}
+
+Retrieved context:
+{context}
+
+Generated answer:
+{answer}
+
+Rate the answer on two dimensions. Return only a JSON object, nothing else:
+{{
+  "faithfulness": <float 0.0-1.0, how well the answer is supported by the context>,
+  "answer_relevancy": <float 0.0-1.0, how well the answer addresses the question>
+}}"""
+
+
+def _extract_json_object(text: str) -> str:
+    """Extract first JSON object from plain or fenced model output."""
+    stripped = text.strip()
+    if stripped.startswith("{") and stripped.endswith("}"):
+        return stripped
+
+    fenced_match = re.search(r"```(?:json)?\s*(\{.*?\})\s*```", stripped, flags=re.DOTALL)
+    if fenced_match:
+        return fenced_match.group(1)
+
+    start = stripped.find("{")
+    end = stripped.rfind("}")
+    if start != -1 and end != -1 and end > start:
+        return stripped[start : end + 1]
+
+    return stripped
+
+
+def _coerce_score(value: Any) -> float | None:
+    try:
+        score = float(value)
+    except Exception:  # noqa: BLE001
+        return None
+
+    if score < 0.0:
+        return 0.0
+    if score > 1.0:
+        return 1.0
+    return score
+
+
+def _parse_judge_scores(raw_response: str) -> tuple[float | None, float | None]:
+    """Parse judge JSON response into (faithfulness, answer_relevancy)."""
+    try:
+        payload = json.loads(_extract_json_object(raw_response))
+    except Exception:  # noqa: BLE001
+        return None, None
+
+    if not isinstance(payload, dict):
+        return None, None
+
+    faith = _coerce_score(payload.get("faithfulness"))
+    relevancy = _coerce_score(payload.get("answer_relevancy"))
+    return faith, relevancy
+
+
+def _score_to_display(value: float | None) -> str:
+    return "N/A" if value is None else f"{value:.2f}"
+
+
+def _safe_pass(value: float | None, threshold: float) -> bool:
+    return (value is not None) and (value > threshold)
 
 
 def _is_reference_result(result: Any) -> bool:
@@ -341,20 +357,13 @@ def main() -> None:
     
     parser = argparse.ArgumentParser()
     parser.add_argument('--skip-generation', action='store_true',
-        help='Skip answer generation and load from saved file for RAGAS scoring only')
+        help='Skip answer generation and load from saved file for judge scoring only')
     args = parser.parse_args()
     
     print("\n" + "=" * 60)
     print("ANSWER GENERATION & RAGAS EVALUATION")
     print("=" * 60)
     print(f"🔑 Groq keys detected for failover: {max(1, len(GROQ_API_KEYS))}")
-    
-    ragas_data = {
-        "question": [],
-        "answer": [],
-        "contexts": [],
-        "ground_truth": [],
-    }
     
     if args.skip_generation:
         # Load from saved file
@@ -369,13 +378,7 @@ def main() -> None:
         
         print(f"✅ Loaded {len(generated_answers_data)} saved answers")
         
-        # Convert saved answers to RAGAS format
-        for entry in generated_answers_data:
-            ragas_data["question"].append(entry["question"])
-            ragas_data["answer"].append(entry["generated_answer"])
-            ragas_data["contexts"].append(entry["contexts"])
-            ragas_data["ground_truth"].append(entry["reference_answer"])
-    
+
     else:
         # Load dataset
         print("\n📂 Loading dataset...")
@@ -396,7 +399,7 @@ def main() -> None:
         pipeline = RetrievalPipeline()
         print("✅ Pipeline ready")
         
-        # Generate answers and collect RAGAS inputs
+        # Generate answers
         print("\n💭 Generating answers...")
         generated_answers_data = []
         
@@ -427,12 +430,6 @@ def main() -> None:
                 paper_type=paper_type,
             )
             
-            # Add to RAGAS dataset
-            ragas_data["question"].append(question)
-            ragas_data["answer"].append(answer)
-            ragas_data["contexts"].append(context_chunks)
-            ragas_data["ground_truth"].append(reference_answer)
-            
             # Store for detailed results
             generated_answers_data.append({
                 "question": question,
@@ -449,80 +446,71 @@ def main() -> None:
         with ANSWERS_OUTPUT.open("w", encoding="utf-8") as f:
             json.dump(generated_answers_data, f, indent=2)
         print(f"✅ Saved to {ANSWERS_OUTPUT}")
-    
-    # Configure RAGAS
-    print("\n⚙️  Configuring RAGAS...")
-    llm = get_llm(current_key_index)
-    llm_wrapper = LangchainLLMWrapper(llm)
-    hf_embeddings = LangchainEmbeddingsWrapper(
-        HuggingFaceEmbeddings(model_name="BAAI/bge-small-en-v1.5")
-    )
-    print("✅ RAGAS configured with Groq LLM and local embeddings")
-    
-    # Build HuggingFace Dataset
-    print("\n📊 Building HuggingFace Dataset...")
-    hf_dataset = datasets.Dataset.from_dict(ragas_data)
-    print(f"✅ Dataset created with {len(hf_dataset)} samples")
-    
-    # Run RAGAS evaluation
+
+    # Run custom LLM-as-judge evaluation
     print("\n🔬 Running RAGAS evaluation (this may take a minute)...")
     try:
-        while True:
+        faithfulness_values: list[float | None] = []
+        answer_relevancy_values: list[float | None] = []
+        context_precision_values: list[None] = []
+
+        for i, entry in enumerate(generated_answers_data):
+            question = str(entry.get("question", ""))
+            answer = str(entry.get("generated_answer", ""))
+            contexts = entry.get("contexts", [])
+            if isinstance(contexts, list):
+                context_text = "\n\n".join(str(c) for c in contexts)
+            else:
+                context_text = str(contexts)
+
+            judge_prompt = _build_judge_prompt(
+                question=question,
+                context=context_text,
+                answer=answer,
+            )
+
             try:
-                llm = get_llm(current_key_index)
-                wrapped_llm = LangchainLLMWrapper(llm)
-                results = evaluate(
-                    dataset=hf_dataset,
-                    metrics=[faithfulness, answer_relevancy, context_precision],
-                    llm=wrapped_llm,
-                    embeddings=hf_embeddings,
-                    raise_exceptions=False,
-                )
-                break
-            except TimeoutError:
-                print("Timeout detected. Retrying with current key in 10 seconds...")
-                time.sleep(10)
+                llm = get_llm(current_key_index, model=JUDGE_MODEL)
+                response = llm.invoke([HumanMessage(content=judge_prompt)])
+                faithfulness, answer_relevancy = _parse_judge_scores(str(response.content))
+                if faithfulness is None or answer_relevancy is None:
+                    print(
+                        f"⚠️  Judge JSON parse issue on sample {i + 1}; storing null scores."
+                    )
             except Exception as e:
-                if _is_rate_limit_error(e):
-                    if len(GROQ_API_KEYS) > 1:
-                        old_idx, new_idx = _rotate_key()
-                        print(
-                            f"Rate limit hit on key {old_idx + 1}. "
-                            f"Switching to key {new_idx + 1}..."
-                        )
-                        continue
+                print(f"⚠️  Judge call failed on sample {i + 1}: {e}")
+                if _is_rate_limit_error(e) and len(GROQ_API_KEYS) > 1:
+                    old_idx, new_idx = _rotate_key()
+                    print(
+                        f"⚠️  Rate limit on key {old_idx + 1}; switching to key {new_idx + 1} for next call..."
+                    )
+                faithfulness, answer_relevancy = None, None
 
-                    print("Rate limit hit with a single configured key. Waiting 60 seconds...")
-                    time.sleep(60)
-                    continue
+            faithfulness_values.append(faithfulness)
+            answer_relevancy_values.append(answer_relevancy)
+            context_precision_values.append(None)
 
-                print(f"Error: {e}. Retrying in 10 seconds...")
-                time.sleep(10)
-        
-        # Extract metric values in a RAGAS-version-compatible way.
-        faithfulness_values = _metric_values(results, "faithfulness")
-        answer_relevancy_values = _metric_values(results, "answer_relevancy")
-        context_precision_values = _metric_values(results, "context_precision")
+            if i < len(generated_answers_data) - 1:
+                time.sleep(2)
 
-        # Aggregate with a safe fallback when a metric is missing.
-        faithfulness_score = _safe_mean(faithfulness_values)
-        answer_relevancy_score = _safe_mean(answer_relevancy_values)
-        context_precision_score = _safe_mean(context_precision_values)
+        faithfulness_score = _safe_mean([v for v in faithfulness_values if v is not None])
+        answer_relevancy_score = _safe_mean([v for v in answer_relevancy_values if v is not None])
+        context_precision_score: float | None = None
         
         # Print results
         print("\n" + "=" * 60)
         print("ANSWER QUALITY RESULTS (RAGAS)")
         print("=" * 60)
-        print(f"Faithfulness      : {faithfulness_score:.2f}   (grounded in retrieved chunks)")
-        print(f"Answer Relevancy  : {answer_relevancy_score:.2f}   (answers address the question)")
-        print(f"Context Precision : {context_precision_score:.2f}   (relevant chunks ranked higher)")
+        print(f"Faithfulness      : {_score_to_display(faithfulness_score)}   (grounded in retrieved chunks)")
+        print(f"Answer Relevancy  : {_score_to_display(answer_relevancy_score)}   (answers address the question)")
+        print(f"Context Precision : {_score_to_display(context_precision_score)}   (relevant chunks ranked higher)")
         
         print("\n" + "-" * 60)
         print("INTERPRETATION")
         print("-" * 60)
         
-        faith_pass = "✅ PASS" if faithfulness_score > 0.7 else "❌ FAIL"
-        relevancy_pass = "✅ PASS" if answer_relevancy_score > 0.65 else "❌ FAIL"
+        faith_pass = "✅ PASS" if _safe_pass(faithfulness_score, 0.7) else "❌ FAIL"
+        relevancy_pass = "✅ PASS" if _safe_pass(answer_relevancy_score, 0.65) else "❌ FAIL"
         
         print(f"Faithfulness > 0.7      = answers well grounded     {faith_pass}")
         print(f"Answer Relevancy > 0.65 = answers address questions {relevancy_pass}")
@@ -532,11 +520,11 @@ def main() -> None:
             "metrics": {
                 "faithfulness": float(faithfulness_score),
                 "answer_relevancy": float(answer_relevancy_score),
-                "context_precision": float(context_precision_score),
+                "context_precision": None,
             },
             "pass_fail": {
-                "faithfulness": faithfulness_score > 0.7,
-                "answer_relevancy": answer_relevancy_score > 0.65,
+                "faithfulness": _safe_pass(faithfulness_score, 0.7),
+                "answer_relevancy": _safe_pass(answer_relevancy_score, 0.65),
             },
             "per_sample_results": [],
         }
@@ -549,7 +537,7 @@ def main() -> None:
                 "section_title": entry["section_title"],
                 "faithfulness": faithfulness_values[i] if i < len(faithfulness_values) else None,
                 "answer_relevancy": answer_relevancy_values[i] if i < len(answer_relevancy_values) else None,
-                "context_precision": context_precision_values[i] if i < len(context_precision_values) else None,
+                "context_precision": None,
             }
             results_data["per_sample_results"].append(sample_result)
         
@@ -567,7 +555,7 @@ def main() -> None:
         print(f"  • {ANSWERS_OUTPUT}")
         
     except Exception as exc:
-        print(f"❌ RAGAS evaluation failed: {exc}")
+        print(f"❌ Evaluation failed: {exc}")
         import traceback
         traceback.print_exc()
         sys.exit(1)

@@ -7,7 +7,7 @@
   },
   "pass1_field_overview": {
     "goal": "Understand the SHAPE of the field, not the detail",
-    "estimated_time": "5-10 min",
+    "estimated_time": "5-10 minutes",
     "steps": [
       {
         "step_number": 1,
@@ -20,7 +20,7 @@
         "objective": "Understand the background and motivation of the survey",
         "questions_to_answer": [
           "What is the main focus of the survey?",
-          "What are the advantages of neural models for NLP tasks?"
+          "What is the current state of pre-trained models for NLP?"
         ],
         "expected_output": "Understand the context and purpose of the survey"
       },
@@ -31,47 +31,47 @@
         ],
         "needs_figures": false,
         "needs_tables": false,
-        "objective": "Understand the overall structure and contributions of the survey",
+        "objective": "Identify the main contributions and takeaways of the survey",
         "questions_to_answer": [
-          "What are the main contributions of the survey?",
-          "What are the potential future research directions for PTMs?"
+          "What are the key findings of the survey?",
+          "What are the potential future directions for pre-trained models?"
         ],
-        "expected_output": "Understand the overall structure and contributions of the survey"
+        "expected_output": "Understand the main conclusions and implications of the survey"
       },
       {
         "step_number": 3,
         "section_to_read": [
           "1 Introduction",
-          "2 Background"
+          "3 Overview of PTMs"
         ],
         "needs_figures": false,
         "needs_tables": false,
-        "objective": "Understand the research gaps and future directions",
+        "objective": "Understand the taxonomy and categorization of pre-trained models",
         "questions_to_answer": [
-          "What are the limitations of current neural models for NLP tasks?",
-          "How do PTMs address these limitations?"
+          "What are the different types of pre-trained models?",
+          "How are they categorized?"
         ],
-        "expected_output": "Understand the research gaps and future directions"
+        "expected_output": "Understand the organization and structure of pre-trained models"
       }
     ]
   },
   "pass2_taxonomy_understanding": {
     "goal": "Build a mental map of how the field is organized",
-    "estimated_time": "20-40 min",
+    "estimated_time": "20-40 minutes",
     "steps": [
       {
         "step_number": 1,
         "section_to_read": [
           "3 Overview of PTMs"
         ],
-        "needs_figures": true,
+        "needs_figures": false,
         "needs_tables": true,
-        "objective": "Understand the taxonomy of PTMs",
+        "objective": "Understand the taxonomy of pre-trained models",
         "questions_to_answer": [
-          "What are the four different perspectives for categorizing PTMs?",
-          "How do these perspectives relate to each other?"
+          "What are the four different perspectives for categorizing pre-trained models?",
+          "How do the authors propose to adapt the knowledge of pre-trained models to downstream tasks?"
         ],
-        "expected_output": "Understand the taxonomy of PTMs"
+        "expected_output": "Understand the taxonomy and categorization of pre-trained models"
       },
       {
         "step_number": 2,
@@ -80,32 +80,32 @@
         ],
         "needs_figures": true,
         "needs_tables": true,
-        "objective": "Understand the key findings per category",
+        "objective": "Understand the extensions and variations of pre-trained models",
         "questions_to_answer": [
-          "What are the main extensions of PTMs?",
-          "How do these extensions improve the performance of PTMs?"
+          "What are the different extensions of pre-trained models?",
+          "How do they improve the performance of pre-trained models?"
         ],
-        "expected_output": "Understand the key findings per category"
+        "expected_output": "Understand the extensions and variations of pre-trained models"
       },
       {
         "step_number": 3,
         "section_to_read": [
           "5 Adapting PTMs to Downstream Tasks"
         ],
-        "needs_figures": false,
+        "needs_figures": true,
         "needs_tables": true,
-        "objective": "Understand the comparison tables",
+        "objective": "Understand how to adapt pre-trained models to downstream tasks",
         "questions_to_answer": [
-          "How do PTMs perform on different downstream tasks?",
-          "What are the strengths and weaknesses of different PTMs?"
+          "What are the different approaches to adapting pre-trained models to downstream tasks?",
+          "How do the authors evaluate the performance of pre-trained models on downstream tasks?"
         ],
-        "expected_output": "Understand the comparison tables"
+        "expected_output": "Understand how to adapt pre-trained models to downstream tasks"
       }
     ]
   },
   "pass3_research_landscape_analysis": {
     "goal": "Use this paper as a NAVIGATION TOOL, not a linear read",
-    "estimated_time": "1-2 hrs",
+    "estimated_time": "1-2 hours",
     "steps": [
       {
         "step_number": 1,
@@ -114,12 +114,12 @@
         ],
         "needs_figures": false,
         "needs_tables": true,
-        "objective": "Understand the resources available for PTMs",
+        "objective": "Identify the resources and tools available for pre-trained models",
         "questions_to_answer": [
-          "What are the main resources available for PTMs?",
-          "How can these resources be used for future research?"
+          "What are the available resources and tools for pre-trained models?",
+          "How can they be used for downstream tasks?"
         ],
-        "expected_output": "Understand the resources available for PTMs"
+        "expected_output": "Understand the resources and tools available for pre-trained models"
       },
       {
         "step_number": 2,
@@ -127,13 +127,13 @@
           "7 Applications"
         ],
         "needs_figures": true,
-        "needs_tables": false,
-        "objective": "Understand the applications of PTMs",
+        "needs_tables": true,
+        "objective": "Understand the applications and use cases of pre-trained models",
         "questions_to_answer": [
-          "What are the main applications of PTMs?",
-          "How can PTMs be used in real-world scenarios?"
+          "What are the different applications and use cases of pre-trained models?",
+          "How can they be used in real-world scenarios?"
         ],
-        "expected_output": "Understand the applications of PTMs"
+        "expected_output": "Understand the applications and use cases of pre-trained models"
       },
       {
         "step_number": 3,
@@ -142,20 +142,21 @@
         ],
         "needs_figures": false,
         "needs_tables": false,
-        "objective": "Understand the future research directions for PTMs",
+        "objective": "Identify the future directions and potential research areas for pre-trained models",
         "questions_to_answer": [
-          "What are the potential future research directions for PTMs?",
-          "How can these directions be explored in future research?"
+          "What are the potential future directions for pre-trained models?",
+          "What are the open research questions and challenges?"
         ],
-        "expected_output": "Understand the future research directions for PTMs"
+        "expected_output": "Understand the future directions and potential research areas for pre-trained models"
       }
     ]
   },
   "final_user_task": {
-    "summary_task": "Summarize the main contributions and future research directions of the survey",
+    "summary_task": "Summarize the main findings and takeaways of the survey",
     "reflection_questions": [
-      "What are the main takeaways from the survey?",
-      "How can the survey be used as a navigation tool for future research?"
+      "What are the key contributions of the survey?",
+      "What are the implications of the survey for the field of NLP?",
+      "What are the potential future directions for pre-trained models?"
     ]
   }
 }

@@ -96,3 +96,10 @@ Or provide it when using the Streamlit UIs.
 - All FastAPI code has been removed for simplicity
 - Pipelines and models are organized in subfolders
 - Input/output folders are at the project root level
+
+## Deferred Answer Generation
+
+Backend now supports deferred one-question answer generation.
+
+Integration guide:
+- See ../docs/DEFERRED_ANSWER_API.md for endpoints and UI wiring contract.

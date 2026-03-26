@@ -401,7 +401,12 @@ For each step, specify which sections to read, the objective, 2-3 questions to a
 
 INSTRUCTIONS:
 1. For each pass, create 3-5 sequential steps.
-2. Each step must specify:
+2. Coverage and non-repetition rules:
+    - The section 'Abstract' must appear in section_to_read at least once across the three passes.
+    - Every section from the provided Section Headings list must appear in section_to_read at least once across all three passes, EXCEPT reference-style sections (References, Bibliography, Works Cited).
+    - Do not repeat the same section in multiple steps within the same pass.
+    - Prefer assigning leaf-level sections when subsection headings are available; do not assign broad parent sections when specific child sections exist.
+3. Each step must specify:
     - For the section_to_read field, only write actual section titles or section numbers from the paper (e.g. '3. Methodology', 'Results'). Never write 'Figure N' or 'Table N' as section references — these are not retrievable sections.
     - Instead, use two separate boolean fields:
       needs_figures: true if this step requires understanding a figure or diagram from that section
@@ -413,8 +418,13 @@ INSTRUCTIONS:
       names, or numbers from the abstract, introduction, or conclusion. Generic questions
       like "What did the authors propose?" are not acceptable.
    - Expected output or insight.
-3. Use needs_figures / needs_tables to indicate figure/table dependency for each step.
-4. Keep instructions clear and actionable.
+4. Use needs_figures / needs_tables to indicate figure/table dependency for each step.
+5. Keep instructions clear and actionable.
+6. Before returning output, run a final self-check:
+    - Abstract is assigned somewhere in the guide
+    - all non-reference listed sections are assigned somewhere in the guide
+    - no pass has duplicate section assignments
+    - steps remain sequential and actionable
 
 Always reference ACTUAL section names from the list above in your guide."""
 
@@ -488,7 +498,12 @@ For each step, specify which sections to read, the objective, 2-3 questions to a
 
 INSTRUCTIONS:
 1. For each pass, create 3-5 sequential steps.
-2. Each step must specify:
+2. Coverage and non-repetition rules:
+    - The section 'Abstract' must appear in section_to_read at least once across the three passes.
+    - Every section from the provided Section Headings list must appear in section_to_read at least once across all three passes, EXCEPT reference-style sections (References, Bibliography, Works Cited).
+    - Do not repeat the same section in multiple steps within the same pass.
+    - Prefer assigning leaf-level sections when subsection headings are available; do not assign broad parent sections when specific child sections exist.
+3. Each step must specify:
     - For the section_to_read field, only write actual section titles or section numbers from the paper (e.g. '3. Methodology', 'Results'). Never write 'Figure N' or 'Table N' as section references — these are not retrievable sections.
     - Instead, use two separate boolean fields:
       needs_figures: true if this step requires understanding a figure or diagram from that section
@@ -500,9 +515,14 @@ INSTRUCTIONS:
       notation, bounds, complexity results, or claims from the abstract, introduction, or conclusion.
       Generic questions like "What is proved?" are not acceptable.
    - Expected output or insight.
-3. Flag specific theorem, lemma, and corollary names when they appear in the section headings.
-4. Use needs_figures / needs_tables to indicate figure/table dependency for each step.
-5. Keep instructions clear and actionable.
+4. Flag specific theorem, lemma, and corollary names when they appear in the section headings.
+5. Use needs_figures / needs_tables to indicate figure/table dependency for each step.
+6. Keep instructions clear and actionable.
+7. Before returning output, run a final self-check:
+    - Abstract is assigned somewhere in the guide
+    - all non-reference listed sections are assigned somewhere in the guide
+    - no pass has duplicate section assignments
+    - steps remain sequential and actionable
 
 Always reference ACTUAL section names from the list above in your guide."""
 
@@ -565,13 +585,18 @@ For each step, specify which sections to read, the objective, 2-3 questions to a
 If the paper has {num_tables} tables, reference comparison tables where relevant.
 
 PASS 3 – Research Landscape Analysis (1-2 hrs):
-Reading order: Individual paper summaries for topics relevant to the reader → Reference list as a curated reading list.
+Reading order: Individual paper summaries for topics relevant to the reader → Trend/gap synthesis sections.
 Goal: Use this paper as a NAVIGATION TOOL, not a linear read.
 For each step, specify which sections to read, the objective, 2-3 questions to answer, and expected output.
 
 INSTRUCTIONS:
 1. For each pass, create 3-5 sequential steps.
-2. Each step must specify:
+2. Coverage and non-repetition rules:
+    - The section 'Abstract' must appear in section_to_read at least once across the three passes.
+    - Every section from the provided Section Headings list must appear in section_to_read at least once across all three passes, EXCEPT reference-style sections (References, Bibliography, Works Cited).
+    - Do not repeat the same section in multiple steps within the same pass.
+    - Prefer assigning leaf-level sections when subsection headings are available; do not assign broad parent sections when specific child sections exist.
+3. Each step must specify:
     - For the section_to_read field, only write actual section titles or section numbers from the paper (e.g. '3. Methodology', 'Results'). Never write 'Figure N' or 'Table N' as section references — these are not retrievable sections.
     - Instead, use two separate boolean fields:
       needs_figures: true if this step requires understanding a figure or diagram from that section
@@ -583,10 +608,237 @@ INSTRUCTIONS:
       benchmark names, date ranges, or claims from the abstract, introduction, or conclusion.
       Generic questions like "What are the categories?" are not acceptable.
    - Expected output or insight.
-3. Use needs_figures / needs_tables to indicate figure/table dependency for each step.
-4. Keep instructions clear and actionable.
+4. Use needs_figures / needs_tables to indicate figure/table dependency for each step.
+5. Keep instructions clear and actionable.
+6. Before returning output, run a final self-check:
+    - Abstract is assigned somewhere in the guide
+    - all non-reference listed sections are assigned somewhere in the guide
+    - no pass has duplicate section assignments
+    - steps remain sequential and actionable
 
 Always reference ACTUAL section names from the list above in your guide."""
+
+
+def _planner_visual_id_block(
+    available_figure_ids: list[str] | None,
+    available_table_ids: list[str] | None,
+    section_visual_index_json: str,
+) -> str:
+    figure_ids = available_figure_ids or []
+    table_ids = available_table_ids or []
+    return (
+        "VISUAL ID CONTEXT:\n"
+        f"- Available figure IDs: {figure_ids}\n"
+        f"- Available table IDs: {table_ids}\n"
+        "- Section-to-visual mapping JSON (use this to assign relevant IDs per step):\n"
+        f"{section_visual_index_json}\n"
+    )
+
+
+def applied_guide_planner_prompt(
+    title: str,
+    abstract: str,
+    introduction: str,
+    conclusion: str,
+    sections: list,
+    num_figures: int = 0,
+    num_tables: int = 0,
+    available_figure_ids: list[str] | None = None,
+    available_table_ids: list[str] | None = None,
+    section_visual_index_json: str = "{}",
+) -> str:
+    section_names = _flatten_sections(sections)
+    section_list = "\n".join([f"- {name}" for name in section_names])
+    visual_block = _planner_visual_id_block(
+        available_figure_ids=available_figure_ids,
+        available_table_ids=available_table_ids,
+        section_visual_index_json=section_visual_index_json,
+    )
+
+    return f"""You are Agent 1: Reading Guide Planner for APPLIED papers.
+
+Return only the guide skeleton. Do not generate questions yet.
+
+PAPER INFORMATION:
+- Title: {title}
+- Abstract: {abstract}
+- Introduction: {introduction}
+- Conclusion: {conclusion}
+- Section Headings:
+{section_list}
+- Number of Figures: {num_figures}
+- Number of Tables: {num_tables}
+
+{visual_block}
+
+RULES:
+1. Build a three-pass guide skeleton with sequential steps.
+2. section_to_read must use only actual section names from Section Headings.
+3. Follow the three-pass method faithfully; do NOT force complete coverage of all sections.
+4. Prefer leaf sections when available and only include sections necessary for each pass goal.
+5. Avoid repeating the same section across steps and across passes by default.
+6. Repeat a section only when truly necessary after prerequisite reading, and make that revisit intent explicit in the objective.
+7. Exclude References/Bibliography/Works Cited unless a specific step explicitly requires them.
+8. For every step, include:
+   - relevant_figure_ids: figure IDs relevant to that step (empty list [] when none)
+   - relevant_table_ids: table IDs relevant to that step (empty list [] when none)
+   - needs_figures / needs_tables booleans aligned to the selected IDs
+9. questions_to_answer must be an empty list [] for every step.
+
+OUTPUT REQUIREMENTS:
+- Return valid JSON matching the plan schema only.
+- Do not include prose outside JSON.
+"""
+
+
+def theoretical_guide_planner_prompt(
+    title: str,
+    abstract: str,
+    introduction: str,
+    conclusion: str,
+    sections: list,
+    num_figures: int = 0,
+    num_tables: int = 0,
+    available_figure_ids: list[str] | None = None,
+    available_table_ids: list[str] | None = None,
+    section_visual_index_json: str = "{}",
+) -> str:
+    section_names = _flatten_sections(sections)
+    section_list = "\n".join([f"- {name}" for name in section_names])
+    visual_block = _planner_visual_id_block(
+        available_figure_ids=available_figure_ids,
+        available_table_ids=available_table_ids,
+        section_visual_index_json=section_visual_index_json,
+    )
+
+    return f"""You are Agent 1: Reading Guide Planner for THEORETICAL papers.
+
+Return only the guide skeleton. Do not generate questions yet.
+
+PAPER INFORMATION:
+- Title: {title}
+- Abstract: {abstract}
+- Introduction: {introduction}
+- Conclusion: {conclusion}
+- Section Headings:
+{section_list}
+- Number of Figures: {num_figures}
+- Number of Tables: {num_tables}
+
+{visual_block}
+
+RULES:
+1. Build a three-pass guide skeleton with sequential steps.
+2. section_to_read must use only actual section names from Section Headings.
+3. Follow the three-pass method faithfully; do NOT force complete coverage of all sections.
+4. Prefer leaf sections when available and only include sections necessary for each pass goal.
+5. Avoid repeating the same section across steps and across passes by default.
+6. Repeat a section only when truly necessary after prerequisite reading, and make that revisit intent explicit in the objective.
+7. Exclude References/Bibliography/Works Cited unless a specific step explicitly requires them.
+8. Include relevant_figure_ids / relevant_table_ids and aligned needs_figures / needs_tables.
+9. questions_to_answer must be an empty list [] for every step.
+
+OUTPUT REQUIREMENTS:
+- Return valid JSON matching the plan schema only.
+- Do not include prose outside JSON.
+"""
+
+
+def survey_guide_planner_prompt(
+    title: str,
+    abstract: str,
+    introduction: str,
+    conclusion: str,
+    sections: list,
+    num_figures: int = 0,
+    num_tables: int = 0,
+    available_figure_ids: list[str] | None = None,
+    available_table_ids: list[str] | None = None,
+    section_visual_index_json: str = "{}",
+) -> str:
+    section_names = _flatten_sections(sections)
+    section_list = "\n".join([f"- {name}" for name in section_names])
+    visual_block = _planner_visual_id_block(
+        available_figure_ids=available_figure_ids,
+        available_table_ids=available_table_ids,
+        section_visual_index_json=section_visual_index_json,
+    )
+
+    return f"""You are Agent 1: Reading Guide Planner for SURVEY papers.
+
+Return only the guide skeleton. Do not generate questions yet.
+
+PAPER INFORMATION:
+- Title: {title}
+- Abstract: {abstract}
+- Introduction: {introduction}
+- Conclusion: {conclusion}
+- Section Headings:
+{section_list}
+- Number of Figures: {num_figures}
+- Number of Tables: {num_tables}
+
+{visual_block}
+
+RULES:
+1. Build a three-pass guide skeleton with sequential steps.
+2. section_to_read must use only actual section names from Section Headings.
+3. Follow the three-pass method faithfully; do NOT force complete coverage of all sections.
+4. Prefer leaf sections when available and only include sections necessary for each pass goal.
+5. Avoid repeating the same section across steps and across passes by default.
+6. Repeat a section only when truly necessary after prerequisite reading, and make that revisit intent explicit in the objective.
+7. Exclude References/Bibliography/Works Cited unless a specific step explicitly requires them.
+8. Include relevant_figure_ids / relevant_table_ids and aligned needs_figures / needs_tables.
+9. questions_to_answer must be an empty list [] for every step.
+
+OUTPUT REQUIREMENTS:
+- Return valid JSON matching the plan schema only.
+- Do not include prose outside JSON.
+"""
+
+
+def guide_step_question_prompt(
+    category: str,
+    title: str,
+    abstract: str,
+    pass_key: str,
+    pass_goal: str,
+    step_number: int,
+    section_to_read: list[str],
+    objective: str,
+    expected_output: str,
+    figure_summaries: list[str] | None = None,
+    table_summaries: list[str] | None = None,
+) -> str:
+    figures = figure_summaries or []
+    tables = table_summaries or []
+    return f"""You are Agent 2: Per-step Question Generator.
+
+Generate exactly 3 paper-specific questions for one reading-guide step.
+
+Paper category: {category}
+Paper title: {title}
+Paper abstract: {abstract}
+Pass key: {pass_key}
+Pass goal: {pass_goal}
+Step number: {step_number}
+Step sections: {section_to_read}
+Step objective: {objective}
+Step expected output: {expected_output}
+Relevant figure summaries: {figures}
+Relevant table summaries: {tables}
+
+STRICT CONSTRAINTS:
+1. Return exactly 3 questions as a JSON array of strings.
+2. Each string must be a single standalone question.
+3. Each question must contain exactly one question mark and end with '?'.
+4. Do not write compound questions joined by 'and'.
+5. Questions must be specific to this paper (method names, metrics, claims, datasets, theorem names, categories, or numerical results).
+6. Avoid generic templates.
+
+OUTPUT FORMAT (strict):
+["question 1?", "question 2?", "question 3?"]
+"""
 
 
 

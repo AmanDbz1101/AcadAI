@@ -1,365 +1,365 @@
 {
   "metrics": {
-    "faithfulness": NaN,
-    "answer_relevancy": NaN,
-    "context_precision": NaN
+    "faithfulness": 0.8348837209302326,
+    "answer_relevancy": 0.886046511627907,
+    "context_precision": 0.44761904761904764
   },
   "pass_fail": {
-    "faithfulness": false,
-    "answer_relevancy": false
+    "faithfulness": true,
+    "answer_relevancy": true
   },
   "per_sample_results": [
     {
       "question": "What are the two main results presented in this paper?",
       "section_id": "30c88170-fd15-5486-bf70-bbab16747183_section_0",
       "section_title": "Abstract",
-      "faithfulness": NaN,
-      "answer_relevancy": 0.8161342225353941,
-      "context_precision": 0.8055555555287036
+      "faithfulness": 0.9,
+      "answer_relevancy": 0.8,
+      "context_precision": 0.6
     },
     {
       "question": "What quantity characterizes the optimal query complexity for estimating a function f with averaged bias less than epsilon?",
       "section_id": "30c88170-fd15-5486-bf70-bbab16747183_section_0",
       "section_title": "Abstract",
-      "faithfulness": NaN,
-      "answer_relevancy": 0.9762333310554207,
-      "context_precision": 0.99999999998
+      "faithfulness": 0.9,
+      "answer_relevancy": 0.95,
+      "context_precision": 0.6
     },
     {
       "question": "Why is it desirable to develop a unified estimation framework for functions on the unitary group rather than studying each function separately?",
       "section_id": "30c88170-fd15-5486-bf70-bbab16747183_section_0",
       "section_title": "Abstract",
-      "faithfulness": NaN,
-      "answer_relevancy": 0.9819431261743806,
-      "context_precision": NaN
+      "faithfulness": 0.9,
+      "answer_relevancy": 0.95,
+      "context_precision": 0.6
     },
     {
       "question": "How is the lower bound on query complexity proved in this paper?",
       "section_id": "30c88170-fd15-5486-bf70-bbab16747183_section_11",
       "section_title": "Lower bound",
-      "faithfulness": NaN,
-      "answer_relevancy": 0.9370030125541086,
-      "context_precision": NaN
+      "faithfulness": 0.8,
+      "answer_relevancy": 0.9,
+      "context_precision": 0.2
     },
     {
       "question": "What is the G-Hadamard algorithm and how many queries to the controlled-g operation does it use?",
       "section_id": "30c88170-fd15-5486-bf70-bbab16747183_section_11",
       "section_title": "Lower bound",
-      "faithfulness": NaN,
-      "answer_relevancy": 0.0,
-      "context_precision": NaN
+      "faithfulness": 0.6,
+      "answer_relevancy": 0.8,
+      "context_precision": 0.6
     },
     {
       "question": "How does the upper bound proof construct an unbiased estimator for polynomial functions on the unitary group?",
       "section_id": "30c88170-fd15-5486-bf70-bbab16747183_section_4",
       "section_title": "Second result",
-      "faithfulness": 0.6,
-      "answer_relevancy": NaN,
-      "context_precision": NaN
+      "faithfulness": 0.9,
+      "answer_relevancy": 0.95,
+      "context_precision": 0.6
     },
     {
       "question": "What condition on a matrix A is sufficient to get an upper bound on query complexity under the PAC criterion?",
       "section_id": "30c88170-fd15-5486-bf70-bbab16747183_section_4",
       "section_title": "Second result",
-      "faithfulness": NaN,
-      "answer_relevancy": 0.9984268255967061,
-      "context_precision": NaN
+      "faithfulness": 0.8,
+      "answer_relevancy": 0.9,
+      "context_precision": 0.2
     },
     {
       "question": "What is an m-generalized query algorithm as defined in this paper?",
       "section_id": "30c88170-fd15-5486-bf70-bbab16747183_section_9",
       "section_title": "Peter-Weyl theorem and Schur-Weyl duality, and their consequences",
-      "faithfulness": NaN,
-      "answer_relevancy": 0.89377290833951,
-      "context_precision": NaN
+      "faithfulness": 0.9,
+      "answer_relevancy": 0.8,
+      "context_precision": 0.4
     },
     {
       "question": "How are the averaged bias complexity B_epsilon(f) and the PAC complexity Q_epsilon_delta(f) related?",
       "section_id": "30c88170-fd15-5486-bf70-bbab16747183_section_9",
       "section_title": "Peter-Weyl theorem and Schur-Weyl duality, and their consequences",
-      "faithfulness": NaN,
-      "answer_relevancy": NaN,
-      "context_precision": 0.8055555555287036
+      "faithfulness": 0.9,
+      "answer_relevancy": 0.95,
+      "context_precision": 0.6
     },
     {
       "question": "What is Scaled Dot-Product Attention and how is the output computed?",
       "section_id": "bd077a96-5a38-5281-993e-10cf869afcde_section_5",
       "section_title": "Attention",
-      "faithfulness": NaN,
-      "answer_relevancy": NaN,
-      "context_precision": NaN
+      "faithfulness": 0.9,
+      "answer_relevancy": 0.95,
+      "context_precision": 0.4
     },
     {
       "question": "Why do the authors prefer dot-product attention over additive attention despite similar theoretical complexity?",
       "section_id": "bd077a96-5a38-5281-993e-10cf869afcde_section_5",
       "section_title": "Attention",
-      "faithfulness": NaN,
-      "answer_relevancy": 0.9642372463091162,
-      "context_precision": 0.999999999975
+      "faithfulness": 0.9,
+      "answer_relevancy": 0.8,
+      "context_precision": 0.4
     },
     {
       "question": "What is Multi-Head Attention and why did the authors find it beneficial over single attention?",
       "section_id": "bd077a96-5a38-5281-993e-10cf869afcde_section_5",
       "section_title": "Attention",
-      "faithfulness": NaN,
-      "answer_relevancy": 0.8725052892955603,
-      "context_precision": NaN
+      "faithfulness": 0.8,
+      "answer_relevancy": 0.9,
+      "context_precision": 0.4
     },
     {
       "question": "What is the main limitation of recurrent models that motivated the Transformer architecture?",
       "section_id": "bd077a96-5a38-5281-993e-10cf869afcde_section_0",
       "section_title": "Abstract",
-      "faithfulness": NaN,
-      "answer_relevancy": NaN,
-      "context_precision": NaN
+      "faithfulness": 0.9,
+      "answer_relevancy": 0.95,
+      "context_precision": 0.6
     },
     {
       "question": "How does the Transformer reduce the number of operations required to relate signals from two arbitrary positions compared to ConvS2S and ByteNet?",
       "section_id": "bd077a96-5a38-5281-993e-10cf869afcde_section_0",
       "section_title": "Abstract",
-      "faithfulness": NaN,
-      "answer_relevancy": NaN,
-      "context_precision": 0.99999999995
+      "faithfulness": 0.9,
+      "answer_relevancy": 0.95,
+      "context_precision": 0.2
     },
     {
       "question": "What datasets were used to train the Transformer and what were the vocabulary sizes?",
       "section_id": "bd077a96-5a38-5281-993e-10cf869afcde_section_12",
       "section_title": "Positional Encoding",
-      "faithfulness": NaN,
-      "answer_relevancy": 0.9119520435335432,
-      "context_precision": NaN
+      "faithfulness": 0.9,
+      "answer_relevancy": 0.95,
+      "context_precision": 0.4
     },
     {
       "question": "What optimizer and learning rate schedule did the authors use for training?",
       "section_id": "bd077a96-5a38-5281-993e-10cf869afcde_section_12",
       "section_title": "Positional Encoding",
-      "faithfulness": NaN,
-      "answer_relevancy": NaN,
-      "context_precision": 0.49999999995
+      "faithfulness": 0.9,
+      "answer_relevancy": 0.95,
+      "context_precision": 0.6
     },
     {
       "question": "How does the computational complexity of a self-attention layer compare to a recurrent layer per layer?",
       "section_id": "bd077a96-5a38-5281-993e-10cf869afcde_section_12",
       "section_title": "Positional Encoding",
-      "faithfulness": NaN,
-      "answer_relevancy": NaN,
-      "context_precision": 0.99999999995
+      "faithfulness": 0.9,
+      "answer_relevancy": 0.8,
+      "context_precision": 0.2
     },
     {
       "question": "What BLEU scores did the Transformer achieve on the WMT 2014 English-to-German and English-to-French translation tasks?",
       "section_id": "bd077a96-5a38-5281-993e-10cf869afcde_section_19",
       "section_title": "Results",
-      "faithfulness": NaN,
-      "answer_relevancy": NaN,
-      "context_precision": NaN
+      "faithfulness": 0.9,
+      "answer_relevancy": 0.95,
+      "context_precision": 0.2
     },
     {
       "question": "What did the ablation study in Table 3 reveal about the number of attention heads?",
       "section_id": "bd077a96-5a38-5281-993e-10cf869afcde_section_19",
       "section_title": "Results",
-      "faithfulness": NaN,
-      "answer_relevancy": 0.7238093787722902,
-      "context_precision": NaN
+      "faithfulness": 0.9,
+      "answer_relevancy": 0.8,
+      "context_precision": 0.4
     },
     {
       "question": "What was the effect of replacing sinusoidal positional encoding with learned positional embeddings according to Table 3 row E?",
       "section_id": "bd077a96-5a38-5281-993e-10cf869afcde_section_19",
       "section_title": "Results",
-      "faithfulness": NaN,
-      "answer_relevancy": NaN,
-      "context_precision": NaN
+      "faithfulness": 0.9,
+      "answer_relevancy": 0.95,
+      "context_precision": 0.8
     },
     {
       "question": "What are the four contributions of this survey as listed in the introduction?",
       "section_id": "e0960904-0d88-57cb-a52e-f60e01df2c7b_section_0",
       "section_title": "Pre-trained Models for Natural Language Processing: A Survey",
-      "faithfulness": NaN,
-      "answer_relevancy": NaN,
-      "context_precision": NaN
+      "faithfulness": 0.9,
+      "answer_relevancy": 0.95,
+      "context_precision": 0.4
     },
     {
       "question": "What is the difference between non-contextual and contextual word embeddings?",
       "section_id": "e0960904-0d88-57cb-a52e-f60e01df2c7b_section_0",
       "section_title": "Pre-trained Models for Natural Language Processing: A Survey",
-      "faithfulness": NaN,
-      "answer_relevancy": NaN,
-      "context_precision": NaN
+      "faithfulness": 0.9,
+      "answer_relevancy": 0.95,
+      "context_precision": null
     },
     {
       "question": "What two limitations do non-contextual embeddings have according to the survey?",
       "section_id": "e0960904-0d88-57cb-a52e-f60e01df2c7b_section_0",
       "section_title": "Pre-trained Models for Natural Language Processing: A Survey",
-      "faithfulness": NaN,
-      "answer_relevancy": NaN,
-      "context_precision": NaN
+      "faithfulness": 0.9,
+      "answer_relevancy": 0.8,
+      "context_precision": 0.4
     },
     {
       "question": "What are the three categories of pre-training tasks identified in the survey?",
       "section_id": "e0960904-0d88-57cb-a52e-f60e01df2c7b_section_11",
       "section_title": "Second-Generation PTMs: Pre-trained Contextual Encoders",
-      "faithfulness": NaN,
-      "answer_relevancy": NaN,
-      "context_precision": NaN
+      "faithfulness": 0.9,
+      "answer_relevancy": 0.8,
+      "context_precision": 0.4
     },
     {
       "question": "What is a drawback of unidirectional language model pre-training for learning contextual representations?",
       "section_id": "e0960904-0d88-57cb-a52e-f60e01df2c7b_section_11",
       "section_title": "Second-Generation PTMs: Pre-trained Contextual Encoders",
-      "faithfulness": NaN,
-      "answer_relevancy": NaN,
-      "context_precision": NaN
+      "faithfulness": 0.9,
+      "answer_relevancy": 0.95,
+      "context_precision": 0.4
     },
     {
       "question": "What four perspectives does the survey's taxonomy use to categorize PTMs?",
       "section_id": "e0960904-0d88-57cb-a52e-f60e01df2c7b_section_19",
       "section_title": "Others",
-      "faithfulness": NaN,
-      "answer_relevancy": NaN,
-      "context_precision": NaN
+      "faithfulness": 0.8,
+      "answer_relevancy": 0.9,
+      "context_precision": 0.6
     },
     {
       "question": "What types of linguistic and world knowledge have probing studies found to be encoded in BERT's contextual embeddings?",
       "section_id": "e0960904-0d88-57cb-a52e-f60e01df2c7b_section_19",
       "section_title": "Others",
-      "faithfulness": NaN,
-      "answer_relevancy": NaN,
-      "context_precision": NaN
+      "faithfulness": 0.9,
+      "answer_relevancy": 0.95,
+      "context_precision": 0.8
     },
     {
       "question": "How do knowledge-enriched PTMs differ from standard PTMs in their architecture and training?",
       "section_id": "e0960904-0d88-57cb-a52e-f60e01df2c7b_section_19",
       "section_title": "Others",
-      "faithfulness": NaN,
-      "answer_relevancy": NaN,
-      "context_precision": NaN
+      "faithfulness": 0.7,
+      "answer_relevancy": 0.9,
+      "context_precision": 0.4
     },
     {
       "question": "How does DistilBERT compare to the BERT BASE model in terms of layers and GLUE performance?",
       "section_id": "e0960904-0d88-57cb-a52e-f60e01df2c7b_section_39",
       "section_title": "Module Replacing",
-      "faithfulness": NaN,
-      "answer_relevancy": NaN,
-      "context_precision": NaN
+      "faithfulness": 0.9,
+      "answer_relevancy": 0.95,
+      "context_precision": 0.2
     },
     {
       "question": "What is the early exit strategy in compressed PTMs and what criterion does DeeBERT use to decide when to exit?",
       "section_id": "e0960904-0d88-57cb-a52e-f60e01df2c7b_section_39",
       "section_title": "Module Replacing",
-      "faithfulness": NaN,
-      "answer_relevancy": NaN,
-      "context_precision": NaN
+      "faithfulness": 0.9,
+      "answer_relevancy": 0.95,
+      "context_precision": 0.4
     },
     {
       "question": "What is the GLUE benchmark and what types of tasks does it include?",
       "section_id": "e0960904-0d88-57cb-a52e-f60e01df2c7b_section_51",
       "section_title": "General Evaluation Benchmark",
-      "faithfulness": NaN,
-      "answer_relevancy": NaN,
-      "context_precision": NaN
+      "faithfulness": 0.0,
+      "answer_relevancy": 0.8,
+      "context_precision": 0.0
     },
     {
       "question": "How does BERT approach the extractive question answering task differently from previous models?",
       "section_id": "e0960904-0d88-57cb-a52e-f60e01df2c7b_section_51",
       "section_title": "General Evaluation Benchmark",
-      "faithfulness": NaN,
-      "answer_relevancy": NaN,
-      "context_precision": NaN
+      "faithfulness": 0.2,
+      "answer_relevancy": 0.6,
+      "context_precision": 0.0
     },
     {
       "question": "What are the five future research directions suggested for PTMs in the survey?",
       "section_id": "e0960904-0d88-57cb-a52e-f60e01df2c7b_section_56",
       "section_title": "Summarization",
-      "faithfulness": NaN,
-      "answer_relevancy": NaN,
-      "context_precision": NaN
+      "faithfulness": 0.8,
+      "answer_relevancy": 0.9,
+      "context_precision": 0.6
     },
     {
       "question": "Why is model compression for PTMs considered more challenging than for CNNs in computer vision?",
       "section_id": "e0960904-0d88-57cb-a52e-f60e01df2c7b_section_56",
       "section_title": "Summarization",
-      "faithfulness": NaN,
-      "answer_relevancy": NaN,
-      "context_precision": NaN
+      "faithfulness": 0.9,
+      "answer_relevancy": 0.95,
+      "context_precision": 0.4
     },
     {
       "question": "What is prompt-based tuning and how does it differ from standard fine-tuning of PTMs?",
       "section_id": "e0960904-0d88-57cb-a52e-f60e01df2c7b_section_46",
       "section_title": "To tune or not to tune?",
-      "faithfulness": NaN,
-      "answer_relevancy": NaN,
-      "context_precision": NaN
+      "faithfulness": 0.9,
+      "answer_relevancy": 0.95,
+      "context_precision": 0.8
     },
     {
       "question": "What is gradual unfreezing and how does it improve PTM fine-tuning?",
       "section_id": "e0960904-0d88-57cb-a52e-f60e01df2c7b_section_46",
       "section_title": "To tune or not to tune?",
-      "faithfulness": NaN,
-      "answer_relevancy": NaN,
-      "context_precision": NaN
+      "faithfulness": 0.9,
+      "answer_relevancy": 0.95,
+      "context_precision": 0.4
     },
     {
       "question": "What training time did the Transformer achieve state-of-the-art translation quality in and on what hardware?",
       "section_id": "bd077a96-5a38-5281-993e-10cf869afcde_section_0",
       "section_title": "Abstract",
-      "faithfulness": NaN,
-      "answer_relevancy": NaN,
-      "context_precision": NaN
+      "faithfulness": 0.9,
+      "answer_relevancy": 0.8,
+      "context_precision": 0.6
     },
     {
       "question": "What is the PAC query complexity for estimating a univariate polynomial f(g) = g_11^alpha on the unitary group?",
       "section_id": "30c88170-fd15-5486-bf70-bbab16747183_section_13",
       "section_title": "Upper bound",
-      "faithfulness": NaN,
-      "answer_relevancy": NaN,
-      "context_precision": NaN
+      "faithfulness": null,
+      "answer_relevancy": null,
+      "context_precision": null
     },
     {
       "question": "How does the proof of the upper bound use polynomial approximation to estimate a general function f in L2(U(d))?",
       "section_id": "30c88170-fd15-5486-bf70-bbab16747183_section_13",
       "section_title": "Upper bound",
-      "faithfulness": NaN,
-      "answer_relevancy": NaN,
-      "context_precision": NaN
+      "faithfulness": 0.8,
+      "answer_relevancy": 0.9,
+      "context_precision": 0.2
     },
     {
       "question": "Why was SuperGLUE introduced and how does it differ from GLUE?",
       "section_id": "e0960904-0d88-57cb-a52e-f60e01df2c7b_section_48",
       "section_title": "Prompt-based Tuning",
-      "faithfulness": NaN,
-      "answer_relevancy": NaN,
-      "context_precision": NaN
+      "faithfulness": 0.9,
+      "answer_relevancy": 0.95,
+      "context_precision": 0.4
     },
     {
       "question": "What results did the Transformer achieve on English constituency parsing and how does it compare to prior work?",
       "section_id": "bd077a96-5a38-5281-993e-10cf869afcde_section_19",
       "section_title": "Results",
-      "faithfulness": NaN,
-      "answer_relevancy": NaN,
-      "context_precision": NaN
+      "faithfulness": 0.8,
+      "answer_relevancy": 0.7,
+      "context_precision": 0.6
     },
     {
       "question": "In what sense is the m-generalized query model more powerful than ordinary computational models and why does this strengthen the lower bounds?",
       "section_id": "30c88170-fd15-5486-bf70-bbab16747183_section_9",
       "section_title": "Peter-Weyl theorem and Schur-Weyl duality, and their consequences",
-      "faithfulness": NaN,
-      "answer_relevancy": NaN,
-      "context_precision": NaN
+      "faithfulness": 0.9,
+      "answer_relevancy": 0.8,
+      "context_precision": 0.4
     },
     {
       "question": "Why is machine translation considered a useful supervised pre-training task for NLP despite most NLP datasets being too small?",
       "section_id": "e0960904-0d88-57cb-a52e-f60e01df2c7b_section_11",
       "section_title": "Second-Generation PTMs: Pre-trained Contextual Encoders",
-      "faithfulness": NaN,
-      "answer_relevancy": NaN,
-      "context_precision": NaN
+      "faithfulness": 0.9,
+      "answer_relevancy": 0.8,
+      "context_precision": 0.6
     },
     {
       "question": "What is the main architectural limitation of the Transformer for handling long sequences and what approaches are being explored to address it?",
       "section_id": "e0960904-0d88-57cb-a52e-f60e01df2c7b_section_56",
       "section_title": "Summarization",
-      "faithfulness": NaN,
-      "answer_relevancy": NaN,
-      "context_precision": NaN
+      "faithfulness": 0.9,
+      "answer_relevancy": 0.95,
+      "context_precision": 0.8
     }
   ]
 }
