@@ -39,7 +39,6 @@ from langchain_core.messages import HumanMessage
 from config import MIN_RELEVANCE_THRESHOLD
 from rag.states import AgentState, RetrievalResult
 from rag.prompts import (
-    categorizer_prompt,
     qa_prompt,
     summarizer_prompt,
     applied_guide_planner_prompt,
@@ -55,6 +54,7 @@ from rag.guide_models import (
     TheoreticalReadingGuidePlan,
     SurveyReadingGuidePlan,
 )
+from rag.tfidf_categorizer import TfidfPaperCategorizer
 from rag.retrieval.config import (
     SCOPED_TOP_K,
     FALLBACK_TOP_K,
@@ -207,6 +207,7 @@ def _retrieve_with_section_id_scope(
 
 # Retrieval pipeline (lazy singleton — imported here to keep graph.py clean)
 _retrieval_pipeline = None
+_tfidf_categorizer: TfidfPaperCategorizer | None = None
 
 
 def _get_retrieval_pipeline():
@@ -217,6 +218,14 @@ def _get_retrieval_pipeline():
 
         _retrieval_pipeline = RetrievalPipeline()
     return _retrieval_pipeline
+
+
+def _get_tfidf_categorizer() -> TfidfPaperCategorizer:
+    """Return a process-wide TF-IDF categorizer singleton."""
+    global _tfidf_categorizer
+    if _tfidf_categorizer is None:
+        _tfidf_categorizer = TfidfPaperCategorizer()
+    return _tfidf_categorizer
 
 # Import extraction orchestrator
 import sys
@@ -229,32 +238,29 @@ from backend.extraction.extraction import PDFExtractor
 logger = logging.getLogger(__name__)
 
 
-# ---------------------------------------------------------------------------
-# JSON extraction helper (from old categorizer_agent.py)
-# ---------------------------------------------------------------------------
-_JSON_BLOCK_RE = re.compile(r"```(?:json)?\s*(\{.*?\})\s*```", re.DOTALL)
+def _normalize_category_label(label: str) -> str | None:
+    """Normalize model-predicted labels to canonical category names."""
+    normalized = (label or "").strip().upper()
+    if normalized in {"APPLIED", "THEORETICAL", "SURVEY"}:
+        return normalized
+
+    alias_map = {
+        "APPLICATION": "APPLIED",
+        "EMPIRICAL": "APPLIED",
+        "REVIEW": "SURVEY",
+        "LITERATURE REVIEW": "SURVEY",
+        "THEORY": "THEORETICAL",
+    }
+    return alias_map.get(normalized)
 
 
-def _extract_json(text: str) -> dict[str, Any]:
-    """Extract the first JSON object from LLM response."""
-    # Try markdown-fenced JSON first
-    match = _JSON_BLOCK_RE.search(text)
-    if match:
-        return json.loads(match.group(1))
-    
-    # Try parsing the whole response as JSON
-    try:
-        return json.loads(text)
-    except json.JSONDecodeError:
-        pass
-    
-    # Last resort – find the first {...} span
-    start = text.find("{")
-    end = text.rfind("}") + 1
-    if start != -1 and end > start:
-        return json.loads(text[start:end])
-    
-    raise ValueError(f"No valid JSON found in LLM response:\n{text}")
+def _confidence_from_probability(probability: float) -> str:
+    """Convert top-class probability into workflow confidence buckets."""
+    if probability >= 0.75:
+        return "HIGH"
+    if probability >= 0.45:
+        return "MEDIUM"
+    return "LOW"
 
 
 # Retrieval helper caches and heuristics
@@ -1399,16 +1405,14 @@ def extraction_node(state: dict) -> dict:
 
 def categorizer_node(state: dict) -> dict:
     """
-    Classify the paper into one of five categories.
-    
-    Uses title and abstract extracted in previous step.
+    Classify the paper into APPLIED/THEORETICAL/SURVEY via TF-IDF model.
     """
     logger.info("📚 Categorizer node: classifying paper...")
     
     title = state.get("title", "").strip()
     abstract = state.get("abstract", "").strip()
     
-    if not title or not abstract:
+    if not title and not abstract:
         return {
             **state,
             "errors": [*state.get("errors", []), "Missing title or abstract for categorization"],
@@ -1416,31 +1420,24 @@ def categorizer_node(state: dict) -> dict:
         }
     
     try:
-        llm = ChatGroq(model="llama-3.1-8b-instant", temperature=0)
-        prompt = categorizer_prompt(title=title, abstract=abstract)
-        response = llm.invoke([HumanMessage(content=prompt)])
-        
-        # Extract JSON from response
-        parsed = _extract_json(response.content)
-        
-        category = parsed.get("category", "").strip().upper()
-        confidence = parsed.get("confidence", "").strip().upper()
-        reasoning = parsed.get("reasoning", "").strip()
-        
-        # Validate category
-        valid_categories = {
-            "APPLIED",
-            "THEORETICAL",
-            "SURVEY",
-        }
-        if category not in valid_categories:
-            logger.warning(f"Invalid category: {category}")
-            category = None
-        
-        # Validate confidence
-        valid_confidence = {"HIGH", "MEDIUM", "LOW"}
-        if confidence not in valid_confidence:
-            confidence = "LOW"
+        predictor = _get_tfidf_categorizer()
+        prediction = predictor.predict(title=title, abstract=abstract, top_k=3)
+
+        raw_label = str(prediction.get("predicted_label", ""))
+        category = _normalize_category_label(raw_label)
+        if category is None:
+            raise ValueError(f"Model returned unknown category label: {raw_label}")
+
+        top_probs = prediction.get("top_probabilities") or []
+        top_probability = 0.0
+        if top_probs and isinstance(top_probs[0], dict):
+            top_probability = float(top_probs[0].get("probability", 0.0) or 0.0)
+
+        confidence = _confidence_from_probability(top_probability)
+        reasoning = (
+            f"Predicted using TF-IDF multinomial logistic regression "
+            f"(top class probability: {top_probability:.4f})."
+        )
         
         return {
             **state,
