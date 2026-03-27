@@ -12,6 +12,7 @@ interface AIToolsPanelProps {
   sections: PaperSection[]
   images: PaperImage[]
   tables: PaperTable[]
+  style?: React.CSSProperties
 }
 
 const AIToolsPanel = ({
@@ -19,9 +20,10 @@ const AIToolsPanel = ({
   sections,
   images,
   tables,
+  style,
 }: AIToolsPanelProps) => {
   return (
-    <aside className="w-[300px] min-w-[300px] bg-panel h-screen sticky top-0 flex flex-col border-l border-border/40">
+    <aside className="w-[300px] min-w-[300px] bg-panel h-screen sticky top-0 flex flex-col border-l border-border/40" style={style}>
       <div className="px-5 pt-8 pb-2 flex-shrink-0">
         <InsightExtractor
           paper={paper}

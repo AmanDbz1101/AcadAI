@@ -43,6 +43,10 @@ class LoginRequest(BaseModel):
     password: str
 
 
+class GenerateAnswerRequest(BaseModel):
+    force_regenerate: bool = False
+
+
 def _b64url_encode(raw: bytes) -> str:
     return base64.urlsafe_b64encode(raw).decode("utf-8").rstrip("=")
 
@@ -149,25 +153,6 @@ def _make_store() -> PostgresPaperStore:
     return PostgresPaperStore(_resolve_postgres_dsn())
 
 
-<<<<<<< HEAD
-def _build_qa_context_from_chunks(chunks: List[Dict[str, Any]], max_chunks: int = 2) -> str:
-    context_parts: List[str] = []
-    for idx, chunk in enumerate(chunks[:max_chunks], 1):
-        content = str(chunk.get("content") or chunk.get("text") or "").strip()
-        metadata = chunk.get("metadata") or {}
-        section_title = str(metadata.get("section_title") or metadata.get("section") or "").strip()
-        if not content:
-            continue
-        if section_title:
-            context_parts.append(f"[{idx}] Section: {section_title}\n{content}")
-        else:
-            context_parts.append(f"[{idx}]\n{content}")
-    return "\n\n".join(context_parts)
-
-
-class GenerateAnswerRequest(BaseModel):
-    force_regenerate: bool = False
-=======
 def _pick_sections_by_keywords(
     sections: List[Dict[str, Any]],
     keywords: List[str],
@@ -399,7 +384,6 @@ def _build_fallback_reading_guide(
             ],
         },
     }
->>>>>>> origin/main
 
 
 app = FastAPI(title="ResearchAgent Backend API", version="1.0.0")

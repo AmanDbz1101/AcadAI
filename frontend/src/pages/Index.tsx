@@ -35,9 +35,82 @@ const Index = () => {
     const cached = localStorage.getItem(SELECTED_PAPER_KEY)
     return cached ? Number(cached) || null : null
   })
-  const [uploadedFileName, setUploadedFileName] = useState<string | null>(null)
   const [uploadError, setUploadError] = useState<string | null>(null)
+  const [guideCollapsed, setGuideCollapsed] = useState(false)
+  const [guideWidth, setGuideWidth] = useState(320) // Default width in pixels
+  const [toolsWidth, setToolsWidth] = useState(300) // Default width for AI tools panel
+  const [isResizing, setIsResizing] = useState(false)
+  const [resizeTarget, setResizeTarget] = useState<'guide' | 'tools' | null>(null)
+  const [showHomeView, setShowHomeView] = useState(false)
   const viewerRef = useRef<PaperViewerHandle>(null)
+
+  // Resize functionality
+  const handleGuideMouseDown = useCallback((e: React.MouseEvent) => {
+    setIsResizing(true)
+    setResizeTarget('guide')
+    e.preventDefault()
+  }, [])
+
+  const handleToolsMouseDown = useCallback((e: React.MouseEvent) => {
+    setIsResizing(true)
+    setResizeTarget('tools')
+    e.preventDefault()
+  }, [])
+
+  const handleMouseMove = useCallback((e: MouseEvent) => {
+    if (!isResizing || !resizeTarget) return
+
+    if (resizeTarget === 'guide') {
+      // Constrain the guide width between 250px and 50% of viewport width
+      const minWidth = 250
+      const maxWidth = Math.min(600, window.innerWidth * 0.4)
+      const newWidth = Math.max(minWidth, Math.min(maxWidth, e.clientX))
+      setGuideWidth(newWidth)
+    } else if (resizeTarget === 'tools') {
+      // Calculate tools width from the right side
+      const viewportWidth = window.innerWidth
+      const toolsMinWidth = 250
+      const toolsMaxWidth = Math.min(500, viewportWidth * 0.4)
+      const newToolsWidth = Math.max(toolsMinWidth, Math.min(toolsMaxWidth, viewportWidth - e.clientX))
+      setToolsWidth(newToolsWidth)
+    }
+  }, [isResizing, resizeTarget])
+
+  const handleMouseUp = useCallback(() => {
+    setIsResizing(false)
+    setResizeTarget(null)
+  }, [])
+
+  useEffect(() => {
+    if (isResizing) {
+      document.addEventListener('mousemove', handleMouseMove)
+      document.addEventListener('mouseup', handleMouseUp)
+      document.body.style.cursor = 'col-resize'
+      document.body.style.userSelect = 'none'
+      // Prevent text selection during resize
+      document.body.style.WebkitUserSelect = 'none'
+      document.body.style.MozUserSelect = 'none'
+      document.body.style.msUserSelect = 'none'
+    } else {
+      document.removeEventListener('mousemove', handleMouseMove)
+      document.removeEventListener('mouseup', handleMouseUp)
+      document.body.style.cursor = ''
+      document.body.style.userSelect = ''
+      document.body.style.WebkitUserSelect = ''
+      document.body.style.MozUserSelect = ''
+      document.body.style.msUserSelect = ''
+    }
+
+    return () => {
+      document.removeEventListener('mousemove', handleMouseMove)
+      document.removeEventListener('mouseup', handleMouseUp)
+      document.body.style.cursor = ''
+      document.body.style.userSelect = ''
+      document.body.style.WebkitUserSelect = ''
+      document.body.style.MozUserSelect = ''
+      document.body.style.msUserSelect = ''
+    }
+  }, [isResizing, handleMouseMove, handleMouseUp])
 
   useEffect(() => {
     if (!authUser) return
@@ -79,8 +152,9 @@ const Index = () => {
 
   // Auto-select first paper when papers load and no paper is selected
   // OR restore paperLoaded flag if we have a selectedPaperId from localStorage
+  // Skip if showHomeView is true (user clicked logo to go to upload page)
   useEffect(() => {
-    if (!authUser || papersQuery.isLoading) return
+    if (!authUser || papersQuery.isLoading || showHomeView) return
 
     if (papers.length > 0) {
       if (!selectedPaperId) {
@@ -92,7 +166,7 @@ const Index = () => {
         setPaperLoaded(true)
       }
     }
-  }, [papers, selectedPaperId, authUser, papersQuery.isLoading, paperLoaded])
+  }, [papers, selectedPaperId, authUser, papersQuery.isLoading, paperLoaded, showHomeView])
 
   const effectivePaperId = selectedPaperId ?? papers[0]?.id ?? null
 
@@ -100,7 +174,6 @@ const Index = () => {
     mutationFn: uploadPaper,
     onMutate: (file: File) => {
       setUploadError(null)
-      setUploadedFileName(file.name)
     },
     onSuccess: async (data) => {
       const newPaperId = data.paper.id
@@ -108,6 +181,7 @@ const Index = () => {
       setActiveSection('')
       setFocusedSection(null)
       setPaperLoaded(true)
+      setShowHomeView(false) // Exit home view after successful upload
 
       await queryClient.invalidateQueries({ queryKey: ['papers'] })
       await queryClient.invalidateQueries({
@@ -115,7 +189,6 @@ const Index = () => {
       })
     },
     onError: (error: Error) => {
-      setUploadedFileName(null)
       setUploadError(error.message || 'Upload failed')
     },
   })
@@ -156,6 +229,14 @@ const Index = () => {
     setSelectedPaperId(paperId)
     setActiveSection('')
     setFocusedSection(null)
+    setShowHomeView(false) // Exit home view when selecting a paper
+  }, [])
+
+  const handleHomeClick = useCallback(() => {
+    setSelectedPaperId(null)
+    setActiveSection('')
+    setFocusedSection(null)
+    setShowHomeView(true)
   }, [])
 
   const handleFileUploaded = useCallback(
@@ -164,10 +245,6 @@ const Index = () => {
     },
     [uploadPaperMutation],
   )
-
-  const handleFileBadgeClear = useCallback((fileName: string | null) => {
-    setUploadedFileName(fileName)
-  }, [])
 
   const handleAuthSubmit = useCallback(
     async (event: FormEvent<HTMLFormElement>) => {
@@ -207,7 +284,6 @@ const Index = () => {
     setAuthUser(null)
     setPaperLoaded(false)
     setSelectedPaperId(null)
-    setUploadedFileName(null)
     setUploadError(null)
     queryClient.clear()
   }, [queryClient])
@@ -303,8 +379,8 @@ const Index = () => {
     )
   }
 
-  // Show upload page if no papers exist
-  if (papers.length === 0) {
+  // Show upload page if no papers exist OR if user clicked home to upload new PDF
+  if (papers.length === 0 || showHomeView) {
     return (
       <div className="flex h-screen overflow-hidden">
         <EmptyStateUpload
@@ -347,20 +423,55 @@ const Index = () => {
       >
         Logout
       </button>
-      <PaperNavigation
-        activeSection={activeSection}
-        onSectionClick={handleSectionClick}
-        sections={navSections}
-        papers={papers}
-        selectedPaperId={effectivePaperId}
-        onPaperSelect={handlePaperSelect}
-        uploadedFileName={uploadedFileName}
-        onFileChange={handleFileBadgeClear}
-        onFileUpload={handleFileUploaded}
-        isUploading={uploadPaperMutation.isPending}
-        uploadError={uploadError}
-        readingGuide={paperBundleQuery.data?.reading_guide ?? null}
-      />
+
+      {/* Collapsed Guide Panel */}
+      {guideCollapsed ? (
+        <div
+          className="flex items-center bg-white border-r border-border/50 cursor-pointer hover:bg-canvas transition-colors"
+          style={{ width: '8px' }}
+          onClick={() => setGuideCollapsed(false)}
+          onMouseEnter={() => setGuideCollapsed(false)}
+        >
+          <div className="w-full h-8 bg-border/30 rounded-r-sm"></div>
+        </div>
+      ) : (
+        <>
+          <PaperNavigation
+            activeSection={activeSection}
+            onSectionClick={handleSectionClick}
+            sections={navSections}
+            papers={papers}
+            selectedPaperId={effectivePaperId}
+            onPaperSelect={handlePaperSelect}
+            readingGuide={paperBundleQuery.data?.reading_guide ?? null}
+            collapsed={guideCollapsed}
+            onToggleCollapse={() => setGuideCollapsed(!guideCollapsed)}
+            onHomeClick={handleHomeClick}
+            style={{ width: `${guideWidth}px` }}
+          />
+
+          {/* Resizer */}
+          <div
+            className="relative flex items-center justify-center w-2 bg-transparent hover:bg-accent/20 cursor-col-resize transition-all duration-200 group"
+            onMouseDown={handleGuideMouseDown}
+            title="Drag to resize guide panel"
+          >
+            {/* Resizer Handle */}
+            <div className="absolute inset-y-0 left-1/2 transform -translate-x-1/2 w-0.5 bg-border/40 group-hover:bg-accent/60 group-hover:w-1 transition-all duration-200 rounded-full" />
+            {/* Grip Lines */}
+            <div className="absolute inset-y-0 left-1/2 transform -translate-x-1/2 flex flex-col justify-center space-y-1 opacity-0 group-hover:opacity-100 transition-opacity duration-200">
+              <div className="w-3 h-0.5 bg-border/60 rounded-full" />
+              <div className="w-3 h-0.5 bg-border/60 rounded-full" />
+              <div className="w-3 h-0.5 bg-border/60 rounded-full" />
+            </div>
+            {/* Active resize indicator */}
+            {isResizing && resizeTarget === 'guide' && (
+              <div className="absolute inset-0 bg-accent/30 border-x border-accent/50" />
+            )}
+          </div>
+        </>
+      )}
+
       <PaperViewer
         ref={viewerRef}
         onVisibleSectionChange={handleVisibleSectionChange}
@@ -368,11 +479,33 @@ const Index = () => {
         paper={paper}
         sections={sections}
       />
+
+      {/* Right Resizer */}
+      <div
+        className="relative flex items-center justify-center w-2 bg-transparent hover:bg-accent/20 cursor-col-resize transition-all duration-200 group"
+        onMouseDown={handleToolsMouseDown}
+        title="Drag to resize AI tools panel"
+      >
+        {/* Resizer Handle */}
+        <div className="absolute inset-y-0 left-1/2 transform -translate-x-1/2 w-0.5 bg-border/40 group-hover:bg-accent/60 group-hover:w-1 transition-all duration-200 rounded-full" />
+        {/* Grip Lines */}
+        <div className="absolute inset-y-0 left-1/2 transform -translate-x-1/2 flex flex-col justify-center space-y-1 opacity-0 group-hover:opacity-100 transition-opacity duration-200">
+          <div className="w-3 h-0.5 bg-border/60 rounded-full" />
+          <div className="w-3 h-0.5 bg-border/60 rounded-full" />
+          <div className="w-3 h-0.5 bg-border/60 rounded-full" />
+        </div>
+        {/* Active resize indicator */}
+        {isResizing && resizeTarget === 'tools' && (
+          <div className="absolute inset-0 bg-accent/30 border-x border-accent/50" />
+        )}
+      </div>
+
       <AIToolsPanel
         paper={paper}
         sections={sections}
         images={images}
         tables={tables}
+        style={{ width: `${toolsWidth}px` }}
       />
     </div>
   )

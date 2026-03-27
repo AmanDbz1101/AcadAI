@@ -1,5 +1,5 @@
-import { BookOpenText, ChevronDown, FileText, Upload, X } from 'lucide-react'
-import { useEffect, useRef, useState } from 'react'
+import { BookOpenText, ChevronDown } from 'lucide-react'
+import { useEffect, useState } from 'react'
 import {
   Collapsible,
   CollapsibleContent,
@@ -21,12 +21,11 @@ interface PaperNavigationProps {
   papers: PaperSummary[]
   selectedPaperId: number | null
   onPaperSelect: (paperId: number) => void
-  uploadedFileName?: string | null
-  onFileChange?: (fileName: string | null) => void
-  onFileUpload?: (file: File) => void
-  isUploading?: boolean
-  uploadError?: string | null
   readingGuide?: ReadingGuide | null
+  collapsed?: boolean
+  onToggleCollapse?: () => void
+  onHomeClick?: () => void
+  style?: React.CSSProperties
 }
 
 interface ReadingPhase {
@@ -143,16 +142,12 @@ const PaperNavigation = ({
   papers,
   selectedPaperId,
   onPaperSelect,
-  uploadedFileName,
-  onFileChange,
-  onFileUpload,
-  isUploading,
-  uploadError,
   readingGuide,
+  collapsed = false,
+  onToggleCollapse,
+  onHomeClick,
+  style,
 }: PaperNavigationProps) => {
-  const fileInputRef = useRef<HTMLInputElement>(null)
-  const [dragActive, setDragActive] = useState(false)
-
   // Extract phases from reading guide or use defaults
   const readingPhases = extractPhasesFromGuide(readingGuide)
   const phaseIdsSignature = readingPhases.map((phase) => phase.id).join('|')
@@ -193,35 +188,33 @@ const PaperNavigation = ({
   }
 
   return (
-    <aside className="w-[320px] min-w-[280px] max-w-[88vw] bg-panel h-screen sticky top-0 flex flex-col border-r border-border/40">
+    <aside className="bg-panel h-screen sticky top-0 flex flex-col border-r border-border/40" style={style}>
       <div className="px-6 pt-8 pb-6">
-        <div className="flex items-center gap-2">
-          <BookOpenText size={18} className="text-text-active" />
-          <h1 className="font-ui text-[16px] font-bold text-foreground tracking-tight">
-            AcadAI
-          </h1>
+        <div className="flex items-center justify-between">
+          <button
+            onClick={onHomeClick}
+            className="flex items-center gap-2 hover:scale-105 transition-transform duration-200 ease-in-out cursor-pointer"
+          >
+            <BookOpenText size={18} className="text-text-active" />
+            <h1 className="font-ui text-[16px] font-bold text-foreground tracking-tight">
+              AcadAI
+            </h1>
+          </button>
+          <button
+            onClick={onToggleCollapse}
+            className="p-1 rounded-md hover:bg-canvas transition-colors"
+            title={collapsed ? "Expand guide panel" : "Collapse guide panel"}
+          >
+            <ChevronDown
+              size={14}
+              className={`text-text-secondary transition-transform ${collapsed ? 'rotate-90' : '-rotate-90'}`}
+            />
+          </button>
         </div>
         <p className="font-ui text-[11px] text-text-secondary pl-[26px]">
           Research Paper Assistant
         </p>
       </div>
-
-      {uploadedFileName ? (
-        <div className="px-4 mb-4">
-          <div className="flex items-center gap-2 px-3 py-2.5 bg-accent/10 rounded-lg">
-            <FileText size={14} className="text-text-active flex-shrink-0" />
-            <span className="font-ui text-[12px] text-foreground truncate flex-1">
-              {uploadedFileName}
-            </span>
-            <button
-              onClick={() => onFileChange?.(null)}
-              className="text-text-secondary hover:text-foreground transition-colors"
-            >
-              <X size={12} />
-            </button>
-          </div>
-        </div>
-      ) : null}
 
       <div className="px-6 mb-3">
         <label className="font-ui text-[11px] font-semibold uppercase tracking-[0.18em] text-text-secondary block mb-2">
@@ -483,70 +476,6 @@ const PaperNavigation = ({
           </ul>
         </div>
       </ScrollArea>
-
-      <div className="border-t border-border/40 px-4 py-4">
-        <input
-          ref={fileInputRef}
-          type="file"
-          accept=".pdf"
-          onChange={(e) => {
-            const file = e.target.files?.[0]
-            if (file) {
-              onFileUpload?.(file)
-              e.target.value = ''
-            }
-          }}
-          className="hidden"
-        />
-        <div
-          onDragEnter={() => setDragActive(true)}
-          onDragLeave={() => setDragActive(false)}
-          onDragOver={(e) => {
-            e.preventDefault()
-            setDragActive(true)
-          }}
-          onDrop={(e) => {
-            e.preventDefault()
-            setDragActive(false)
-            const file = e.dataTransfer.files?.[0]
-            if (file && file.type === 'application/pdf') {
-              onFileUpload?.(file)
-            }
-          }}
-          onClick={() => fileInputRef.current?.click()}
-          className={`
-            relative p-3 rounded-lg border-2 border-dashed transition-all cursor-pointer
-            ${
-              dragActive
-                ? 'border-accent/60 bg-accent/10'
-                : uploadError
-                  ? 'border-destructive/40 bg-destructive/5 hover:bg-destructive/10'
-                  : 'border-border/40 bg-canvas hover:border-border/60 hover:bg-canvas/80'
-            }
-          `}
-        >
-          <div className="flex flex-col items-center gap-1.5">
-            <Upload
-              size={16}
-              className={
-                uploadError
-                  ? 'text-destructive/60'
-                  : dragActive
-                    ? 'text-accent'
-                    : 'text-text-secondary'
-              }
-            />
-            <p className="font-ui text-[11px] text-text-secondary text-center">
-              {isUploading ? 'Uploading...' : 'Drop PDF or click'}
-            </p>
-          </div>
-        </div>
-        {uploadError ? (
-          <p className="mt-1.5 font-ui text-[10px] text-destructive text-center">
-            {uploadError}
-          </p>
-        ) : null}
-      </div>
 
       <div className="px-6 pb-6 pt-4 border-t border-border/40">
         <p className="font-ui text-[10px] text-text-secondary/50 tracking-wide">
