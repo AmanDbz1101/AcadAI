@@ -12,6 +12,12 @@ logs/
 *.log
 Research Papers/
 plans/
+
+# Runtime artifacts
+input/
+output/
+pdfs/
+backend/evaluation/results/
 # Python
 __pycache__/
 *.pyc

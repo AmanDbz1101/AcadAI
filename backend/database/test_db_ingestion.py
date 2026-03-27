@@ -70,7 +70,12 @@ def main(pdf_path: str) -> None:
     print(f"\n✓  Ingested document  id={stored_id}")
 
     # --- Read back ---
-    store = PostgresPaperStore(os.getenv("DATABASE_URL") or "postgresql+psycopg://postgres@localhost:5432/research_papers")
+    dsn = (
+        os.getenv("POSTGRES_DSN")
+        or os.getenv("DATABASE_URL")
+        or "postgresql+psycopg://postgres@localhost:5432/research_agent"
+    )
+    store = PostgresPaperStore(dsn)
     paper = store.get_paper_by_id(int(stored_id)) if stored_id.isdigit() else None
     if paper:
         print("\n  DB stats for paper:")

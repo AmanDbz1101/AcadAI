@@ -6,7 +6,7 @@ import {
   CollapsibleTrigger,
 } from '@/components/ui/collapsible'
 import { ScrollArea } from '@/components/ui/scroll-area'
-import type { PaperSummary, ReadingGuide } from '@/types/api'
+import type { GuideStatus, PaperSummary, ReadingGuide } from '@/types/api'
 
 interface Section {
   id: string
@@ -27,6 +27,8 @@ interface PaperNavigationProps {
   isUploading?: boolean
   uploadError?: string | null
   readingGuide?: ReadingGuide | null
+  guideStatus?: GuideStatus | null
+  onGoHome?: () => void
 }
 
 interface ReadingPhase {
@@ -149,6 +151,8 @@ const PaperNavigation = ({
   isUploading,
   uploadError,
   readingGuide,
+  guideStatus,
+  onGoHome,
 }: PaperNavigationProps) => {
   const fileInputRef = useRef<HTMLInputElement>(null)
   const [dragActive, setDragActive] = useState(false)
@@ -195,12 +199,17 @@ const PaperNavigation = ({
   return (
     <aside className="w-[320px] min-w-[280px] max-w-[88vw] bg-panel h-screen sticky top-0 flex flex-col border-r border-border/40">
       <div className="px-6 pt-8 pb-6">
-        <div className="flex items-center gap-2">
+        <button
+          type="button"
+          onClick={onGoHome}
+          className="flex items-center gap-2 text-left hover:opacity-90 transition-opacity"
+          title="Go to home"
+        >
           <BookOpenText size={18} className="text-text-active" />
           <h1 className="font-ui text-[16px] font-bold text-foreground tracking-tight">
             AcadAI
           </h1>
-        </div>
+        </button>
         <p className="font-ui text-[11px] text-text-secondary pl-[26px]">
           Research Paper Assistant
         </p>
@@ -272,9 +281,35 @@ const PaperNavigation = ({
         <div className="space-y-1 pb-4">
           {readingPhases.length === 0 ? (
             <div className="px-3 py-2 rounded-md bg-canvas">
-              <p className="font-ui text-[11px] text-text-secondary leading-relaxed">
-                No backend reading guide found for this paper yet.
-              </p>
+              {guideStatus?.status === 'pending' ? (
+                <>
+                  <p className="font-ui text-[11px] text-text-secondary leading-relaxed">
+                    Reading guide is being generated from your uploaded PDF.
+                  </p>
+                  <div className="mt-2 flex items-center gap-1.5">
+                    <span
+                      className="w-1.5 h-1.5 rounded-full bg-text-secondary/60 animate-bounce"
+                      style={{ animationDelay: '0ms' }}
+                    />
+                    <span
+                      className="w-1.5 h-1.5 rounded-full bg-text-secondary/60 animate-bounce"
+                      style={{ animationDelay: '150ms' }}
+                    />
+                    <span
+                      className="w-1.5 h-1.5 rounded-full bg-text-secondary/60 animate-bounce"
+                      style={{ animationDelay: '300ms' }}
+                    />
+                  </div>
+                </>
+              ) : guideStatus?.status === 'failed' ? (
+                <p className="font-ui text-[11px] text-destructive leading-relaxed">
+                  Guide generation failed. Re-upload the paper or try again.
+                </p>
+              ) : (
+                <p className="font-ui text-[11px] text-text-secondary leading-relaxed">
+                  No backend reading guide found for this paper yet.
+                </p>
+              )}
             </div>
           ) : (
             readingPhases.map((phase, idx) => {

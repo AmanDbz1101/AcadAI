@@ -9,6 +9,26 @@ export interface PaperSummary {
   created_at?: string
 }
 
+export interface GuideStatus {
+  status: 'pending' | 'ready' | 'failed' | 'missing'
+  error?: string | null
+  updated_at?: string | null
+}
+
+export interface PaperQuestion {
+  id: number
+  paper_id: number
+  question_text: string
+  scoped_sections_json: string[]
+  retrieval_payload_json: Record<string, unknown>
+  status: 'pending' | 'running' | 'completed' | 'failed'
+  answer_text?: string | null
+  confidence?: string | null
+  error_message?: string | null
+  created_at?: string
+  updated_at?: string
+}
+
 export interface PaperSection {
   id: string
   title: string
@@ -34,6 +54,17 @@ export interface PaperTable {
   page_number?: number | null
   markdown_content?: string | null
   text_content?: string | null
+}
+
+export interface TechnicalTerm {
+  term: string
+  type?: string | null
+  score?: number | null
+  expansion?: string | null
+  source_sections?: string[]
+  definition?: string | null
+  definition_source?: 'cso' | 'inspire' | 'wikipedia' | 'llm' | null
+  definition_status?: 'ready' | 'pending_llm' | null
 }
 
 export interface ReadingStep {
@@ -81,8 +112,10 @@ export interface ReadingGuide {
 export interface PaperBundle {
   paper: PaperSummary
   sections: PaperSection[]
+  technical_terms?: TechnicalTerm[]
   images: PaperImage[]
   tables: PaperTable[]
   text_blocks: Array<Record<string, unknown>>
   reading_guide?: ReadingGuide | null
+  guide_status?: GuideStatus | null
 }

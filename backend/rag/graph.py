@@ -2216,6 +2216,14 @@ def route_after_categorizer(state: dict) -> str:
     return "summarizer"
 
 
+def route_after_guide(state: dict) -> str:
+    """Route guide path either to retrieval/qa or directly to end."""
+    if bool(state.get("skip_retrieve_and_qa", False)):
+        logger.info("→ Skipping retrieve_and_qa (guide-only mode)")
+        return "end"
+    return "retrieve_and_qa"
+
+
 # ---------------------------------------------------------------------------
 # Graph builder
 # ---------------------------------------------------------------------------
@@ -2275,9 +2283,16 @@ def build_graph():
         },
     )
 
-    # All three guide nodes flow into the combined retrieve-and-QA node
+    # Guide nodes can continue into retrieve-and-QA or terminate in guide-only mode.
     for guide_node in _CATEGORY_GUIDE_NODE.values():
-        builder.add_edge(guide_node, "retrieve_and_qa")
+        builder.add_conditional_edges(
+            guide_node,
+            route_after_guide,
+            {
+                "retrieve_and_qa": "retrieve_and_qa",
+                "end": END,
+            },
+        )
 
     # Summarizer and retrieve-and-QA paths both terminate
     builder.add_edge("summarizer", END)
