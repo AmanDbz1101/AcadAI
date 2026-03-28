@@ -54,6 +54,10 @@ class LoginRequest(BaseModel):
     password: str
 
 
+class GenerateAnswerRequest(BaseModel):
+    force_regenerate: bool = False
+
+
 def _b64url_encode(raw: bytes) -> str:
     return base64.urlsafe_b64encode(raw).decode("utf-8").rstrip("=")
 

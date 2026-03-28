@@ -1,0 +1,105 @@
+{
+  "hierarchy": {
+    "document_id": "a85211d3-4ad5-52d0-9a49-7d351a58fe31",
+    "sections": [
+      {
+        "section_id": "a85211d3-4ad5-52d0-9a49-7d351a58fe31_section_0",
+        "title": "Introduction",
+        "level": 1,
+        "numbering": "1.",
+        "parent_id": null,
+        "page_start": 2,
+        "page_end": 2,
+        "has_subsections": false,
+        "child_section_ids": [],
+        "font_size": null,
+        "is_bold": null,
+        "reading_order": 0
+      },
+      {
+        "section_id": "a85211d3-4ad5-52d0-9a49-7d351a58fe31_section_1",
+        "title": "MemGPT (MemoryGPT)",
+        "level": 1,
+        "numbering": "2.",
+        "parent_id": null,
+        "page_start": 3,
+        "page_end": 4,
+        "has_subsections": false,
+        "child_section_ids": [],
+        "font_size": null,
+        "is_bold": null,
+        "reading_order": 1
+      },
+      {
+        "section_id": "a85211d3-4ad5-52d0-9a49-7d351a58fe31_section_2",
+        "title": "Experiments",
+        "level": 1,
+        "numbering": "3.",
+        "parent_id": null,
+        "page_start": 5,
+        "page_end": 8,
+        "has_subsections": false,
+        "child_section_ids": [],
+        "font_size": null,
+        "is_bold": null,
+        "reading_order": 2
+      },
+      {
+        "section_id": "a85211d3-4ad5-52d0-9a49-7d351a58fe31_section_3",
+        "title": "Related Work",
+        "level": 1,
+        "numbering": "4.",
+        "parent_id": null,
+        "page_start": 9,
+        "page_end": 9,
+        "has_subsections": false,
+        "child_section_ids": [],
+        "font_size": null,
+        "is_bold": null,
+        "reading_order": 3
+      },
+      {
+        "section_id": "a85211d3-4ad5-52d0-9a49-7d351a58fe31_section_4",
+        "title": "Conclusion",
+        "level": 1,
+        "numbering": "5.",
+        "parent_id": null,
+        "page_start": 9,
+        "page_end": 9,
+        "has_subsections": false,
+        "child_section_ids": [],
+        "font_size": null,
+        "is_bold": null,
+        "reading_order": 4
+      },
+      {
+        "section_id": "a85211d3-4ad5-52d0-9a49-7d351a58fe31_section_5",
+        "title": "Reference",
+        "level": 1,
+        "numbering": null,
+        "parent_id": null,
+        "page_start": 10,
+        "page_end": null,
+        "has_subsections": false,
+        "child_section_ids": [],
+        "font_size": null,
+        "is_bold": null,
+        "reading_order": 5
+      }
+    ],
+    "root_sections": [
+      "a85211d3-4ad5-52d0-9a49-7d351a58fe31_section_0",
+      "a85211d3-4ad5-52d0-9a49-7d351a58fe31_section_1",
+      "a85211d3-4ad5-52d0-9a49-7d351a58fe31_section_2",
+      "a85211d3-4ad5-52d0-9a49-7d351a58fe31_section_3",
+      "a85211d3-4ad5-52d0-9a49-7d351a58fe31_section_4",
+      "a85211d3-4ad5-52d0-9a49-7d351a58fe31_section_5"
+    ],
+    "total_sections": 6,
+    "max_depth": 1,
+    "detection_method": "docling+heuristics",
+    "confidence_score": 0.9166666666666667
+  },
+  "processing_time_seconds": 0.00044274330139160156,
+  "warnings": []
+}

@@ -59,7 +59,7 @@ export interface GenerateTechnicalTermDefinitionResponse {
 }
 
 const API_BASE_URL =
-  import.meta.env.VITE_API_BASE_URL || 'http://localhost:8001'
+  import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000'
 
 const AUTH_TOKEN_KEY = 'researchagent.auth.token'
 const AUTH_USER_KEY = 'researchagent.auth.user'

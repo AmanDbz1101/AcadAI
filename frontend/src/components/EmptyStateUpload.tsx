@@ -65,16 +65,18 @@ const EmptyStateUpload = ({
   return (
     <div className="flex-1 h-screen overflow-y-auto bg-canvas flex items-center justify-center">
       <div className="max-w-[520px] w-full px-6 animate-fade-in">
-        <div className="text-center mb-10">
-          <div className="inline-flex items-center gap-2.5 mb-3">
-            <BookOpenText size={28} className="text-text-active" />
-            <h1 className="font-ui text-[24px] font-bold text-foreground tracking-tight">
-              AcadAI
-            </h1>
+        <div className="text-center mb-10 rounded-xl border border-border/60 bg-panel shadow-sm overflow-hidden">
+          <div className="px-6 py-4 border-b border-accent/20 bg-gradient-to-r from-accent/10 via-accent/5 to-transparent">
+            <div className="inline-flex items-center gap-2.5 mb-3">
+              <BookOpenText size={28} className="text-text-active" />
+              <h1 className="font-ui text-[24px] font-bold text-foreground tracking-tight">
+                AcadAI
+              </h1>
+            </div>
+            <p className="font-ui text-[14px] text-text-secondary">
+              Upload a research paper to start analyzing
+            </p>
           </div>
-          <p className="font-ui text-[14px] text-text-secondary">
-            Upload a research paper to start analyzing
-          </p>
         </div>
 
         <div
@@ -86,7 +88,7 @@ const EmptyStateUpload = ({
           onDrop={handleDrop}
           onClick={() => !isUploading && fileInputRef.current?.click()}
           className={`
-            relative flex flex-col items-center gap-4 py-16 px-8 rounded-xl border-2 border-dashed transition-all duration-300
+            relative flex flex-col items-center gap-4 py-16 px-8 rounded-xl border-2 border-dashed bg-panel shadow-sm transition-all duration-300
             ${isUploading ? 'cursor-wait opacity-85' : 'cursor-pointer'}
             ${
               isDragging && !isUploading
@@ -138,10 +140,10 @@ const EmptyStateUpload = ({
           </p>
         ) : null}
 
-        <div className="mt-10 grid grid-cols-3 gap-4">
+        <div className="mt-10 grid grid-cols-3 gap-4 rounded-xl border border-border/60 bg-panel p-4 shadow-sm">
           {features.map((f) => (
             <div key={f.label} className="text-center px-2">
-              <div className="w-9 h-9 rounded-lg bg-card flex items-center justify-center mx-auto mb-2">
+              <div className="w-9 h-9 rounded-lg bg-canvas border border-border/50 flex items-center justify-center mx-auto mb-2 shadow-sm">
                 <f.icon size={16} className="text-text-active" />
               </div>
               <p className="font-ui text-[11px] font-semibold text-foreground mb-0.5">
