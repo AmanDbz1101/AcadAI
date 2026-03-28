@@ -16,10 +16,11 @@ from typing import List, Dict, Any, Optional
 
 from docling.document_converter import DocumentConverter, PdfFormatOption
 from docling.datamodel.base_models import InputFormat
-from docling.datamodel.pipeline_options import PdfPipelineOptions, AcceleratorOptions, AcceleratorDevice
+from docling.datamodel.pipeline_options import PdfPipelineOptions
 from groq import Groq
 
 from backend.extraction.models.document import ValidatedDocument
+from backend.extraction.app.pdf_loader import _get_accelerator_options
 from backend.extraction.models.metadata import (
     ExtractedMetadata,
     SectionInfo,
@@ -30,27 +31,6 @@ from backend.extraction.models.metadata import (
 
 
 logger = logging.getLogger(__name__)
-
-_MIN_FREE_GPU_GB = 1.5  # minimum free VRAM required to use GPU
-
-
-def _get_accelerator_options(num_threads: int = 4) -> AcceleratorOptions:
-    """Return GPU AcceleratorOptions if enough VRAM is free, else fall back to CPU."""
-    try:
-        import torch
-        if torch.cuda.is_available():
-            free_bytes, _ = torch.cuda.mem_get_info()
-            free_gb = free_bytes / (1024 ** 3)
-            if free_gb >= _MIN_FREE_GPU_GB:
-                logger.info(f"Using GPU for docling (free VRAM: {free_gb:.2f} GB)")
-                return AcceleratorOptions(num_threads=num_threads, device=AcceleratorDevice.CUDA)
-            logger.warning(
-                f"GPU free VRAM too low ({free_gb:.2f} GB < {_MIN_FREE_GPU_GB} GB), falling back to CPU"
-            )
-    except Exception:
-        pass
-    logger.info("Using CPU for docling")
-    return AcceleratorOptions(num_threads=num_threads, device=AcceleratorDevice.CPU)
 
 
 

@@ -101,31 +101,6 @@ class DefinitionLookup:
             return None
 
     def _get_inspire_definition(self, term: str) -> Optional[str]:
-        physics_keywords = [
-            "quantum",
-            "particle",
-            "photon",
-            "quark",
-            "lepton",
-            "hadron",
-            "boson",
-            "fermion",
-            "neutrino",
-            "cosmology",
-            "relativity",
-            "gravity",
-            "spacetime",
-            "field theory",
-            "standard model",
-            "higgs",
-            "supersymmetry",
-            "gauge",
-        ]
-
-        term_lower = term.lower()
-        if not any(kw in term_lower for kw in physics_keywords):
-            return None
-
         try:
             url = "https://inspirehep.net/api/literature"
             params = {
@@ -147,6 +122,7 @@ class DefinitionLookup:
             titles = metadata.get("titles", [])
             if titles:
                 title_text = str(titles[0].get("title") or "").lower()
+                term_lower = term.lower()
                 if term_lower not in title_text:
                     return None
 

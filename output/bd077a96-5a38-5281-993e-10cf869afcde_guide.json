@@ -3,53 +3,52 @@
   "reading_strategy": {
     "method": "three_pass_method",
     "paper_type": "applied",
-    "estimated_total_time": "60-90 minutes"
+    "estimated_total_time": "60 minutes"
   },
-  "pass1_quick_scan": {
-    "goal": "Understand the overall structure and key contributions",
-    "estimated_time": "10-15 minutes",
+  "pass1_field_overview": {
+    "goal": "Understand the context and background of the paper",
+    "estimated_time": "10 minutes",
     "steps": [
       {
         "step_number": 1,
         "section_to_read": [
-          "1 Introduction"
+          "1 Introduction",
+          "2 Background"
         ],
         "relevant_figure_ids": [],
         "relevant_table_ids": [],
         "needs_figures": false,
         "needs_tables": false,
-        "objective": "Understand the research context and problem statement",
+        "objective": "Understand the introduction and background",
         "questions_to_answer": [
-          "What is the primary problem that the Attention Is All You Need paper aims to address in the field of deep learning?",
-          "How does the paper's proposed approach differ from traditional sequence-to-sequence models with encoder-decoder structures?",
-          "What is the key contribution of the Attention Is All You Need paper in terms of improving the efficiency of neural machine translation models?"
+          "What is the primary contribution of the Attention Is All You Need paper to the field of natural language processing?",
+          "How does the paper's proposed method differ from traditional sequence-to-sequence models with attention?",
+          "What specific problem in machine translation does the paper's attention-based approach aim to address?"
         ],
-        "expected_output": "Summary of the research context and problem statement"
+        "expected_output": "Context and background understanding"
       }
     ]
   },
-  "pass2_method_understanding": {
+  "pass2_taxonomy_understanding": {
     "goal": "Understand the model architecture and training",
-    "estimated_time": "20-30 minutes",
+    "estimated_time": "20 minutes",
     "steps": [
       {
         "step_number": 1,
         "section_to_read": [
           "3 Model Architecture"
         ],
-        "relevant_figure_ids": [
-          "224fe8dda46fcfb50fa3dcfda9520dd2"
-        ],
+        "relevant_figure_ids": [],
         "relevant_table_ids": [],
         "needs_figures": true,
         "needs_tables": false,
-        "objective": "Understand the Transformer model architecture",
+        "objective": "Understand the model architecture",
         "questions_to_answer": [
-          "Which specific claim in section 3 Model Architecture most directly achieves this step objective?",
-          "Which paper-specific evidence best supports the stated expected output for step 1?",
-          "Which paper-specific evidence best supports the stated expected output for step 1?"
+          "What is the primary component of the model architecture proposed in the Attention Is All You Need paper?",
+          "How does the self-attention mechanism contribute to the overall model architecture?",
+          "What is the role of the encoder-decoder structure in the Attention Is All You Need model?"
         ],
-        "expected_output": "Description of the Transformer model architecture"
+        "expected_output": "Model architecture understanding"
       },
       {
         "step_number": 2,
@@ -57,45 +56,39 @@
           "5 Training"
         ],
         "relevant_figure_ids": [],
-        "relevant_table_ids": [
-          "8470418306dcd6e0bb89309a8a583968"
-        ],
+        "relevant_table_ids": [],
         "needs_figures": false,
         "needs_tables": true,
         "objective": "Understand the training process",
         "questions_to_answer": [
-          "What is the time complexity of the self-attention mechanism in the model architecture?",
-          "How does the maximum path length vary across different layer types during the training process?",
-          "What is the effect of sequence length n on the complexity per layer of the convolutional layer type?"
+          "What optimization algorithm is used for training the model in the Attention Is All You Need paper?",
+          "How does the training process in the Attention Is All You Need paper handle sequence-to-sequence tasks?",
+          "What is the batch size used during the training process as described in the Attention Is All You Need paper?"
         ],
-        "expected_output": "Description of the training process"
+        "expected_output": "Training process understanding"
       }
     ]
   },
-  "pass3_deep_analysis": {
+  "pass3_research_landscape_analysis": {
     "goal": "Analyze the results and conclusion",
-    "estimated_time": "30-45 minutes",
+    "estimated_time": "30 minutes",
     "steps": [
       {
         "step_number": 1,
         "section_to_read": [
           "6 Results"
         ],
-        "relevant_figure_ids": [
-          "3dae6155f0a8b74110fff10bfcbbb25b"
-        ],
-        "relevant_table_ids": [
-          "e89268e9c3cff453095f105dcbd3f6c8"
-        ],
+        "relevant_figure_ids": [],
+        "relevant_table_ids": [],
         "needs_figures": true,
         "needs_tables": true,
         "objective": "Analyze the results",
         "questions_to_answer": [
-          "What is the BLEU score achieved by the Transformer model on the English-to-German newstest2014 test?",
-          "How does the training cost of the Transformer model compare to that of the GNMT + RL model on the English-to-French task?",
-          "What is the relative training cost of the ByteNet model compared to the Deep-Att + PosUnk model on the English-to-German task?"
+          "What are the key results presented in the '6 Results' section of the paper 'Attention Is All You Need'?",
+          "How do the authors of 'Attention Is All You Need' evaluate the performance of their proposed attention-based model?",
+          "What datasets are used to validate the effectiveness of the attention mechanism in the 'Attention Is All You Need' paper?"
         ],
-        "expected_output": "Summary of the results"
+        "expected_output": "Results analysis"
       },
       {
         "step_number": 2,
@@ -106,18 +99,18 @@
         "relevant_table_ids": [],
         "needs_figures": false,
         "needs_tables": false,
-        "objective": "Understand the conclusion and future work",
+        "objective": "Understand the conclusion and revisit the introduction for context",
         "questions_to_answer": [
           "What are the key findings presented in the conclusion of the Attention Is All You Need paper?",
-          "How do the authors of Attention Is All You Need propose to extend their work in future research?",
-          "What potential applications or improvements are highlighted in the conclusion of the Attention Is All You Need paper?"
+          "How do the authors of Attention Is All You Need support their claim that attention mechanisms can replace traditional recurrent neural network architectures?",
+          "What future research directions are proposed in the conclusion of the Attention Is All You Need paper?"
         ],
-        "expected_output": "Summary of the conclusion and future work"
+        "expected_output": "Conclusion understanding"
       }
     ]
   },
   "final_user_task": {
-    "summary_task": "Summarize the key contributions and findings of the paper",
+    "summary_task": "Summarize the main points of the paper",
     "reflection_questions": []
   }
 }

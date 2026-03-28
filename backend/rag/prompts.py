@@ -84,9 +84,8 @@ Instructions:
 - Include page/section references when available in metadata
 
 Format your answer as:
-1. Direct answer (2-3 sentences)
-2. Supporting evidence with citations
-3. Additional context if needed
+Direct answer (2-3 sentences)
+
 
 Answer:"""
 

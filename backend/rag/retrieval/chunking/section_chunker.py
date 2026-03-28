@@ -48,6 +48,10 @@ _REFERENCE_SECTION_KEYWORDS = (
     "works cited",
 )
 
+_HEADING_NUMBERING_RE = re.compile(r"^\d+[\.\d]*\s")
+_HEADING_LABELS = {"section_header", "title", "heading", "header"}
+_HEADING_MAX_WORDS = 12
+
 
 # ── Internal helpers ──────────────────────────────────────────────────────────
 
@@ -237,6 +241,345 @@ def _segment_fulltext_by_sections(
         end = anchors[idx + 1][0] if idx + 1 < len(anchors) else len(full_text)
         seg[sec_id] = full_text[start:end].strip()
     return seg
+
+
+def _normalize_section_title(value: str) -> str:
+    """Normalize section titles for robust matching across extraction stages."""
+    text = str(value or "").strip().lower()
+    if not text:
+        return ""
+    # Drop common numeric prefixes so "3.2 Method" can match "Method".
+    text = re.sub(r"^\s*\d+(?:\.\d+)*\s*[:.)-]?\s*", "", text)
+    return " ".join(text.split())
+
+
+def _normalize_text(value: str) -> str:
+    return " ".join(str(value or "").strip().split())
+
+
+def _word_count(value: str) -> int:
+    return len(re.findall(r"\b\w+\b", str(value or "")))
+
+
+def _is_title_cased_heading(text: str) -> bool:
+    """Heuristic title-case check that tolerates short function words."""
+    words = re.findall(r"[A-Za-z][A-Za-z'\-]*", str(text or ""))
+    if not words:
+        return False
+
+    allowed_lower = {
+        "a", "an", "and", "as", "at", "by", "for", "from", "in",
+        "of", "on", "or", "the", "to", "via", "with",
+    }
+
+    for idx, word in enumerate(words):
+        lower = word.lower()
+        if idx > 0 and lower in allowed_lower:
+            continue
+        if word.isupper():
+            continue
+        if not word[0].isupper() or (len(word) > 1 and not word[1:].islower()):
+            return False
+    return True
+
+
+def _sort_text_blocks_in_reading_order(text_blocks: list[dict]) -> list[dict]:
+    def _sort_key(block: dict) -> tuple[int, int, float, float]:
+        reading_order = block.get("reading_order")
+        page = block.get("page")
+        bbox = block.get("bbox") or {}
+
+        y0 = 0.0
+        x0 = 0.0
+        if isinstance(bbox, dict):
+            y0 = float(bbox.get("y0") or bbox.get("top") or 0.0)
+            x0 = float(bbox.get("x0") or bbox.get("left") or 0.0)
+
+        order_val = int(reading_order) if isinstance(reading_order, int) else 10**9
+        page_val = int(page) if isinstance(page, int) else 10**9
+        return order_val, page_val, y0, x0
+
+    return sorted(text_blocks, key=_sort_key)
+
+
+def _looks_like_heading_block(block: dict) -> bool:
+    label = str(block.get("label") or "").strip().lower()
+    if label not in _HEADING_LABELS:
+        return False
+
+    text = _normalize_text(block.get("text") or "")
+    if not text:
+        return False
+
+    if _word_count(text) > _HEADING_MAX_WORDS:
+        return False
+
+    has_numbering = bool(_HEADING_NUMBERING_RE.match(text))
+    if not has_numbering and not _is_title_cased_heading(text):
+        return False
+
+    return True
+
+
+def _resolve_section_for_block(
+    block: dict,
+    sections_by_id: dict[str, dict],
+    sections_by_title: dict[str, list[dict]],
+) -> Optional[str]:
+    block_section_id = str(block.get("section_id") or "").strip()
+    if block_section_id and block_section_id in sections_by_id:
+        return block_section_id
+
+    title_candidates: list[str] = []
+    block_text = _normalize_section_title(block.get("text") or "")
+    if block_text:
+        title_candidates.append(block_text)
+
+    block_section_title = _normalize_section_title(
+        block.get("section_title") or block.get("section") or ""
+    )
+    if block_section_title and block_section_title not in title_candidates:
+        title_candidates.append(block_section_title)
+
+    candidates: list[dict] = []
+    seen_ids: set[str] = set()
+    for key in title_candidates:
+        for node in sections_by_title.get(key, []):
+            sec_id = str(node.get("section_id") or "")
+            if not sec_id or sec_id in seen_ids:
+                continue
+            seen_ids.add(sec_id)
+            candidates.append(node)
+
+    if not candidates:
+        return None
+
+    if len(candidates) == 1:
+        return str(candidates[0].get("section_id") or "") or None
+
+    block_page = block.get("page")
+    if isinstance(block_page, int):
+        in_range = []
+        for node in candidates:
+            start = node.get("page_start")
+            end = node.get("page_end")
+            if not isinstance(start, int):
+                continue
+            if end is None and block_page >= start:
+                in_range.append(node)
+            elif isinstance(end, int) and start <= block_page <= end:
+                in_range.append(node)
+        if in_range:
+            candidates = in_range
+
+    best = min(candidates, key=lambda n: n.get("reading_order", 0))
+    best_id = str(best.get("section_id") or "")
+    return best_id or None
+
+
+def _map_section_texts_from_nearest_headings(
+    elements: Optional[ElementDict],
+    sections: list[dict],
+) -> tuple[dict[str, str], list[dict[str, str]], list[dict]]:
+    """
+    Assign each text block to the nearest valid preceding heading in reading order.
+
+    Returns:
+    - section_texts: section_id -> concatenated text
+    - assignments: per block assignment used for validation
+    - unresolved_blocks: non-heading blocks with no preceding heading
+    """
+    if not elements or not sections:
+        return {}, [], []
+
+    text_blocks = elements.get("text_blocks")
+    if not isinstance(text_blocks, list) or not text_blocks:
+        return {}, [], []
+
+    ordered_blocks = _sort_text_blocks_in_reading_order(
+        [b for b in text_blocks if isinstance(b, dict)]
+    )
+    if not ordered_blocks:
+        return {}, [], []
+
+    sections_by_id: dict[str, dict] = {
+        str(node.get("section_id")): node for node in sections if node.get("section_id")
+    }
+    sections_by_title: dict[str, list[dict]] = {}
+    for node in sections:
+        key = _normalize_section_title(node.get("title", ""))
+        if not key:
+            continue
+        sections_by_title.setdefault(key, []).append(node)
+
+    buckets: dict[str, list[str]] = {}
+    assignments: list[dict[str, str]] = []
+    unresolved_blocks: list[dict] = []
+
+    current_section_id: Optional[str] = None
+
+    for block in ordered_blocks:
+        text = _normalize_text(block.get("text") or "")
+        if not text:
+            continue
+
+        if _looks_like_heading_block(block):
+            resolved_id = _resolve_section_for_block(
+                block,
+                sections_by_id,
+                sections_by_title,
+            )
+            if resolved_id:
+                current_section_id = resolved_id
+            continue
+
+        if current_section_id and current_section_id in sections_by_id:
+            buckets.setdefault(current_section_id, []).append(text)
+            assignments.append(
+                {
+                    "text": text,
+                    "section_id": current_section_id,
+                    "section_title": str(
+                        sections_by_id[current_section_id].get("title") or ""
+                    ),
+                }
+            )
+            continue
+
+        unresolved_blocks.append(block)
+
+    section_texts = {
+        section_id: "\n\n".join(parts).strip()
+        for section_id, parts in buckets.items()
+        if parts
+    }
+    return section_texts, assignments, unresolved_blocks
+
+
+def _map_unresolved_blocks_from_element_tags(
+    unresolved_blocks: list[dict],
+    sections: list[dict],
+) -> tuple[dict[str, str], list[dict[str, str]]]:
+    """Fallback for blocks without a preceding heading using element-level section tags."""
+    if not unresolved_blocks or not sections:
+        return {}, []
+
+    sections_by_id: dict[str, dict] = {
+        str(node.get("section_id")): node for node in sections if node.get("section_id")
+    }
+    sections_by_title: dict[str, list[dict]] = {}
+    for node in sections:
+        key = _normalize_section_title(node.get("title", ""))
+        if key:
+            sections_by_title.setdefault(key, []).append(node)
+
+    buckets: dict[str, list[str]] = {}
+    assignments: list[dict[str, str]] = []
+
+    for block in unresolved_blocks:
+        text = _normalize_text(block.get("text") or "")
+        if not text:
+            continue
+
+        resolved_id = _resolve_section_for_block(block, sections_by_id, sections_by_title)
+        if not resolved_id:
+            continue
+
+        buckets.setdefault(resolved_id, []).append(text)
+        assignments.append(
+            {
+                "text": text,
+                "section_id": resolved_id,
+                "section_title": str(sections_by_id[resolved_id].get("title") or ""),
+            }
+        )
+
+    section_texts = {
+        section_id: "\n\n".join(parts).strip()
+        for section_id, parts in buckets.items()
+        if parts
+    }
+    return section_texts, assignments
+
+
+def _validate_chunk_section_titles(
+    chunks: list[Chunk],
+    nearest_assignments: list[dict[str, str]],
+) -> None:
+    """
+    Warning-only validation:
+    log chunks whose assigned section title differs from nearest-heading assignments.
+    """
+    if not chunks or not nearest_assignments:
+        return
+
+    # Prefer longer block snippets to reduce ambiguous matches.
+    candidates = [
+        a for a in nearest_assignments if len(_normalize_text(a.get("text", ""))) >= 24
+    ]
+    if not candidates:
+        return
+
+    for chunk in chunks:
+        if chunk.content_type != "text":
+            continue
+
+        chunk_text = _normalize_text(chunk.content)
+        if len(chunk_text) < 24:
+            continue
+
+        expected_title = ""
+        for assignment in candidates:
+            block_text = _normalize_text(assignment.get("text", ""))
+            if not block_text:
+                continue
+            probe = block_text[: min(len(block_text), 96)]
+            if probe and probe in chunk_text:
+                expected_title = str(assignment.get("section_title") or "")
+                break
+
+        if not expected_title:
+            continue
+
+        assigned_title = str(chunk.section_title or "")
+        if _normalize_section_title(assigned_title) != _normalize_section_title(expected_title):
+            logger.warning(
+                "Section-title mismatch for chunk_index=%s doc=%s assigned='%s' expected_nearest='%s'",
+                chunk.chunk_index,
+                chunk.document_id,
+                assigned_title,
+                expected_title,
+            )
+
+
+def _map_section_texts_from_elements(
+    elements: Optional[ElementDict],
+    sections: list[dict],
+) -> dict[str, str]:
+    """
+    Build section text using Docling text-block section metadata.
+
+    This is more accurate than page-range slicing when multiple headings start
+    on the same page because each block carries section context.
+    """
+    nearest_texts, _, unresolved = _map_section_texts_from_nearest_headings(
+        elements,
+        sections,
+    )
+    unresolved_texts, _ = _map_unresolved_blocks_from_element_tags(unresolved, sections)
+
+    merged: dict[str, list[str]] = {}
+    for source in (nearest_texts, unresolved_texts):
+        for section_id, text in source.items():
+            if not text:
+                continue
+            merged.setdefault(section_id, []).append(text)
+
+    return {
+        section_id: "\n\n".join(parts).strip()
+        for section_id, parts in merged.items()
+        if parts
+    }
 
 
 def _is_reference_section_title(title: str) -> bool:
@@ -527,6 +870,11 @@ class SectionChunker:
             s["section_id"]: s for s in all_section_nodes
         }
 
+        # Load extracted elements from complete.json once; used both for
+        # section text mapping and table/figure/reference handling.
+        extracted_elements = self._load_extracted_elements(document_id, output_dir)
+        reference_blocks = _extract_reference_blocks(extracted_elements)
+
         # ── Gather page-level text ────────────────────────────────────────────
         page_texts: dict[int, str] = {}
         source_file_name = f"{document_id}_complete.json"
@@ -537,11 +885,46 @@ class SectionChunker:
 
         # ── Build section → text mapping ─────────────────────────────────────
         section_texts: dict[str, str] = {}
+        nearest_heading_assignments: list[dict[str, str]] = []
+
+        nearest_texts, nearest_heading_assignments, unresolved_blocks = (
+            _map_section_texts_from_nearest_headings(
+                extracted_elements,
+                all_section_nodes,
+            )
+        )
+        if nearest_texts:
+            section_texts.update(nearest_texts)
+
+        unresolved_texts, unresolved_assignments = _map_unresolved_blocks_from_element_tags(
+            unresolved_blocks,
+            all_section_nodes,
+        )
+        nearest_heading_assignments.extend(unresolved_assignments)
+        for section_id, text in unresolved_texts.items():
+            if not text:
+                continue
+            if section_texts.get(section_id):
+                section_texts[section_id] = f"{section_texts[section_id]}\n\n{text}".strip()
+            else:
+                section_texts[section_id] = text
+
+        # Keep the legacy element-tag path as a safety net for sparse/missing block streams.
+        if not section_texts:
+            element_section_texts = _map_section_texts_from_elements(
+                extracted_elements,
+                all_section_nodes,
+            )
+            if element_section_texts:
+                section_texts.update(element_section_texts)
 
         if page_texts:
-            # Prefer page-based assignment
+            # Fill any gaps with page-based assignment.
             for node in all_section_nodes:
-                section_texts[node["section_id"]] = _text_for_section_pages(
+                section_id = node["section_id"]
+                if section_texts.get(section_id):
+                    continue
+                section_texts[section_id] = _text_for_section_pages(
                     page_texts,
                     node.get("page_start"),
                     node.get("page_end"),
@@ -554,10 +937,13 @@ class SectionChunker:
             )
             if fallback_text:
                 source_file_name = fallback_source
-                section_texts = _segment_fulltext_by_sections(
+                segmented = _segment_fulltext_by_sections(
                     fallback_text,
                     all_section_nodes,
                 )
+                for section_id, text in segmented.items():
+                    if text and not section_texts.get(section_id):
+                        section_texts[section_id] = text
                 if not any(section_texts.values()):
                     logger.warning(
                         "Section-aware segmentation failed for %s; using whole-document fallback",
@@ -570,10 +956,6 @@ class SectionChunker:
                     document_id,
                 )
                 return []
-
-        # ── Load extracted elements from complete.json ────────────────────────
-        extracted_elements = self._load_extracted_elements(document_id, output_dir)
-        reference_blocks = _extract_reference_blocks(extracted_elements)
 
         # ── Produce chunks ────────────────────────────────────────────────────
         chunks: list[Chunk] = []
@@ -692,6 +1074,9 @@ class SectionChunker:
             len(ordered_nodes),
             document_id,
         )
+
+        _validate_chunk_section_titles(chunks, nearest_heading_assignments)
+
         return chunks
 
     # ── Private helpers ───────────────────────────────────────────────────────
