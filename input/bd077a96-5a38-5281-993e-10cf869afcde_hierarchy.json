@@ -400,6 +400,6 @@
     "detection_method": "docling+heuristics",
     "confidence_score": 0.9230769230769231
   },
-  "processing_time_seconds": 0.000225067138671875,
+  "processing_time_seconds": 0.0007681846618652344,
   "warnings": []
 }

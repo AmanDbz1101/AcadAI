@@ -6,6 +6,7 @@ import base64
 import hashlib
 import hmac
 import json
+import logging
 import os
 import secrets
 import shutil
@@ -15,7 +16,7 @@ from pathlib import Path
 from typing import Any, Dict, List, Optional
 from uuid import uuid4
 
-from fastapi import FastAPI, File, Header, HTTPException, UploadFile
+from fastapi import BackgroundTasks, FastAPI, File, Header, HTTPException, UploadFile
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse
 from pydantic import BaseModel
@@ -23,13 +24,23 @@ from pydantic import BaseModel
 from langchain_groq import ChatGroq
 from langchain_core.messages import HumanMessage
 
-from backend.extraction.extraction import extract_pdf
+from backend.extraction.extraction import extract_pdf, generate_reading_guide_state
 from backend.extraction.persistence import PostgresPaperStore
+from backend.extraction.technical_terms import (
+    extract_technical_terms_for_bundle,
+    get_term_context_text,
+    set_llm_definition_override,
+)
 from backend.rag.prompts import qa_prompt
+from config import MIN_RELEVANCE_THRESHOLD
 
 
 AUTH_SECRET_KEY = os.getenv("AUTH_SECRET_KEY", "dev-auth-secret-change-me")
 AUTH_TOKEN_TTL_SECONDS = int(os.getenv("AUTH_TOKEN_TTL_SECONDS", "86400"))
+logger = logging.getLogger(__name__)
+
+QUESTIONS_LONG_POLL_SECONDS = float(os.getenv("QUESTIONS_LONG_POLL_SECONDS", "20"))
+QUESTIONS_LONG_POLL_INTERVAL_SECONDS = float(os.getenv("QUESTIONS_LONG_POLL_INTERVAL_SECONDS", "0.4"))
 
 
 class RegisterRequest(BaseModel):
@@ -151,6 +162,325 @@ def _resolve_postgres_dsn() -> str:
 
 def _make_store() -> PostgresPaperStore:
     return PostgresPaperStore(_resolve_postgres_dsn())
+
+
+def _build_qa_context_from_chunks(chunks: List[Dict[str, Any]], max_chunks: int = 2) -> str:
+    context_parts: List[str] = []
+    for idx, chunk in enumerate(chunks[:max_chunks], 1):
+        content = str(chunk.get("content") or chunk.get("text") or "").strip()
+        metadata = chunk.get("metadata") or {}
+        section_title = str(metadata.get("section_title") or metadata.get("section") or "").strip()
+        if not content:
+            continue
+        if section_title:
+            context_parts.append(f"[{idx}] Section: {section_title}\n{content}")
+        else:
+            context_parts.append(f"[{idx}]\n{content}")
+    return "\n\n".join(context_parts)
+
+
+def _build_sections_for_guide(store: PostgresPaperStore, paper_id: int) -> List[Dict[str, Any]]:
+    rows = store.get_sections_for_paper_id(paper_id)
+    normalized: List[Dict[str, Any]] = []
+    for idx, row in enumerate(sorted(rows, key=lambda r: r.get("section_key") or ""), 1):
+        normalized.append(
+            {
+                "id": str(row.get("id") or idx),
+                "title": row.get("original_name") or f"Section {idx}",
+                "level": int(row.get("level") or 1),
+                "page_start": int(row.get("page_start") or 1),
+                "stats": row.get("stats_json") or {},
+            }
+        )
+    return normalized
+
+
+def _build_full_text_for_guide(store: PostgresPaperStore, paper_id: int) -> str:
+    blocks = store.get_text_blocks_for_paper_id(paper_id)
+    parts: List[str] = []
+    for block in blocks:
+        text = str(block.get("text_content") or "").strip()
+        if text:
+            parts.append(text)
+    return "\n\n".join(parts)
+
+
+def _build_questions_for_persistence(state: Dict[str, Any]) -> List[Dict[str, Any]]:
+    question_section_pairs = state.get("question_section_pairs") or []
+    per_question_results = state.get("per_question_results") or []
+    qa_results = state.get("qa_results") or []
+
+    by_question_payload: Dict[str, Dict[str, Any]] = {}
+    for payload in per_question_results:
+        question = str(payload.get("question") or "").strip()
+        if question and question not in by_question_payload:
+            by_question_payload[question] = payload
+
+    by_question_answer: Dict[str, Dict[str, Any]] = {}
+    for entry in qa_results:
+        question = str(entry.get("question") or "").strip()
+        if question and question not in by_question_answer:
+            by_question_answer[question] = entry
+
+    questions_to_store: List[Dict[str, Any]] = []
+    for pair in question_section_pairs:
+        question_text = str(pair.get("question") or "").strip()
+        if not question_text:
+            continue
+
+        payload = by_question_payload.get(question_text) or {}
+        answer_row = by_question_answer.get(question_text) or {}
+        answer_text = answer_row.get("answer")
+        status = str(answer_row.get("status") or ("completed" if answer_text else "pending"))
+
+        questions_to_store.append(
+            {
+                "question_text": question_text,
+                "scoped_sections": pair.get("sections") or [],
+                "retrieval_payload": payload,
+                "status": status,
+                "answer_text": answer_text,
+                "confidence": answer_row.get("confidence"),
+                "error_message": None,
+            }
+        )
+
+    return questions_to_store
+
+
+def _compute_retrieval_payload_for_question(
+    *,
+    paper: Dict[str, Any],
+    question_text: str,
+    scoped_sections: List[str],
+) -> Dict[str, Any]:
+    # Keep retrieval behavior aligned with rag.graph by using its internal helpers.
+    from rag import graph as rag_graph
+
+    pipeline = rag_graph._get_retrieval_pipeline()
+    document_id = str(paper.get("document_uuid") or "")
+    if document_id:
+        hierarchy_path = Path("output") / f"{document_id}_hierarchy.json"
+        if hierarchy_path.exists():
+            pipeline.index(
+                hierarchy_json_path=hierarchy_path,
+                output_dir=Path("output"),
+                pdf_path=None,
+            )
+
+    hits, retrieval_meta = rag_graph._retrieve_for_question(
+        pipeline=pipeline,
+        question=question_text,
+        step_sections=scoped_sections,
+        document_id=document_id,
+    )
+
+    hits = rag_graph._dedupe_results(hits)
+    hits = [chunk for chunk in hits if not rag_graph._is_reference_result(chunk)]
+    filtered_hits = [
+        chunk for chunk in hits if rag_graph._result_score(chunk) >= MIN_RELEVANCE_THRESHOLD
+    ]
+    if len(filtered_hits) < 2:
+        filtered_hits = hits[:2]
+
+    deduped_hits = rag_graph._dedupe_near_identical_chunks(filtered_hits)
+    final_hits = deduped_hits[: rag_graph.QA_TOP_K]
+
+    return {
+        "question": question_text,
+        "sections": scoped_sections,
+        "resolved_sections": retrieval_meta["resolved_sections"],
+        "expanded_queries": retrieval_meta["expanded_queries"],
+        "chunk_level": retrieval_meta["chunk_level"],
+        "chunks": [rag_graph._result_to_dict(r) for r in final_hits],
+    }
+
+
+def _resolve_hierarchy_artifact(document_uuid: str) -> Optional[Path]:
+    if not document_uuid:
+        return None
+    candidate_dirs = [Path("input"), Path("output")]
+    for base_dir in candidate_dirs:
+        candidate = base_dir / f"{document_uuid}_hierarchy.json"
+        if candidate.exists():
+            return candidate
+    return None
+
+
+def _index_paper_in_qdrant(*, document_uuid: str, pdf_path: Path) -> Dict[str, Any]:
+    """
+    Index an uploaded paper in Qdrant using its generated hierarchy artifact.
+
+    Returns a status payload without raising, so upload can still succeed even
+    if vector indexing fails.
+    """
+    from rag import graph as rag_graph
+
+    if not document_uuid:
+        return {"indexed": False, "reason": "missing_document_uuid"}
+
+    hierarchy_path = _resolve_hierarchy_artifact(document_uuid)
+    if hierarchy_path is None:
+        return {
+            "indexed": False,
+            "reason": "missing_hierarchy_artifact",
+            "hierarchy_path": f"input/{document_uuid}_hierarchy.json or output/{document_uuid}_hierarchy.json",
+        }
+
+    try:
+        pipeline = rag_graph._get_retrieval_pipeline()
+        result = pipeline.index(
+            hierarchy_json_path=hierarchy_path,
+            output_dir=hierarchy_path.parent,
+            pdf_path=pdf_path,
+        )
+        return {
+            "indexed": True,
+            "skipped": bool(getattr(result, "skipped", False)),
+            "chunks": int(getattr(result, "total_chunks", 0) or 0),
+            "collection": str(getattr(result, "collection_name", "")),
+            "document_id": str(getattr(result, "document_id", document_uuid)),
+        }
+    except Exception as exc:  # noqa: BLE001
+        logger.exception("Qdrant indexing failed for document_uuid=%s", document_uuid)
+        return {"indexed": False, "reason": str(exc)}
+
+
+def _remove_local_artifacts(document_uuid: str, source_pdf_path: Optional[str]) -> Dict[str, Any]:
+    """Delete local extraction artifacts related to a document UUID."""
+    removed_files: List[str] = []
+    errors: List[str] = []
+
+    if document_uuid:
+        for base_dir in [Path("input"), Path("output")]:
+            for artifact in base_dir.glob(f"{document_uuid}_*"):
+                try:
+                    if artifact.is_file():
+                        artifact.unlink(missing_ok=True)
+                        removed_files.append(str(artifact))
+                except Exception as exc:  # noqa: BLE001
+                    errors.append(f"{artifact}: {exc}")
+
+    if source_pdf_path:
+        try:
+            workspace_root = Path(__file__).resolve().parents[2]
+            pdfs_root = (workspace_root / "pdfs").resolve()
+            source_path = Path(str(source_pdf_path)).expanduser().resolve()
+            if source_path.is_file() and str(source_path).startswith(str(pdfs_root)):
+                source_path.unlink(missing_ok=True)
+                removed_files.append(str(source_path))
+        except Exception as exc:  # noqa: BLE001
+            errors.append(f"{source_pdf_path}: {exc}")
+
+    return {
+        "removed_files": removed_files,
+        "errors": errors,
+    }
+
+
+def _delete_qdrant_document_points(document_uuid: str) -> Dict[str, Any]:
+    if not document_uuid:
+        return {"deleted": False, "reason": "missing_document_uuid"}
+    try:
+        from rag.retrieval.indexing.qdrant_store import QdrantStoreManager
+
+        manager = QdrantStoreManager()
+        removed = manager.delete_document_points(document_uuid)
+        return {
+            "deleted": bool(removed),
+            "collection": manager.collection_name,
+            "document_id": document_uuid,
+        }
+    except Exception as exc:  # noqa: BLE001
+        logger.exception("Failed deleting Qdrant points for document_uuid=%s", document_uuid)
+        return {"deleted": False, "reason": str(exc), "document_id": document_uuid}
+
+
+def _guide_status_from_row(guide_row: Optional[Dict[str, Any]]) -> Dict[str, Any]:
+    if not guide_row:
+        return {"status": "missing", "error": None, "updated_at": None}
+
+    plan = guide_row.get("guide_plan_json") if isinstance(guide_row.get("guide_plan_json"), dict) else {}
+    explicit_status = str(plan.get("status") or "").strip().lower()
+    if explicit_status in {"pending", "ready", "failed"}:
+        status = explicit_status
+    else:
+        guide_json = guide_row.get("guide_json")
+        status = "ready" if isinstance(guide_json, dict) and guide_json else "pending"
+
+    return {
+        "status": status,
+        "error": plan.get("error"),
+        "updated_at": guide_row.get("updated_at"),
+    }
+
+
+def _generate_and_store_reading_guide(paper_id: int) -> None:
+    try:
+        if not os.getenv("POSTGRES_DSN"):
+            os.environ["POSTGRES_DSN"] = _resolve_postgres_dsn()
+
+        store = _make_store()
+        paper = store.get_paper_by_id(paper_id)
+        if not paper:
+            raise RuntimeError("Paper not found")
+
+        sections = _build_sections_for_guide(store, paper_id)
+        full_text = _build_full_text_for_guide(store, paper_id)
+        result_state = generate_reading_guide_state(
+            title=str(paper.get("title") or paper.get("paper_name") or ""),
+            abstract=str(paper.get("abstract") or ""),
+            sections=sections,
+            full_text=full_text,
+            defer_answer_generation=True,
+            skip_retrieve_and_qa=True,
+        )
+
+        reading_guide = result_state.get("reading_guide") or {}
+        if not isinstance(reading_guide, dict) or not reading_guide:
+            raise RuntimeError("Guide workflow completed without a reading guide")
+
+        guide_plan = result_state.get("reading_guide_plan")
+        plan_payload = guide_plan if isinstance(guide_plan, dict) else {}
+        plan_payload = {**plan_payload, "status": "ready", "error": None}
+
+        question_section_pairs = result_state.get("question_section_pairs") or []
+        questions_to_store = _build_questions_for_persistence(result_state)
+        store.upsert_paper_guide(
+            paper_id=paper_id,
+            document_uuid=paper.get("document_uuid"),
+            guide_json=reading_guide,
+            guide_plan_json=plan_payload,
+            question_section_pairs=question_section_pairs,
+        )
+        store.replace_paper_questions(
+            paper_id=paper_id,
+            document_uuid=paper.get("document_uuid"),
+            questions=questions_to_store,
+        )
+        logger.info("Reading guide generated for paper_id=%s", paper_id)
+    except Exception as exc:  # noqa: BLE001
+        logger.exception("Failed background reading guide generation for paper_id=%s", paper_id)
+        try:
+            store = _make_store()
+            paper = store.get_paper_by_id(paper_id)
+            store.upsert_paper_guide(
+                paper_id=paper_id,
+                document_uuid=(paper or {}).get("document_uuid"),
+                guide_json={},
+                guide_plan_json={"status": "failed", "error": str(exc)},
+                question_section_pairs=[],
+            )
+        except Exception:  # noqa: BLE001
+            logger.exception("Failed to persist failed guide status for paper_id=%s", paper_id)
+
+
+class GenerateAnswerRequest(BaseModel):
+    force_regenerate: bool = False
+
+
+class GenerateTermDefinitionRequest(BaseModel):
+    term: str
 
 
 def _pick_sections_by_keywords(
@@ -386,6 +716,26 @@ def _build_fallback_reading_guide(
     }
 
 
+def _generate_term_definition_with_llm(
+    *,
+    term: str,
+    context_sentence: str,
+    paper_title: str,
+) -> str:
+    llm = ChatGroq(
+        model=os.getenv("QA_ANSWER_MODEL", "llama-3.3-70b-versatile"),
+        temperature=0.2,
+    )
+    prompt = (
+        f'Define the technical term "{term}" for a research-paper reader.\n\n'
+        f"Paper title: {paper_title}\n"
+        f"Context sentence: {context_sentence or 'N/A'}\n\n"
+        "Return exactly 1-2 concise sentences, no bullets, no preamble."
+    )
+    response = llm.invoke([HumanMessage(content=prompt)])
+    return str(response.content or "").strip()
+
+
 app = FastAPI(title="ResearchAgent Backend API", version="1.0.0")
 
 app.add_middleware(
@@ -489,6 +839,77 @@ def list_papers(
     return {"papers": papers_with_urls}
 
 
+@app.get("/api/cms/papers")
+def cms_list_papers(
+    limit: int = 200,
+    authorization: Optional[str] = Header(default=None, alias="Authorization"),
+) -> Dict[str, Any]:
+    """Backend-only CMS endpoint for listing stored papers."""
+    user_id = _require_auth_user_id(authorization)
+    store = _make_store()
+    papers = store.list_papers_for_user(user_id=user_id, limit=limit)
+    items = [
+        {
+            **paper,
+            "pdf_url": f"/api/papers/{paper['id']}/pdf",
+            "bundle_url": f"/api/papers/{paper['id']}/bundle",
+            "delete_url": f"/api/cms/papers/{paper['id']}",
+        }
+        for paper in papers
+    ]
+    return {
+        "count": len(items),
+        "papers": items,
+    }
+
+
+@app.delete("/api/cms/papers/{paper_id}")
+def cms_delete_paper(
+    paper_id: int,
+    authorization: Optional[str] = Header(default=None, alias="Authorization"),
+) -> Dict[str, Any]:
+    """
+    Backend-only CMS endpoint to remove a paper.
+
+    Semantics:
+    - Removes the caller's access link.
+    - If no users remain linked to the paper, deletes DB rows, Qdrant points,
+      and local extraction artifacts.
+    """
+    user_id = _require_auth_user_id(authorization)
+    store = _make_store()
+
+    result = store.delete_paper_for_user(user_id=user_id, paper_id=paper_id)
+    if not result.get("deleted"):
+        reason = result.get("reason")
+        if reason == "paper_not_found":
+            raise HTTPException(status_code=404, detail="Paper not found")
+        if reason == "access_not_found":
+            raise HTTPException(status_code=403, detail="You do not have access to this paper")
+        raise HTTPException(status_code=500, detail=f"Delete failed: {reason}")
+
+    qdrant_cleanup = {"deleted": False, "reason": "skipped_not_globally_deleted"}
+    file_cleanup = {"removed_files": [], "errors": ["skipped_not_globally_deleted"]}
+
+    if bool(result.get("paper_deleted")):
+        document_uuid = str(result.get("document_uuid") or "")
+        qdrant_cleanup = _delete_qdrant_document_points(document_uuid)
+        file_cleanup = _remove_local_artifacts(
+            document_uuid=document_uuid,
+            source_pdf_path=result.get("source_pdf_path"),
+        )
+
+    return {
+        "paper_id": paper_id,
+        "deleted": True,
+        "paper_deleted": bool(result.get("paper_deleted")),
+        "reason": result.get("reason"),
+        "remaining_links": int(result.get("remaining_links") or 0),
+        "qdrant": qdrant_cleanup,
+        "artifacts": file_cleanup,
+    }
+
+
 @app.get("/api/papers/{paper_id}/bundle")
 def get_paper_bundle(
     paper_id: int,
@@ -553,12 +974,21 @@ def get_paper_bundle(
         "pdf_url": f"/api/papers/{paper_id}/pdf"
     }
     
-    # Extract reading guide from paper object if available
-    reading_guide = paper_with_url.pop("reading_guide", None)
+    guide_row = store.get_paper_guide_for_paper_id(paper_id)
+    guide_status = _guide_status_from_row(guide_row)
+    technical_terms = extract_technical_terms_for_bundle(paper_with_url, normalized_sections)
 
-    # If no guide is stored, synthesize a deterministic fallback guide from sections.
-    # This keeps frontend behavior consistent for legacy papers.
-    if not isinstance(reading_guide, dict) or not reading_guide:
+    # Legacy papers may still have reading_guide directly on papers table.
+    reading_guide = paper_with_url.pop("reading_guide", None)
+    if guide_status["status"] == "ready" and isinstance((guide_row or {}).get("guide_json"), dict):
+        reading_guide = guide_row.get("guide_json")
+
+    # Only use synthesized fallback when no explicit guide state exists.
+    # For pending/failed states we return no guide so frontend can render live status.
+    if (
+        (not isinstance(reading_guide, dict) or not reading_guide)
+        and guide_status["status"] == "missing"
+    ):
         metadata_json = paper_with_url.get("metadata_json")
         inference = metadata_json.get("inference") if isinstance(metadata_json, dict) else {}
         paper_type_hint = inference.get("paper_type") if isinstance(inference, dict) else None
@@ -567,15 +997,18 @@ def get_paper_bundle(
             sections=normalized_sections,
             paper_type_hint=str(paper_type_hint) if paper_type_hint else None,
         )
+        guide_status = {"status": "ready", "error": None, "updated_at": None}
     
     return {
         "paper": paper_with_url,
         "sections": normalized_sections,
+        "technical_terms": technical_terms,
         "tables": tables,
         "images": images,
         "references": references,
         "text_blocks": text_blocks,
         "reading_guide": reading_guide,
+        "guide_status": guide_status,
     }
 
 
@@ -767,15 +1200,18 @@ def get_paper_guide(
 
     guide_row = store.get_paper_guide_for_paper_id(paper_id)
     questions = store.list_paper_questions_for_paper_id(paper_id)
+    guide_status = _guide_status_from_row(guide_row)
     return {
         "paper": paper,
         "guide": guide_row,
+        "guide_status": guide_status,
         "questions": questions,
     }
 
 
 @app.post("/api/papers/upload")
 def upload_paper(
+    background_tasks: BackgroundTasks,
     file: UploadFile = File(...),
     authorization: Optional[str] = Header(default=None, alias="Authorization"),
 ) -> Dict[str, Any]:
@@ -804,7 +1240,11 @@ def upload_paper(
         if not os.getenv("POSTGRES_DSN"):
             os.environ["POSTGRES_DSN"] = _resolve_postgres_dsn()
 
-        extraction_result = extract_pdf(temp_pdf_path, output_dir="input")
+        extraction_result = extract_pdf(
+            temp_pdf_path,
+            output_dir="input",
+            generate_reading_guide=False,
+        )
         db_result = extraction_result.get("database") or {}
         paper_id = db_result.get("paper_id")
         if paper_id is None:
@@ -819,6 +1259,39 @@ def upload_paper(
         if not paper:
             raise HTTPException(status_code=500, detail="Paper persisted but could not be fetched")
 
+        # Keep vector DB aligned with uploaded papers so retrieval reflects
+        # newly ingested documents immediately.
+        qdrant_index = _index_paper_in_qdrant(
+            document_uuid=str(paper.get("document_uuid") or ""),
+            pdf_path=pdf_storage_path,
+        )
+
+        queued = False
+        existing_guide_row = store.get_paper_guide_for_paper_id(int(paper_id))
+        current_status = _guide_status_from_row(existing_guide_row)
+        has_legacy_guide = isinstance(paper.get("reading_guide"), dict) and bool(paper.get("reading_guide"))
+
+        if current_status["status"] != "ready" and not has_legacy_guide:
+            store.upsert_paper_guide(
+                paper_id=int(paper_id),
+                document_uuid=paper.get("document_uuid"),
+                guide_json={},
+                guide_plan_json={"status": "pending", "error": None},
+                question_section_pairs=[],
+            )
+            background_tasks.add_task(_generate_and_store_reading_guide, int(paper_id))
+            queued = True
+
+        guide_status = (
+            {"status": "pending", "error": None, "updated_at": None}
+            if queued
+            else (
+                current_status
+                if current_status["status"] != "missing"
+                else {"status": "ready" if has_legacy_guide else "pending", "error": None, "updated_at": None}
+            )
+        )
+
         return {
             "paper": paper,
             "database": {
@@ -827,7 +1300,9 @@ def upload_paper(
                 "paper_name": db_result.get("paper_name"),
                 "reason": db_result.get("reason"),
             },
+            "qdrant": qdrant_index,
             "pdf_id": pdf_uuid,
+            "guide_status": guide_status,
         }
     except HTTPException:
         raise
@@ -847,7 +1322,23 @@ def get_paper_questions(paper_id: int) -> Dict[str, Any]:
     if not paper:
         raise HTTPException(status_code=404, detail="Paper not found")
 
-    questions = store.list_paper_questions_for_paper_id(paper_id)
+    deadline = time.monotonic() + max(0.0, QUESTIONS_LONG_POLL_SECONDS)
+    questions: List[Dict[str, Any]] = []
+
+    while True:
+        questions = store.list_paper_questions_for_paper_id(paper_id)
+        if questions:
+            break
+
+        guide_status = _guide_status_from_row(store.get_paper_guide_for_paper_id(paper_id))
+        if guide_status["status"] != "pending":
+            break
+
+        if time.monotonic() >= deadline:
+            break
+
+        time.sleep(max(0.05, QUESTIONS_LONG_POLL_INTERVAL_SECONDS))
+
     return {"paper": paper, "questions": questions}
 
 
@@ -882,6 +1373,28 @@ def generate_answer_for_question(
     question_text = str(claimed.get("question_text") or "").strip()
     retrieval_payload = claimed.get("retrieval_payload_json") or {}
     chunks = retrieval_payload.get("chunks") or []
+
+    if not chunks and question_text:
+        try:
+            retrieval_payload = _compute_retrieval_payload_for_question(
+                paper=paper,
+                question_text=question_text,
+                scoped_sections=claimed.get("scoped_sections_json") or [],
+            )
+            chunks = retrieval_payload.get("chunks") or []
+            claimed = store.update_paper_question_retrieval_payload(
+                paper_id=paper_id,
+                question_id=question_id,
+                retrieval_payload=retrieval_payload,
+            )
+        except Exception as exc:  # noqa: BLE001
+            logger.warning(
+                "Failed to compute retrieval payload on demand for paper_id=%s question_id=%s: %s",
+                paper_id,
+                question_id,
+                exc,
+            )
+
     context = _build_qa_context_from_chunks(chunks)
 
     try:
@@ -919,3 +1432,84 @@ def generate_answer_for_question(
             error_message=str(exc),
         )
         raise HTTPException(status_code=500, detail=f"Answer generation failed: {exc}") from exc
+
+
+@app.post("/api/papers/{paper_id}/technical-terms/generate")
+def generate_technical_term_definition(
+    paper_id: int,
+    payload: GenerateTermDefinitionRequest,
+    authorization: Optional[str] = Header(default=None, alias="Authorization"),
+) -> Dict[str, Any]:
+    user_id = _require_auth_user_id(authorization)
+    store = _make_store()
+
+    if not store.user_has_access_to_paper(user_id=user_id, paper_id=paper_id):
+        raise HTTPException(status_code=403, detail="You do not have access to this paper")
+
+    paper = store.get_paper_by_id(paper_id)
+    if not paper:
+        raise HTTPException(status_code=404, detail="Paper not found")
+
+    term = str(payload.term or "").strip()
+    if not term:
+        raise HTTPException(status_code=400, detail="term is required")
+
+    sections = store.get_sections_for_paper_id(paper_id)
+    text_blocks = store.get_text_blocks_for_paper_id(paper_id)
+    section_text_links = store.get_section_text_blocks_for_paper_id(paper_id)
+
+    section_text_map: Dict[int, List[str]] = defaultdict(list)
+    for row in section_text_links:
+        section_id = row.get("section_id")
+        content = (row.get("text_content") or "").strip()
+        if section_id and content:
+            section_text_map[int(section_id)].append(content)
+
+    page_to_texts: Dict[int, List[str]] = defaultdict(list)
+    for block in text_blocks:
+        page = block.get("page_number")
+        text = (block.get("text_content") or "").strip()
+        if page is not None and text:
+            page_to_texts[int(page)].append(text)
+
+    sections_sorted = sorted(sections, key=lambda s: s.get("section_key") or "")
+    normalized_sections: List[Dict[str, Any]] = []
+    for idx, section in enumerate(sections_sorted):
+        sid = int(section["id"])
+        content_lines = section_text_map.get(sid, [])
+        if not content_lines:
+            page = int(section.get("page_start") or 1)
+            content_lines = page_to_texts.get(page, [])
+
+        normalized_sections.append(
+            {
+                "id": str(sid),
+                "title": section.get("original_name") or f"Section {idx + 1}",
+                "level": int(section.get("level") or 1),
+                "page_start": int(section.get("page_start") or 1),
+                "content": "\n\n".join(content_lines).strip(),
+            }
+        )
+
+    context_sentence = get_term_context_text(paper, normalized_sections, term)
+
+    try:
+        definition = _generate_term_definition_with_llm(
+            term=term,
+            context_sentence=context_sentence,
+            paper_title=str(paper.get("title") or paper.get("paper_name") or ""),
+        )
+    except Exception as exc:  # noqa: BLE001
+        raise HTTPException(status_code=500, detail=f"Definition generation failed: {exc}") from exc
+
+    if not definition:
+        raise HTTPException(status_code=500, detail="Definition generation returned empty content")
+
+    term_payload = set_llm_definition_override(paper_id=paper_id, term=term, definition=definition)
+    return {
+        "paper": paper,
+        "technical_term": {
+            "term": term,
+            **term_payload,
+        },
+    }

@@ -52,6 +52,7 @@ def _generate_reading_guide(
     abstract: str,
     sections: list[Dict[str, Any]],
     full_text: str,
+    defer_answer_generation: bool = True,
 ) -> Optional[Dict[str, Any]]:
     """
     Generate a reading guide using the LangGraph workflow.
@@ -66,32 +67,15 @@ def _generate_reading_guide(
         Reading guide dict or None if generation fails
     """
     try:
-        # Import here to avoid circular imports and allow optional usage
-        _BACKEND_DIR = Path(__file__).resolve().parent.parent
-        _PROJECT_ROOT = _BACKEND_DIR.parent
-        for _p in (_PROJECT_ROOT, _BACKEND_DIR):
-            if str(_p) not in sys.path:
-                sys.path.insert(0, str(_p))
-        
-        from rag.graph import get_agent
-        
         logger.info("Generating reading guide via LangGraph workflow...")
         
-        # Initialize the agent
-        agent = get_agent()
-        
-        # Prepare state with extracted information
-        state = {
-            "title": title,
-            "abstract": abstract,
-            "sections": sections,
-            "full_text": full_text,
-            "errors": [],
-        }
-        
-        # Run the workflow - it will go through extraction (skipped since we have metadata),
-        # categorization, and then the appropriate guide node
-        result_state = agent.invoke(state)
+        result_state = generate_reading_guide_state(
+            title=title,
+            abstract=abstract,
+            sections=sections,
+            full_text=full_text,
+            defer_answer_generation=defer_answer_generation,
+        )
         
         reading_guide = result_state.get("reading_guide")
         if reading_guide:
@@ -104,6 +88,37 @@ def _generate_reading_guide(
     except Exception as exc:
         logger.error(f"Failed to generate reading guide: {exc}", exc_info=True)
         return None
+
+
+def generate_reading_guide_state(
+    title: str,
+    abstract: str,
+    sections: list[Dict[str, Any]],
+    full_text: str,
+    defer_answer_generation: bool = True,
+    skip_retrieve_and_qa: bool = False,
+) -> Dict[str, Any]:
+    """Run LangGraph reading-guide workflow and return the full state payload."""
+    # Import here to avoid circular imports and allow optional usage
+    _BACKEND_DIR = Path(__file__).resolve().parent.parent
+    _PROJECT_ROOT = _BACKEND_DIR.parent
+    for _p in (_PROJECT_ROOT, _BACKEND_DIR):
+        if str(_p) not in sys.path:
+            sys.path.insert(0, str(_p))
+
+    from rag.graph import get_agent
+
+    agent = get_agent()
+    state = {
+        "title": title,
+        "abstract": abstract,
+        "sections": sections,
+        "full_text": full_text,
+        "errors": [],
+        "defer_answer_generation": defer_answer_generation,
+        "skip_retrieve_and_qa": skip_retrieve_and_qa,
+    }
+    return agent.invoke(state)
 
 
 class PDFExtractor:
@@ -133,6 +148,7 @@ class PDFExtractor:
         force_ocr: bool = False,
         save_metadata_file: bool = False,
         save_fulltext_file: bool = False,
+        generate_reading_guide: bool = True,
     ) -> Dict[str, Any]:
         """
         Extract all information from a PDF file.
@@ -300,18 +316,22 @@ class PDFExtractor:
         db_result = None
         postgres_dsn = _resolve_postgres_dsn()
         
-        # Generate reading guide
-        logger.info("Generating reading guide...")
-        reading_guide = _generate_reading_guide(
-            title=processed_doc.metadata.title or "",
-            abstract=processed_doc.metadata.abstract or "",
-            sections=[s.model_dump(mode='json', exclude_none=True) for s in processed_doc.metadata.sections],
-            full_text=full_text,
-        )
-        if reading_guide:
-            logger.info("✅ Reading guide generated and will be stored with paper")
+        reading_guide: Optional[Dict[str, Any]] = None
+        if generate_reading_guide:
+            logger.info("Generating reading guide...")
+            reading_guide = _generate_reading_guide(
+                title=processed_doc.metadata.title or "",
+                abstract=processed_doc.metadata.abstract or "",
+                sections=[s.model_dump(mode='json', exclude_none=True) for s in processed_doc.metadata.sections],
+                full_text=full_text,
+                defer_answer_generation=True,
+            )
+            if reading_guide:
+                logger.info("✅ Reading guide generated and will be stored with paper")
+            else:
+                logger.warning("⚠️  Reading guide generation failed, paper will be stored without guide")
         else:
-            logger.warning("⚠️  Reading guide generation failed, paper will be stored without guide")
+            logger.info("Skipping reading guide generation (deferred)")
         
         if postgres_dsn:
             try:
@@ -399,6 +419,7 @@ def extract_pdf(
     force_ocr: bool = False,
     save_metadata_file: bool = False,
     save_fulltext_file: bool = False,
+    generate_reading_guide: bool = True,
 ) -> Dict[str, Any]:
     """
     Convenience function for extracting a single PDF.
@@ -421,6 +442,7 @@ def extract_pdf(
         force_ocr,
         save_metadata_file,
         save_fulltext_file,
+        generate_reading_guide,
     )
 
 

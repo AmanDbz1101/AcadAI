@@ -6,7 +6,7 @@ import {
   CollapsibleTrigger,
 } from '@/components/ui/collapsible'
 import { ScrollArea } from '@/components/ui/scroll-area'
-import type { PaperSummary, ReadingGuide } from '@/types/api'
+import type { GuideStatus, PaperSummary, ReadingGuide } from '@/types/api'
 
 interface Section {
   id: string
@@ -22,6 +22,10 @@ interface PaperNavigationProps {
   selectedPaperId: number | null
   onPaperSelect: (paperId: number) => void
   readingGuide?: ReadingGuide | null
+<<<<<<< HEAD
+  guideStatus?: GuideStatus | null
+  onGoHome?: () => void
+=======
   collapsed?: boolean
   onToggleCollapse?: () => void
   onHomeClick?: () => void
@@ -30,6 +34,7 @@ interface PaperNavigationProps {
   isUploadingPdf?: boolean
   uploadErrorMessage?: string | null
   style?: React.CSSProperties
+>>>>>>> origin/main
 }
 
 interface ReadingPhase {
@@ -147,6 +152,10 @@ const PaperNavigation = ({
   selectedPaperId,
   onPaperSelect,
   readingGuide,
+<<<<<<< HEAD
+  guideStatus,
+  onGoHome,
+=======
   collapsed = false,
   onToggleCollapse,
   onHomeClick,
@@ -155,6 +164,7 @@ const PaperNavigation = ({
   isUploadingPdf = false,
   uploadErrorMessage,
   style,
+>>>>>>> origin/main
 }: PaperNavigationProps) => {
   // Extract phases from reading guide or use defaults
   const readingPhases = extractPhasesFromGuide(readingGuide)
@@ -197,9 +207,30 @@ const PaperNavigation = ({
     }))
   }
 
+<<<<<<< HEAD
+  return (
+    <aside className="w-[320px] min-w-[280px] max-w-[88vw] bg-panel h-screen sticky top-0 flex flex-col border-r border-border/40">
+      <div className="px-6 pt-8 pb-6">
+        <button
+          type="button"
+          onClick={onGoHome}
+          className="flex items-center gap-2 text-left hover:opacity-90 transition-opacity"
+          title="Go to home"
+        >
+          <BookOpenText size={18} className="text-text-active" />
+          <h1 className="font-ui text-[16px] font-bold text-foreground tracking-tight">
+            AcadAI
+          </h1>
+        </button>
+        <p className="font-ui text-[11px] text-text-secondary pl-[26px]">
+          Research Paper Assistant
+        </p>
+      </div>
+=======
   const handleUploadButtonClick = () => {
     fileInputRef.current?.click()
   }
+>>>>>>> origin/main
 
   const handleFileInputChange = (
     event: React.ChangeEvent<HTMLInputElement>,
@@ -292,6 +323,78 @@ const PaperNavigation = ({
           </div>
         ) : null}
 
+<<<<<<< HEAD
+      <ScrollArea className="flex-1 px-4 py-1">
+        <div className="space-y-1 pb-4">
+          {readingPhases.length === 0 ? (
+            <div className="px-3 py-2 rounded-md bg-canvas">
+              {guideStatus?.status === 'pending' ? (
+                <>
+                  <p className="font-ui text-[11px] text-text-secondary leading-relaxed">
+                    Reading guide is being generated from your uploaded PDF.
+                  </p>
+                  <div className="mt-2 flex items-center gap-1.5">
+                    <span
+                      className="w-1.5 h-1.5 rounded-full bg-text-secondary/60 animate-bounce"
+                      style={{ animationDelay: '0ms' }}
+                    />
+                    <span
+                      className="w-1.5 h-1.5 rounded-full bg-text-secondary/60 animate-bounce"
+                      style={{ animationDelay: '150ms' }}
+                    />
+                    <span
+                      className="w-1.5 h-1.5 rounded-full bg-text-secondary/60 animate-bounce"
+                      style={{ animationDelay: '300ms' }}
+                    />
+                  </div>
+                </>
+              ) : guideStatus?.status === 'failed' ? (
+                <p className="font-ui text-[11px] text-destructive leading-relaxed">
+                  Guide generation failed. Re-upload the paper or try again.
+                </p>
+              ) : (
+                <p className="font-ui text-[11px] text-text-secondary leading-relaxed">
+                  No backend reading guide found for this paper yet.
+                </p>
+              )}
+            </div>
+          ) : (
+            readingPhases.map((phase, idx) => {
+              return (
+                <Collapsible
+                  key={phase.id}
+                  open={openPhases[phase.id] ?? false}
+                  onOpenChange={(isOpen) => setPhaseOpenState(phase.id, isOpen)}
+                >
+                  <CollapsibleTrigger className="w-full text-left px-3 py-2.5 rounded-md hover:bg-canvas transition-colors duration-200 group flex items-center gap-2">
+                    <span className="font-mono text-[10px] text-text-secondary/60">
+                      {String(idx + 1).padStart(2, '0')}
+                    </span>
+                    <div className="flex-1 min-w-0">
+                      <p className="font-ui text-[12px] font-semibold text-foreground truncate">
+                        {phase.title}
+                      </p>
+                    </div>
+                    <ChevronDown
+                      size={14}
+                      className={`text-text-secondary transition-transform duration-200 ${
+                        openPhases[phase.id] ? 'rotate-180' : ''
+                      }`}
+                    />
+                  </CollapsibleTrigger>
+
+                  <CollapsibleContent className="animate-fade-in">
+                    <div className="ml-[26px] mr-1 mb-2 space-y-2 border-l-2 border-border/40 pl-3 py-2">
+                      <div className="bg-canvas rounded-md border border-border/40 px-2.5 py-2 space-y-1">
+                        <p className="font-ui text-[10px] font-semibold uppercase tracking-wider text-text-active">
+                          Pass Goal
+                        </p>
+                        <p className="font-ui text-[11px] text-foreground leading-relaxed">
+                          {phase.goal}
+                        </p>
+                        <p className="font-ui text-[10px] text-text-secondary">
+                          Estimated time: {phase.estimatedTime}
+=======
         <ScrollArea className="flex-1 px-4 py-2">
           <div className="space-y-1 pb-4">
             {readingPhases.length === 0 ? (
@@ -317,6 +420,7 @@ const PaperNavigation = ({
                       <div className="flex-1 min-w-0">
                         <p className="font-ui text-[12px] font-semibold text-foreground truncate">
                           {phase.title}
+>>>>>>> origin/main
                         </p>
                       </div>
                       <ChevronDown

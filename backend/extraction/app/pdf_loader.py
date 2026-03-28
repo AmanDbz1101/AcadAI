@@ -8,6 +8,8 @@ Detects machine-readability and determines if OCR is needed.
 
 import time
 import logging
+import os
+import subprocess
 from pathlib import Path
 from typing import Optional, List, Dict, Any
 from dataclasses import dataclass
@@ -21,21 +23,119 @@ _loader_logger = logging.getLogger(__name__)
 _MIN_FREE_GPU_GB = 1.5  # minimum free VRAM required to use GPU
 
 
+def _env_flag(name: str, default: bool) -> bool:
+    value = os.getenv(name)
+    if value is None:
+        return default
+    return value.strip().lower() in {"1", "true", "yes", "on"}
+
+
+def _other_gpu_compute_pids() -> List[int]:
+    """Return PIDs with active CUDA compute contexts, excluding current PID."""
+    try:
+        result = subprocess.run(
+            [
+                "nvidia-smi",
+                "--query-compute-apps=pid",
+                "--format=csv,noheader,nounits",
+            ],
+            check=True,
+            capture_output=True,
+            text=True,
+        )
+    except Exception:
+        return []
+
+    current_pid = os.getpid()
+    pids: List[int] = []
+    for line in result.stdout.splitlines():
+        line = line.strip()
+        if not line:
+            continue
+        try:
+            pid = int(line)
+        except ValueError:
+            continue
+        if pid != current_pid:
+            pids.append(pid)
+    return sorted(set(pids))
+
+
+def _cuda_ready(min_free_gpu_gb: float, require_exclusive: bool) -> tuple[bool, float, List[int]]:
+    """
+    Check whether CUDA can be used right now.
+
+    Returns (ready, free_gb, competing_pids).
+    """
+    import torch
+
+    free_bytes, _ = torch.cuda.mem_get_info()
+    free_gb = free_bytes / (1024 ** 3)
+    competing_pids = _other_gpu_compute_pids() if require_exclusive else []
+
+    if free_gb < min_free_gpu_gb:
+        return False, free_gb, competing_pids
+    if require_exclusive and competing_pids:
+        return False, free_gb, competing_pids
+    return True, free_gb, competing_pids
+
+
 def _get_accelerator_options(num_threads: int = 4) -> AcceleratorOptions:
-    """Return GPU AcceleratorOptions if enough VRAM is free, else fall back to CPU."""
+    """Return accelerator options based on env override and runtime capacity."""
+    forced_device = (os.getenv("DOCLING_DEVICE") or "").strip().lower()
+    require_cuda = _env_flag("DOCLING_REQUIRE_CUDA", forced_device == "cuda")
+    require_gpu_exclusive = _env_flag("DOCLING_GPU_EXCLUSIVE", True)
+    wait_for_gpu = _env_flag("DOCLING_WAIT_FOR_GPU", True)
+    wait_timeout_seconds = float(os.getenv("DOCLING_GPU_WAIT_TIMEOUT_SEC", "300"))
+    poll_interval_seconds = float(os.getenv("DOCLING_GPU_POLL_INTERVAL_SEC", "2"))
+    min_free_gpu_gb = float(os.getenv("DOCLING_MIN_FREE_GPU_GB", str(_MIN_FREE_GPU_GB)))
+
+    if forced_device == "cpu":
+        _loader_logger.info("DOCLING_DEVICE=cpu set; using CPU for docling")
+        return AcceleratorOptions(num_threads=num_threads, device=AcceleratorDevice.CPU)
+
     try:
         import torch
-        if torch.cuda.is_available():
-            free_bytes, _ = torch.cuda.mem_get_info()
-            free_gb = free_bytes / (1024 ** 3)
-            if free_gb >= _MIN_FREE_GPU_GB:
-                _loader_logger.info(f"Using GPU for docling (free VRAM: {free_gb:.2f} GB)")
-                return AcceleratorOptions(num_threads=num_threads, device=AcceleratorDevice.CUDA)
-            _loader_logger.warning(
-                f"GPU free VRAM too low ({free_gb:.2f} GB < {_MIN_FREE_GPU_GB} GB), falling back to CPU"
+
+        if not torch.cuda.is_available():
+            if require_cuda:
+                raise RuntimeError("CUDA is required but torch.cuda.is_available() is False")
+            _loader_logger.info("Using CPU for docling (CUDA unavailable)")
+            return AcceleratorOptions(num_threads=num_threads, device=AcceleratorDevice.CPU)
+
+        deadline = time.time() + max(0.0, wait_timeout_seconds)
+        while True:
+            ready, free_gb, competing_pids = _cuda_ready(
+                min_free_gpu_gb=min_free_gpu_gb,
+                require_exclusive=require_gpu_exclusive,
             )
+            if ready:
+                _loader_logger.info(
+                    "Using GPU for docling (free VRAM: %.2f GB, exclusive=%s)",
+                    free_gb,
+                    require_gpu_exclusive,
+                )
+                return AcceleratorOptions(num_threads=num_threads, device=AcceleratorDevice.CUDA)
+
+            if not wait_for_gpu or time.time() >= deadline:
+                reason = (
+                    f"GPU not ready (free VRAM={free_gb:.2f} GB, "
+                    f"required>={min_free_gpu_gb:.2f} GB, competing_pids={competing_pids})"
+                )
+                if require_cuda or forced_device == "cuda":
+                    raise RuntimeError(f"{reason}; refusing CPU fallback because CUDA is required")
+                _loader_logger.warning("%s; falling back to CPU", reason)
+                return AcceleratorOptions(num_threads=num_threads, device=AcceleratorDevice.CPU)
+
+            _loader_logger.info(
+                "Waiting for GPU availability (free VRAM: %.2f GB, competing_pids=%s)",
+                free_gb,
+                competing_pids,
+            )
+            time.sleep(max(0.2, poll_interval_seconds))
     except Exception:
-        pass
+        if require_cuda or forced_device == "cuda":
+            raise
     _loader_logger.info("Using CPU for docling")
     return AcceleratorOptions(num_threads=num_threads, device=AcceleratorDevice.CPU)
 from docling_core.types.doc import DoclingDocument, DocItem
@@ -82,8 +182,14 @@ class PDFLoader:
         self.config = config or LoaderConfig()
         self._initialize_converter()
     
-    def _initialize_converter(self):
+    def _initialize_converter(self, force_cpu: bool = False):
         """Initialize docling converter with pipeline options."""
+        accelerator_options = (
+            AcceleratorOptions(num_threads=4, device=AcceleratorDevice.CPU)
+            if force_cpu
+            else _get_accelerator_options()
+        )
+
         # Configure pipeline options
         pipeline_options = PdfPipelineOptions(
             do_ocr=self.config.do_ocr,
@@ -92,7 +198,7 @@ class PDFLoader:
             generate_page_images=self.config.generate_page_images,
             generate_picture_images=self.config.generate_picture_images,
             # do_formula_enrichment=True,
-            accelerator_options=_get_accelerator_options(),
+            accelerator_options=accelerator_options,
         )
         
         # Create converter with options
@@ -102,6 +208,15 @@ class PDFLoader:
                     pipeline_options=pipeline_options
                 )
             }
+        )
+
+    @staticmethod
+    def _is_meta_tensor_error(exc: Exception) -> bool:
+        message = str(exc)
+        return (
+            "Cannot copy out of meta tensor" in message
+            or "to_empty()" in message
+            or "meta tensor" in message.lower()
         )
     
     def load(self, pdf_path: Path) -> Dict[str, Any]:
@@ -120,8 +235,20 @@ class PDFLoader:
         """
         start_time = time.time()
         
-        # Convert PDF
-        result = self.converter.convert(pdf_path)
+        # Convert PDF. If a model was initialized on a meta device by an
+        # upstream dependency, retry once on CPU to avoid hard API failures.
+        try:
+            result = self.converter.convert(pdf_path)
+        except Exception as exc:
+            if self._is_meta_tensor_error(exc):
+                _loader_logger.warning(
+                    "Docling conversion hit meta tensor device error. Retrying on CPU once."
+                )
+                self._initialize_converter(force_cpu=True)
+                result = self.converter.convert(pdf_path)
+            else:
+                raise
+
         doc: DoclingDocument = result.document
         
         # Extract pages with layout information

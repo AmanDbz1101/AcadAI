@@ -736,7 +736,9 @@ class PostgresPaperStore:
                     "title": r.title,
                     "abstract": r.abstract,
                     "source_pdf_path": r.source_pdf_path,
+                    "document_uuid": r.document_uuid,
                     "created_at": r.created_at,
+                    "updated_at": r.updated_at,
                 }
                 for r in rows
             ]
@@ -836,6 +838,87 @@ class PostgresPaperStore:
                 .first()
             )
             return row is not None
+
+    def delete_paper_for_user(
+        self,
+        *,
+        user_id: int,
+        paper_id: int,
+        delete_even_if_shared: bool = False,
+    ) -> Dict[str, Any]:
+        """
+        Remove a paper from a user and optionally delete the paper globally.
+
+        Behavior:
+        - If the user does not have access, no changes are made.
+        - User link is always removed when present.
+        - The paper row is deleted only if no other user links remain,
+          unless ``delete_even_if_shared`` is True.
+        """
+        self.ensure_schema()
+        with self._Session() as session:
+            paper = session.query(PaperRecord).filter(PaperRecord.id == paper_id).first()
+            if paper is None:
+                return {
+                    "deleted": False,
+                    "paper_deleted": False,
+                    "reason": "paper_not_found",
+                }
+
+            link = (
+                session.query(UserPaperRecord)
+                .filter(
+                    UserPaperRecord.user_id == user_id,
+                    UserPaperRecord.paper_id == paper_id,
+                )
+                .first()
+            )
+            if link is None:
+                return {
+                    "deleted": False,
+                    "paper_deleted": False,
+                    "reason": "access_not_found",
+                }
+
+            session.delete(link)
+            session.flush()
+
+            remaining_links = (
+                session.query(func.count(UserPaperRecord.id))
+                .filter(UserPaperRecord.paper_id == paper_id)
+                .scalar()
+                or 0
+            )
+
+            source_pdf_path = paper.source_pdf_path
+            document_uuid = paper.document_uuid
+            paper_name = paper.paper_name
+
+            if remaining_links > 0 and not delete_even_if_shared:
+                session.commit()
+                return {
+                    "deleted": True,
+                    "paper_deleted": False,
+                    "reason": "unlinked_user_only",
+                    "paper_id": int(paper_id),
+                    "paper_name": paper_name,
+                    "document_uuid": document_uuid,
+                    "source_pdf_path": source_pdf_path,
+                    "remaining_links": int(remaining_links),
+                }
+
+            session.delete(paper)
+            session.commit()
+            return {
+                "deleted": True,
+                "paper_deleted": True,
+                "reason": "deleted_globally",
+                "paper_id": int(paper_id),
+                "paper_name": paper_name,
+                "document_uuid": document_uuid,
+                "source_pdf_path": source_pdf_path,
+                "remaining_links": 0,
+            }
 
     def get_paper_by_id(self, paper_id: int) -> Optional[Dict[str, Any]]:
         self.ensure_schema()
@@ -1070,6 +1153,31 @@ class PostgresPaperStore:
                 .first()
             )
             return self._to_dict(row) if row else None
+
+    def update_paper_question_retrieval_payload(
+        self,
+        *,
+        paper_id: int,
+        question_id: int,
+        retrieval_payload: Dict[str, Any],
+    ) -> Dict[str, Any]:
+        with self._Session() as session:
+            row = (
+                session.query(PaperQuestionRecord)
+                .filter(
+                    PaperQuestionRecord.paper_id == paper_id,
+                    PaperQuestionRecord.id == question_id,
+                )
+                .with_for_update()
+                .first()
+            )
+            if row is None:
+                raise ValueError("question_not_found")
+
+            row.retrieval_payload_json = retrieval_payload or {}
+            session.commit()
+            session.refresh(row)
+            return self._to_dict(row)
 
     def claim_question_for_generation(
         self,

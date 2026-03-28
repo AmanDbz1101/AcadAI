@@ -73,18 +73,8 @@ class DefinitionLookup:
                     "source": "paper",
                     "time_taken": time.time() - start_time
                 }
-        
-        # Layer 2: Wikipedia
-        definition = self._get_wikipedia_definition(term)
-        if definition:
-            self.stats["wikipedia"] += 1
-            return {
-                "definition": definition,
-                "source": "wikipedia",
-                "time_taken": time.time() - start_time
-            }
-        
-        # Layer 3: Domain ontologies
+       
+        # Layer 2: Domain ontologies
         # Try CS Ontology first
         definition = self._get_cso_definition(term)
         if definition:
@@ -103,7 +93,18 @@ class DefinitionLookup:
                 "definition": definition,
                 "source": "ontology (INSPIRE-HEP)",
                 "time_taken": time.time() - start_time
+            } 
+        # Layer 3: Wikipedia
+        definition = self._get_wikipedia_definition(term)
+        if definition:
+            self.stats["wikipedia"] += 1
+            return {
+                "definition": definition,
+                "source": "wikipedia",
+                "time_taken": time.time() - start_time
             }
+        
+ 
         
         # Layer 4: Local LLM fallback (only novel/niche terms reach here)
         definition = self._get_llm_definition(term, context_sentence)

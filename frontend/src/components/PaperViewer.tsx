@@ -32,10 +32,22 @@ interface PaperViewerProps {
   focusedSection: string | null
   paper: PaperSummary | null
   sections: PaperSection[]
+  isProcessingUpload?: boolean
+  processingFileName?: string | null
 }
 
 const PaperViewer = forwardRef<PaperViewerHandle, PaperViewerProps>(
-  ({ paper, sections, onVisibleSectionChange, focusedSection }, ref) => {
+  (
+    {
+      paper,
+      sections,
+      onVisibleSectionChange,
+      focusedSection,
+      isProcessingUpload = false,
+      processingFileName = null,
+    },
+    ref,
+  ) => {
     const scrollContainerRef = useRef<HTMLDivElement>(null)
     const pageRefs = useRef<Record<number, HTMLDivElement | null>>({})
     const jumpCorrectionTimerRef = useRef<number | null>(null)
@@ -605,9 +617,23 @@ const PaperViewer = forwardRef<PaperViewerHandle, PaperViewerProps>(
           </div>
         ) : (
           <div className="flex-1 flex items-center justify-center">
-            <p className="font-ui text-sm text-text-secondary">
-              {paper ? 'Loading PDF...' : 'No paper selected'}
-            </p>
+            {isProcessingUpload ? (
+              <div className="text-center px-6">
+                <div className="animate-spin rounded-full h-8 w-8 border-2 border-accent border-t-transparent mx-auto mb-3" />
+                <p className="font-ui text-sm text-foreground mb-1">
+                  Preparing your paper workspace...
+                </p>
+                <p className="font-ui text-xs text-text-secondary">
+                  {processingFileName
+                    ? `Uploading ${processingFileName} and building guide context.`
+                    : 'Uploading PDF and building guide context.'}
+                </p>
+              </div>
+            ) : (
+              <p className="font-ui text-sm text-text-secondary">
+                {paper ? 'Loading PDF...' : 'No paper selected'}
+              </p>
+            )}
           </div>
         )}
       </div>

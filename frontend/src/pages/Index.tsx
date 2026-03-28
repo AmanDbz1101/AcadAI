@@ -37,6 +37,10 @@ const Index = () => {
     return cached ? Number(cached) || null : null
   })
   const [uploadError, setUploadError] = useState<string | null>(null)
+<<<<<<< HEAD
+  const [uploadTransitioning, setUploadTransitioning] = useState(false)
+  const [showUploadHome, setShowUploadHome] = useState(false)
+=======
   const [guideCollapsed, setGuideCollapsed] = useState(false)
   const [guideWidth, setGuideWidth] = useState(320) // Default width in pixels
   const [toolsWidth, setToolsWidth] = useState(300) // Default width for AI tools panel
@@ -45,6 +49,7 @@ const Index = () => {
     null,
   )
   const [showHomeView, setShowHomeView] = useState(false)
+>>>>>>> origin/main
   const viewerRef = useRef<PaperViewerHandle>(null)
 
   // Resize functionality
@@ -190,6 +195,11 @@ const Index = () => {
     mutationFn: uploadPaper,
     onMutate: (file: File) => {
       setUploadError(null)
+<<<<<<< HEAD
+      setUploadedFileName(file.name)
+      setUploadTransitioning(true)
+=======
+>>>>>>> origin/main
     },
     onSuccess: async (data) => {
       const newPaperId = data.paper.id
@@ -197,7 +207,11 @@ const Index = () => {
       setActiveSection('')
       setFocusedSection(null)
       setPaperLoaded(true)
+<<<<<<< HEAD
+      setUploadTransitioning(false)
+=======
       setShowHomeView(false) // Exit home view after successful upload
+>>>>>>> origin/main
 
       await queryClient.invalidateQueries({ queryKey: ['papers'] })
       await queryClient.invalidateQueries({
@@ -205,6 +219,11 @@ const Index = () => {
       })
     },
     onError: (error: Error) => {
+<<<<<<< HEAD
+      setUploadTransitioning(false)
+      setUploadedFileName(null)
+=======
+>>>>>>> origin/main
       setUploadError(error.message || 'Upload failed')
     },
   })
@@ -213,12 +232,18 @@ const Index = () => {
     queryKey: ['paper-bundle', effectivePaperId],
     queryFn: () => getPaperBundle(effectivePaperId as number),
     enabled: Boolean(authUser) && paperLoaded && effectivePaperId !== null,
+    refetchInterval: (query) => {
+      const status = (
+        query.state.data as { guide_status?: { status?: string } } | undefined
+      )?.guide_status?.status
+      return status === 'pending' ? 2000 : false
+    },
   })
 
   const sections = paperBundleQuery.data?.sections ?? []
   const paper = paperBundleQuery.data?.paper ?? null
   const images = paperBundleQuery.data?.images ?? []
-  const tables = paperBundleQuery.data?.tables ?? []
+  const technicalTerms = paperBundleQuery.data?.technical_terms ?? []
 
   const navSections = sections.map((section, idx) => ({
     id: section.id,
@@ -242,6 +267,7 @@ const Index = () => {
   }, [])
 
   const handlePaperSelect = useCallback((paperId: number) => {
+    setShowUploadHome(false)
     setSelectedPaperId(paperId)
     setActiveSection('')
     setFocusedSection(null)
@@ -257,11 +283,25 @@ const Index = () => {
 
   const handleFileUploaded = useCallback(
     (file: File) => {
+      setShowUploadHome(false)
       uploadPaperMutation.mutate(file)
     },
     [uploadPaperMutation],
   )
 
+<<<<<<< HEAD
+  const handleGoHome = useCallback(() => {
+    setShowUploadHome(true)
+    setUploadError(null)
+    setUploadedFileName(null)
+  }, [])
+
+  const handleFileBadgeClear = useCallback((fileName: string | null) => {
+    setUploadedFileName(fileName)
+  }, [])
+
+=======
+>>>>>>> origin/main
   const handleAuthSubmit = useCallback(
     async (event: FormEvent<HTMLFormElement>) => {
       event.preventDefault()
@@ -400,8 +440,25 @@ const Index = () => {
     )
   }
 
+<<<<<<< HEAD
+  // Show upload page if no papers exist
+  if (papers.length === 0 && !uploadTransitioning) {
+    return (
+      <div className="flex h-screen overflow-hidden">
+        <EmptyStateUpload
+          onFileUploaded={handleFileUploaded}
+          isUploading={uploadPaperMutation.isPending}
+          errorMessage={uploadError}
+        />
+      </div>
+    )
+  }
+
+  if (showUploadHome && !uploadTransitioning) {
+=======
   // Show upload page if no papers exist OR if user clicked home to upload new PDF
   if (papers.length === 0 || showHomeView) {
+>>>>>>> origin/main
     return (
       <div className="flex h-screen overflow-hidden">
         <EmptyStateUpload
@@ -414,7 +471,7 @@ const Index = () => {
   }
 
   // Show loading while bundle is fetching
-  if (paperBundleQuery.isLoading) {
+  if (paperBundleQuery.isLoading && effectivePaperId === null && !uploadTransitioning) {
     return (
       <div className="h-screen w-full flex items-center justify-center bg-canvas">
         <p className="font-ui text-sm text-text-secondary">
@@ -437,6 +494,36 @@ const Index = () => {
   }
 
   return (
+<<<<<<< HEAD
+    <div className="flex h-screen overflow-hidden relative">
+      <button
+        onClick={handleLogout}
+        className="absolute top-3 right-4 z-50 bg-panel border border-border/50 rounded-md px-3 py-1.5 text-[12px] text-text-secondary hover:text-foreground"
+      >
+        Logout
+      </button>
+      <PaperNavigation
+        activeSection={activeSection}
+        onSectionClick={handleSectionClick}
+        sections={navSections}
+        papers={papers}
+        selectedPaperId={effectivePaperId}
+        onPaperSelect={handlePaperSelect}
+        uploadedFileName={uploadedFileName}
+        onFileChange={handleFileBadgeClear}
+        onFileUpload={handleFileUploaded}
+        isUploading={uploadPaperMutation.isPending}
+        uploadError={uploadError}
+        readingGuide={paperBundleQuery.data?.reading_guide ?? null}
+        guideStatus={
+          paperBundleQuery.data?.guide_status ??
+          ((paperBundleQuery.isLoading || (papers.length === 0 && uploadTransitioning))
+            ? { status: 'pending', error: null, updated_at: null }
+            : null)
+        }
+        onGoHome={handleGoHome}
+      />
+=======
     <div className="flex h-screen overflow-hidden relative bg-canvas">
       {/* Collapsed Guide Panel */}
       {guideCollapsed ? (
@@ -490,13 +577,24 @@ const Index = () => {
         </>
       )}
 
+>>>>>>> origin/main
       <PaperViewer
         ref={viewerRef}
         onVisibleSectionChange={handleVisibleSectionChange}
         focusedSection={focusedSection}
         paper={paper}
         sections={sections}
+        isProcessingUpload={papers.length === 0 && uploadTransitioning}
+        processingFileName={uploadedFileName}
       />
+<<<<<<< HEAD
+      <AIToolsPanel
+        paper={paper}
+        sections={sections}
+        images={images}
+        technicalTerms={technicalTerms}
+      />
+=======
 
       {/* Right Resizer */}
       <div
@@ -536,6 +634,7 @@ const Index = () => {
           </div>
         </div>
       </div>
+>>>>>>> origin/main
     </div>
   )
 }

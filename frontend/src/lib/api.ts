@@ -1,4 +1,4 @@
-import type { PaperBundle, PaperSummary } from '@/types/api'
+import type { GuideStatus, PaperBundle, PaperQuestion, PaperSummary } from '@/types/api'
 
 export interface AuthUser {
   id: number
@@ -30,6 +30,31 @@ export interface UploadPaperResponse {
     paper_id: number | null
     paper_name?: string | null
     reason?: string | null
+  }
+  guide_status?: GuideStatus
+}
+
+export interface PaperQuestionsResponse {
+  paper: PaperSummary
+  questions: PaperQuestion[]
+}
+
+export interface GenerateQuestionAnswerPayload {
+  force_regenerate?: boolean
+}
+
+export interface GenerateQuestionAnswerResponse {
+  paper: PaperSummary
+  question: PaperQuestion
+}
+
+export interface GenerateTechnicalTermDefinitionResponse {
+  paper: PaperSummary
+  technical_term: {
+    term: string
+    definition: string
+    definition_source: 'llm'
+    definition_status: 'ready'
   }
 }
 
@@ -134,4 +159,33 @@ export async function uploadPaper(file: File): Promise<UploadPaperResponse> {
   }
 
   return response.json() as Promise<UploadPaperResponse>
+}
+
+export async function getPaperQuestions(
+  paperId: number,
+): Promise<PaperQuestionsResponse> {
+  return fetchJson<PaperQuestionsResponse>(`/api/papers/${paperId}/questions`)
+}
+
+export async function generateQuestionAnswer(
+  paperId: number,
+  questionId: number,
+  payload: GenerateQuestionAnswerPayload = {},
+): Promise<GenerateQuestionAnswerResponse> {
+  return postJson<GenerateQuestionAnswerResponse>(
+    `/api/papers/${paperId}/questions/${questionId}/generate`,
+    {
+      force_regenerate: Boolean(payload.force_regenerate),
+    },
+  )
+}
+
+export async function generateTechnicalTermDefinition(
+  paperId: number,
+  term: string,
+): Promise<GenerateTechnicalTermDefinitionResponse> {
+  return postJson<GenerateTechnicalTermDefinitionResponse>(
+    `/api/papers/${paperId}/technical-terms/generate`,
+    { term },
+  )
 }
