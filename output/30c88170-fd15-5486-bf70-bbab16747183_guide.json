@@ -6,7 +6,7 @@
     "estimated_total_time": "60-90 minutes"
   },
   "pass1_quick_scan": {
-    "goal": "Understand the paper's context and contributions",
+    "goal": "Understand the overall structure and main contributions of the paper",
     "estimated_time": "10-15 minutes",
     "steps": [
       {
@@ -18,11 +18,11 @@
         "relevant_table_ids": [],
         "needs_figures": false,
         "needs_tables": false,
-        "objective": "Understand the paper's context and motivation",
+        "objective": "Understand the introduction and context of the paper",
         "questions_to_answer": [
-          "What is the primary task in quantum information science that this paper aims to address?",
-          "How does the sample complexity for full unitary tomography scale with the dimension of the unitary operation?",
-          "What criterion is used to evaluate the optimality of the sample-efficient estimation algorithm proposed in this paper?"
+          "What is the primary task in quantum information science that the paper aims to address?",
+          "How does the sample complexity for estimating specific functions of a unitary differ from that of full unitary tomography?",
+          "What criterion is used to evaluate the optimality of the sample-efficient estimation algorithm proposed in the paper?"
         ],
         "expected_output": "Basic understanding of the paper's topic and relevance"
       },
@@ -35,18 +35,18 @@
         "relevant_table_ids": [],
         "needs_figures": false,
         "needs_tables": false,
-        "objective": "Identify the paper's main contributions",
+        "objective": "Identify the main contributions of the paper",
         "questions_to_answer": [
-          "What is the optimal sample complexity for estimating arbitrary square integrable functions f : U ( d ) → C in the context of this paper?",
-          "How does the Probably Approximately Correct (PAC) learning criterion impact the sample-efficient estimation algorithm presented in this work?",
-          "What classes of functions are considered for the sample-efficient estimation algorithm to become optimal under the PAC learning criterion?"
+          "What is the significance of the unified framework presented in the paper for estimating arbitrary square integrable functions f : U ( d ) → C?",
+          "How does the sample-efficient estimation algorithm constructed in the paper achieve optimality under the Probably Approximately Correct (PAC) learning criterion?",
+          "What is the tight characterization of the optimal sample complexity provided in the paper when the accuracy is measured by the averaged bias over the unitary U ( d )?"
         ],
-        "expected_output": "Clear understanding of the paper's contributions"
+        "expected_output": "List of key contributions and their significance"
       }
     ]
   },
   "pass2_proof_strategy": {
-    "goal": "Understand the paper's technical approach",
+    "goal": "Understand the technical details and proof strategies",
     "estimated_time": "20-30 minutes",
     "steps": [
       {
@@ -58,13 +58,13 @@
         "relevant_table_ids": [],
         "needs_figures": false,
         "needs_tables": false,
-        "objective": "Understand the technical background and notation",
+        "objective": "Understand the preliminary concepts and notations",
         "questions_to_answer": [
-          "What is the significance of using the controlled-unitary operation in estimating functions of a unitary?",
-          "How does the paper's framework characterize the optimal sample complexity for estimating arbitrary square integrable functions f : U ( d ) → C?",
-          "What is the role of the Probably Approximately Correct (PAC) learning criterion in the paper's sample-efficient estimation algorithm?"
+          "What is the significance of the unitary group U(d) in the context of estimating properties of unknown unitary operations?",
+          "How does the sample complexity for estimating specific functions of a unitary differ from full unitary tomography?",
+          "What is the role of the Probably Approximately Correct (PAC) learning criterion in the construction of the sample-efficient estimation algorithm?"
         ],
-        "expected_output": "Familiarity with the paper's technical context"
+        "expected_output": "Familiarity with the technical background and terminology"
       },
       {
         "step_number": 2,
@@ -75,18 +75,18 @@
         "relevant_table_ids": [],
         "needs_figures": false,
         "needs_tables": false,
-        "objective": "Understand the lower bound and its significance",
+        "objective": "Understand the lower bound proof",
         "questions_to_answer": [
-          "Which specific claim in section 3 Lower bound most directly achieves this step objective?",
-          "Which paper-specific evidence best supports the stated expected output for step 2?",
-          "Which paper-specific evidence best supports the stated expected output for step 2?"
+          "What is the key insight behind the tight characterization of the optimal sample complexity in the context of estimating square integrable functions on the unitary group?",
+          "How does the Probably Approximately Correct learning criterion influence the construction of the sample-efficient estimation algorithm for various classes of functions?",
+          "What is the significance of the averaged bias over the unitary U(d) in determining the lower bound for the sample complexity of estimating functions on the unitary group?"
         ],
-        "expected_output": "Clear understanding of the lower bound"
+        "expected_output": "Understanding of the lower bound and its implications"
       }
     ]
   },
   "pass3_deep_mathematical_analysis": {
-    "goal": "Analyze the paper's technical results",
+    "goal": "Analyze the mathematical details and applications",
     "estimated_time": "30-45 minutes",
     "steps": [
       {
@@ -98,13 +98,13 @@
         "relevant_table_ids": [],
         "needs_figures": false,
         "needs_tables": false,
-        "objective": "Understand the upper bound and its proof",
+        "objective": "Understand the upper bound proof",
         "questions_to_answer": [
           "What is the tight characterization of the optimal sample complexity for estimating arbitrary square integrable functions f : U ( d ) → C?",
-          "How does the sample-efficient estimation algorithm become optimal under the Probably Approximately Correct (PAC) learning criterion for various classes of functions?",
-          "What is the significance of the controlled-unitary operation in the unified framework for the sample-efficient estimation of functions on the unitary group?"
+          "How does the Probably Approximately Correct (PAC) learning criterion impact the construction of the sample-efficient estimation algorithm?",
+          "What are the implications of the upper bound proof in section 4 on the efficiency of estimating specific functions of a unitary?"
         ],
-        "expected_output": "Clear understanding of the upper bound"
+        "expected_output": "Understanding of the upper bound and its implications"
       },
       {
         "step_number": 2,
@@ -115,18 +115,18 @@
         "relevant_table_ids": [],
         "needs_figures": false,
         "needs_tables": false,
-        "objective": "Understand the applications and implications",
+        "objective": "Understand the applications and implications of the results",
         "questions_to_answer": [
           "What are the implications of the unified framework for estimating arbitrary square integrable functions f : U ( d ) → C on the efficiency of quantum information science tasks?",
-          "How does the sample-efficient estimation algorithm constructed in the paper achieve optimal performance under the Probably Approximately Correct (PAC) learning criterion for various classes of functions?",
-          "What are the potential applications of the optimal sample complexity characterization for estimating specific functions of a unitary in the context of unitary tomography?"
+          "How does the sample-efficient estimation algorithm constructed in the paper achieve optimality under the Probably Approximately Correct (PAC) learning criterion for various classes of functions?",
+          "What are the potential applications of the optimal sample complexity characterization when the accuracy is measured by the averaged bias over the unitary U ( d ) in the context of unitary operations?"
         ],
-        "expected_output": "Clear understanding of the paper's implications"
+        "expected_output": "Understanding of the practical implications and potential applications"
       }
     ]
   },
   "final_user_task": {
-    "summary_task": "Summarize the paper's main contributions and technical approach",
+    "summary_task": "Summarize the main contributions and implications of the paper",
     "reflection_questions": []
   }
 }
