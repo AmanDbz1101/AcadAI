@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import re
 from typing import Optional, Tuple
+from urllib.parse import quote
 
 import requests
 
@@ -12,19 +13,89 @@ class DefinitionLookup:
     """Lookup definitions from external APIs without LLM fallback."""
 
     def lookup_api_definition(self, term: str) -> Tuple[Optional[str], Optional[str]]:
-        definition = self._get_cso_definition(term)
+        definition = self._get_dbpedia_definition(term)
         if definition:
-            return definition, "cso"
+            return definition, "dbpedia"
 
-        definition = self._get_inspire_definition(term)
+        definition = self._get_dictionary_definition(term)
         if definition:
-            return definition, "inspire"
+            return definition, "dictionary"
 
         definition = self._get_wikipedia_definition(term)
         if definition:
             return definition, "wikipedia"
 
         return None, None
+
+    def _get_dbpedia_definition(self, term: str) -> Optional[str]:
+        try:
+            endpoint = "http://dbpedia.org/sparql"
+            query = """
+                SELECT ?abstract WHERE {
+                  ?resource rdfs:label ?label ;
+                            dbo:abstract ?abstract .
+                  FILTER (lang(?label) = 'en')
+                  FILTER (lang(?abstract) = 'en')
+                  FILTER (lcase(str(?label)) = lcase(?term))
+                }
+                LIMIT 1
+            """
+            params = {
+                "query": query,
+                "format": "application/sparql-results+json",
+                "term": term.strip(),
+            }
+            response = requests.get(endpoint, params=params, timeout=6)
+            if response.status_code != 200:
+                return None
+
+            data = response.json()
+            bindings = data.get("results", {}).get("bindings", [])
+            if not bindings:
+                return None
+
+            abstract = str(bindings[0].get("abstract", {}).get("value") or "").strip()
+            if not abstract:
+                return None
+
+            sentence = abstract.split(". ")[0].strip()
+            if len(sentence) < 20:
+                return None
+            if not sentence.endswith("."):
+                sentence += "."
+            return sentence
+        except Exception:  # noqa: BLE001
+            return None
+
+    def _get_dictionary_definition(self, term: str) -> Optional[str]:
+        try:
+            clean_term = quote(term.strip().lower())
+            if not clean_term:
+                return None
+
+            url = f"https://api.dictionaryapi.dev/api/v2/entries/en/{clean_term}"
+            response = requests.get(url, timeout=6)
+            if response.status_code != 200:
+                return None
+
+            data = response.json()
+            if not isinstance(data, list) or not data:
+                return None
+
+            first_entry = data[0] if isinstance(data[0], dict) else {}
+            meanings = first_entry.get("meanings") or []
+            for meaning in meanings:
+                definitions = meaning.get("definitions") or []
+                for definition_item in definitions:
+                    definition = str(definition_item.get("definition") or "").strip()
+                    if len(definition) > 8:
+                        if not definition.endswith("."):
+                            definition += "."
+                        return definition
+
+            return None
+        except Exception:  # noqa: BLE001
+            return None
 
     def _get_wikipedia_definition(self, term: str) -> Optional[str]:
         try:
@@ -78,69 +149,3 @@ class DefinitionLookup:
         except Exception:  # noqa: BLE001
             return None
 
-    def _get_cso_definition(self, term: str) -> Optional[str]:
-        try:
-            url = "https://cso.kmi.open.ac.uk/api/v2.0/topics"
-            params = {"topic": term.lower()}
-            response = requests.get(url, params=params, timeout=5)
-            if response.status_code != 200:
-                return None
-
-            data = response.json()
-            if isinstance(data, dict):
-                abstraction = str(data.get("abstraction") or "").strip()
-                if abstraction:
-                    return f"A computer science topic related to {abstraction}."
-
-                explanation = str(data.get("description") or "").strip()
-                if explanation:
-                    return explanation
-
-            return None
-        except Exception:  # noqa: BLE001
-            return None
-
-    def _get_inspire_definition(self, term: str) -> Optional[str]:
-        try:
-            url = "https://inspirehep.net/api/literature"
-            params = {
-                "q": f'title:"{term}"',
-                "size": 1,
-                "fields": "abstracts,titles",
-                "sort": "mostrecent",
-            }
-            response = requests.get(url, params=params, timeout=5)
-            if response.status_code != 200:
-                return None
-
-            data = response.json()
-            hits = data.get("hits", {}).get("hits", [])
-            if not hits:
-                return None
-
-            metadata = hits[0].get("metadata", {})
-            titles = metadata.get("titles", [])
-            if titles:
-                title_text = str(titles[0].get("title") or "").lower()
-                term_lower = term.lower()
-                if term_lower not in title_text:
-                    return None
-
-            abstracts = metadata.get("abstracts", [])
-            if not abstracts:
-                return None
-
-            abstract_text = str(abstracts[0].get("value") or "").strip()
-            if not abstract_text:
-                return None
-
-            sentences = re.split(r"(?<=[.!?])\s+", abstract_text)
-            first_sentence = (sentences[0] if sentences else "").strip()
-            if len(first_sentence) > 50:
-                if not first_sentence.endswith("."):
-                    first_sentence += "."
-                return first_sentence
-
-            return None
-        except Exception:  # noqa: BLE001
-            return None

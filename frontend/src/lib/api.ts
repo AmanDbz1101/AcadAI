@@ -52,10 +52,14 @@ export interface GenerateTechnicalTermDefinitionResponse {
   paper: PaperSummary
   technical_term: {
     term: string
-    definition: string
-    definition_source: 'llm'
-    definition_status: 'ready'
+    definition?: string | null
+    definition_source?: 'dbpedia' | 'dictionary' | 'wikipedia' | 'llm' | null
+    definition_status?: 'ready' | 'pending_llm' | null
   }
+}
+
+export interface GenerateTechnicalTermDefinitionPayload {
+  forceLlm?: boolean
 }
 
 export interface CmsDeletePaperResponse {
@@ -76,12 +80,58 @@ export interface CmsDeletePaperResponse {
 const API_BASE_URL =
   import.meta.env.VITE_API_BASE_URL || 'http://localhost:8001'
 
+const API_BASE_CANDIDATES = Array.from(
+  new Set([
+    API_BASE_URL,
+    'http://127.0.0.1:8001',
+    'http://localhost:8001',
+  ]),
+)
+
 const AUTH_TOKEN_KEY = 'researchagent.auth.token'
 const AUTH_USER_KEY = 'researchagent.auth.user'
 
 function getAuthHeader(): HeadersInit {
   const token = localStorage.getItem(AUTH_TOKEN_KEY)
   return token ? { Authorization: `Bearer ${token}` } : {}
+}
+
+function joinApiUrl(baseUrl: string, path: string): string {
+  return `${baseUrl.replace(/\/$/, '')}${path}`
+}
+
+function isNetworkError(error: unknown): boolean {
+  return error instanceof TypeError
+}
+
+function buildNetworkError(): Error {
+  return new Error(
+    `Failed to fetch API. Tried: ${API_BASE_CANDIDATES.join(', ')}. Ensure backend is running on port 8001.`,
+  )
+}
+
+async function fetchWithFallback(
+  path: string,
+  init: RequestInit,
+): Promise<Response> {
+  let lastError: unknown = null
+
+  for (const baseUrl of API_BASE_CANDIDATES) {
+    try {
+      return await fetch(joinApiUrl(baseUrl, path), init)
+    } catch (error) {
+      lastError = error
+      if (!isNetworkError(error)) {
+        throw error
+      }
+    }
+  }
+
+  if (isNetworkError(lastError)) {
+    throw buildNetworkError()
+  }
+
+  throw new Error('Failed to reach API endpoint.')
 }
 
 export function setAuthSession(token: string, user: AuthUser): void {
@@ -105,7 +155,7 @@ export function getCachedAuthUser(): AuthUser | null {
 }
 
 async function fetchJson<T>(path: string): Promise<T> {
-  const response = await fetch(`${API_BASE_URL}${path}`, {
+  const response = await fetchWithFallback(path, {
     headers: {
       ...getAuthHeader(),
     },
@@ -118,7 +168,7 @@ async function fetchJson<T>(path: string): Promise<T> {
 }
 
 async function postJson<T>(path: string, body: unknown): Promise<T> {
-  const response = await fetch(`${API_BASE_URL}${path}`, {
+  const response = await fetchWithFallback(path, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
@@ -134,7 +184,7 @@ async function postJson<T>(path: string, body: unknown): Promise<T> {
 }
 
 async function deleteJson<T>(path: string): Promise<T> {
-  const response = await fetch(`${API_BASE_URL}${path}`, {
+  const response = await fetchWithFallback(path, {
     method: 'DELETE',
     headers: {
       ...getAuthHeader(),
@@ -174,7 +224,7 @@ export async function uploadPaper(file: File): Promise<UploadPaperResponse> {
   const formData = new FormData()
   formData.append('file', file)
 
-  const response = await fetch(`${API_BASE_URL}/api/papers/upload`, {
+  const response = await fetchWithFallback('/api/papers/upload', {
     method: 'POST',
     headers: {
       ...getAuthHeader(),
@@ -218,9 +268,13 @@ export async function generateQuestionAnswer(
 export async function generateTechnicalTermDefinition(
   paperId: number,
   term: string,
+  payload: GenerateTechnicalTermDefinitionPayload = {},
 ): Promise<GenerateTechnicalTermDefinitionResponse> {
   return postJson<GenerateTechnicalTermDefinitionResponse>(
     `/api/papers/${paperId}/technical-terms/generate`,
-    { term },
+    {
+      term,
+      force_llm: Boolean(payload.forceLlm),
+    },
   )
 }

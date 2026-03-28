@@ -271,125 +271,124 @@ const PaperNavigation = ({
           </select>
         </div>
 
-        <div className="px-6 mb-3">
-          <h2 className="font-ui text-[11px] font-semibold uppercase tracking-[0.18em] text-text-secondary">
-            Reading Guide
-          </h2>
-        </div>
+        <div className="mx-4 mb-4 flex-1 min-h-0 rounded-xl border border-border/60 bg-gradient-to-b from-panel via-panel to-canvas/40 px-2 pt-3 pb-2">
+          <div className="px-2 mb-3">
+            <h2 className="font-ui text-[11px] font-semibold uppercase tracking-[0.18em] text-text-secondary">
+              Reading Guide
+            </h2>
+          </div>
 
-        {readingGuide?.paper_title ? (
-          <div className="px-4 mb-3">
-            <div className="bg-canvas rounded-md border border-border/50 px-3 py-2 space-y-1">
-              <div className="flex flex-wrap gap-1">
-                {readingGuide.reading_strategy?.paper_type ? (
-                  <span className="font-ui text-[10px] px-1.5 py-0.5 rounded bg-accent/15 text-text-active">
-                    {readingGuide.reading_strategy.paper_type}
-                  </span>
-                ) : null}
-                {readingGuide.reading_strategy?.estimated_total_time ? (
-                  <span className="font-ui text-[10px] px-1.5 py-0.5 rounded bg-canvas text-text-secondary border border-border/50">
-                    {readingGuide.reading_strategy.estimated_total_time}
-                  </span>
-                ) : null}
+          {readingGuide?.paper_title ? (
+            <div className="px-2 mb-3">
+              <div className="bg-canvas rounded-md border border-border/50 px-3 py-2 space-y-1">
+                <div className="flex flex-wrap gap-1">
+                  {readingGuide.reading_strategy?.paper_type ? (
+                    <span className="font-ui text-[10px] px-1.5 py-0.5 rounded bg-accent/15 text-text-active">
+                      {readingGuide.reading_strategy.paper_type}
+                    </span>
+                  ) : null}
+                  {readingGuide.reading_strategy?.estimated_total_time ? (
+                    <span className="font-ui text-[10px] px-1.5 py-0.5 rounded bg-canvas text-text-secondary border border-border/50">
+                      {readingGuide.reading_strategy.estimated_total_time}
+                    </span>
+                  ) : null}
+                </div>
               </div>
             </div>
-          </div>
-        ) : null}
+          ) : null}
 
-        <ScrollArea className="flex-1 px-4 py-2">
-          <div className="space-y-1 pb-4">
-            {readingPhases.length === 0 ? (
-              <div className="px-3 py-2 rounded-md bg-canvas">
-                <p className="font-ui text-[11px] text-text-secondary leading-relaxed">
-                  No backend reading guide found for this paper yet.
-                </p>
-              </div>
-            ) : (
-              readingPhases.map((phase, idx) => {
-                return (
-                  <Collapsible
-                    key={phase.id}
-                    open={openPhases[phase.id] ?? false}
-                    onOpenChange={(isOpen) =>
-                      setPhaseOpenState(phase.id, isOpen)
-                    }
-                  >
-                    <CollapsibleTrigger className="w-full text-left px-3 py-2.5 rounded-md hover:bg-canvas transition-colors duration-200 group flex items-center gap-2">
-                      <span className="font-mono text-[10px] text-text-secondary/60">
-                        {String(idx + 1).padStart(2, '0')}
-                      </span>
-                      <div className="flex-1 min-w-0">
-                        <p className="font-ui text-[12px] font-semibold text-foreground truncate">
-                          {phase.title}
-                        </p>
-                      </div>
-                      <ChevronDown
-                        size={14}
-                        className={`text-text-secondary transition-transform duration-200 ${
-                          openPhases[phase.id] ? 'rotate-180' : ''
-                        }`}
-                      />
-                    </CollapsibleTrigger>
-
-                    <CollapsibleContent className="animate-fade-in">
-                      <div className="ml-[26px] mr-1 mb-2 space-y-2 border-l-2 border-border/40 pl-3 py-2">
-                        <div className="bg-canvas rounded-md border border-border/40 px-2.5 py-2 space-y-1">
-                          <p className="font-ui text-[10px] font-semibold uppercase tracking-wider text-text-active">
-                            Pass Goal
-                          </p>
-                          <p className="font-ui text-[11px] text-foreground leading-relaxed">
-                            {phase.goal}
-                          </p>
-                          <p className="font-ui text-[10px] text-text-secondary">
-                            Estimated time: {phase.estimatedTime}
+          <ScrollArea className="flex-1 px-2 py-1">
+            <div className="space-y-1 pb-4">
+              {readingPhases.length === 0 ? (
+                <div className="px-3 py-2 rounded-md bg-canvas">
+                  <p className="font-ui text-[11px] text-text-secondary leading-relaxed">
+                    No backend reading guide found for this paper yet.
+                  </p>
+                </div>
+              ) : (
+                readingPhases.map((phase, idx) => {
+                  return (
+                    <Collapsible
+                      key={phase.id}
+                      open={openPhases[phase.id] ?? false}
+                      onOpenChange={(isOpen) =>
+                        setPhaseOpenState(phase.id, isOpen)
+                      }
+                    >
+                      <CollapsibleTrigger className="w-full text-left px-3 py-2.5 rounded-md hover:bg-canvas transition-colors duration-200 group flex items-center gap-2">
+                        <span className="font-mono text-[10px] text-text-secondary/60">
+                          {String(idx + 1).padStart(2, '0')}
+                        </span>
+                        <div className="flex-1 min-w-0">
+                          <p className="font-ui text-[12px] font-semibold text-foreground truncate">
+                            {phase.title}
                           </p>
                         </div>
+                        <ChevronDown
+                          size={14}
+                          className={`text-text-secondary transition-transform duration-200 ${
+                            openPhases[phase.id] ? 'rotate-180' : ''
+                          }`}
+                        />
+                      </CollapsibleTrigger>
 
-                        {phase.steps.length === 0 ? (
-                          <p className="font-ui text-[11px] text-text-secondary leading-relaxed">
-                            No step details available for this pass.
-                          </p>
-                        ) : (
-                          phase.steps.map((step, stepIdx) => {
-                            const stepNumber = step.step_number || stepIdx + 1
-                            const guideSections = step.section_to_read || []
+                      <CollapsibleContent className="animate-fade-in">
+                        <div className="ml-0 mr-0 mb-2 space-y-2 border-l-2 border-border/40 pl-0 py-2">
+                          <div className="bg-canvas rounded-md border border-border/40 px-2.5 py-2 space-y-1">
+                            <p className="font-ui text-[10px] font-semibold uppercase tracking-wider text-text-active">
+                              Pass Goal
+                            </p>
+                            <p className="font-ui text-[11px] text-foreground leading-relaxed">
+                              {phase.goal}
+                            </p>
+                            <p className="font-ui text-[10px] text-text-secondary">
+                              Estimated time: {phase.estimatedTime}
+                            </p>
+                          </div>
 
-                            return (
-                              <div
-                                key={`${phase.id}-step-${stepNumber}`}
-                                className="bg-canvas rounded-md border border-border/40 px-2.5 py-2 space-y-1.5"
-                              >
-                                <div className="flex items-center justify-between gap-2">
-                                  <p className="font-ui text-[10px] font-semibold uppercase tracking-wider text-text-active">
-                                    Step {stepNumber}
-                                  </p>
-                                  <div className="flex gap-1">
-                                    {step.needs_figures ? (
-                                      <span className="font-ui text-[9px] px-1.5 py-0.5 rounded bg-accent/15 text-text-secondary">
-                                        figures
-                                      </span>
-                                    ) : null}
-                                    {step.needs_tables ? (
-                                      <span className="font-ui text-[9px] px-1.5 py-0.5 rounded bg-accent/15 text-text-secondary">
-                                        tables
-                                      </span>
-                                    ) : null}
+                          {phase.steps.length === 0 ? (
+                            <p className="font-ui text-[11px] text-text-secondary leading-relaxed">
+                              No step details available for this pass.
+                            </p>
+                          ) : (
+                            phase.steps.map((step, stepIdx) => {
+                              const stepNumber = step.step_number || stepIdx + 1
+                              const guideSections = step.section_to_read || []
+
+                              return (
+                                <div
+                                  key={`${phase.id}-step-${stepNumber}`}
+                                  className="bg-canvas rounded-md border border-border/40 px-2.5 py-2 space-y-1.5"
+                                >
+                                  <div className="flex items-center justify-between gap-2">
+                                    <p className="font-ui text-[10px] font-semibold uppercase tracking-wider text-text-active">
+                                      Step {stepNumber}
+                                    </p>
+                                    <div className="flex gap-1">
+                                      {step.needs_figures ? (
+                                        <span className="font-ui text-[9px] px-1.5 py-0.5 rounded bg-accent/15 text-text-secondary">
+                                          figures
+                                        </span>
+                                      ) : null}
+                                      {step.needs_tables ? (
+                                        <span className="font-ui text-[9px] px-1.5 py-0.5 rounded bg-accent/15 text-text-secondary">
+                                          tables
+                                        </span>
+                                      ) : null}
+                                    </div>
                                   </div>
-                                </div>
 
-                                <div>
-                                  <p className="font-ui text-[10px] font-semibold text-text-secondary mb-1">
-                                    Sections to read
-                                  </p>
-                                  {guideSections.length > 0 ? (
-                                    <div className="flex flex-wrap gap-1">
-                                      {guideSections.map(
-                                        (sectionName, sectionIdx) => {
-                                          const matched =
-                                            findSectionByGuideName(
-                                              sectionName,
-                                              sections,
-                                            )
+                                  <div>
+                                    <p className="font-ui text-[10px] font-semibold text-text-secondary mb-1">
+                                      Sections to read
+                                    </p>
+                                    {guideSections.length > 0 ? (
+                                      <div className="flex flex-wrap gap-1">
+                                        {guideSections.map((sectionName, sectionIdx) => {
+                                          const matched = findSectionByGuideName(
+                                            sectionName,
+                                            sections,
+                                          )
                                           const isActive = matched
                                             ? activeSection === matched.id
                                             : false
@@ -397,9 +396,7 @@ const PaperNavigation = ({
                                           return matched ? (
                                             <button
                                               key={`${phase.id}-${stepNumber}-section-${sectionIdx}`}
-                                              onClick={() =>
-                                                onSectionClick(matched.id)
-                                              }
+                                              onClick={() => onSectionClick(matched.id)}
                                               className={`font-ui text-[10px] px-2 py-0.5 rounded transition-colors ${
                                                 isActive
                                                   ? 'bg-accent/25 text-foreground font-medium'
@@ -416,70 +413,67 @@ const PaperNavigation = ({
                                               {sectionName}
                                             </span>
                                           )
-                                        },
-                                      )}
-                                    </div>
-                                  ) : (
-                                    <p className="font-ui text-[11px] text-text-secondary">
-                                      No sections specified.
+                                        })}
+                                      </div>
+                                    ) : (
+                                      <p className="font-ui text-[11px] text-text-secondary">
+                                        No sections specified.
+                                      </p>
+                                    )}
+                                  </div>
+
+                                  <div>
+                                    <p className="font-ui text-[10px] font-semibold text-text-secondary">
+                                      Objective
                                     </p>
-                                  )}
-                                </div>
+                                    <p className="font-ui text-[11px] text-foreground leading-relaxed">
+                                      {step.objective || 'No objective provided.'}
+                                    </p>
+                                  </div>
 
-                                <div>
-                                  <p className="font-ui text-[10px] font-semibold text-text-secondary">
-                                    Objective
-                                  </p>
-                                  <p className="font-ui text-[11px] text-foreground leading-relaxed">
-                                    {step.objective || 'No objective provided.'}
-                                  </p>
-                                </div>
-
-                                <div>
-                                  <p className="font-ui text-[10px] font-semibold text-text-secondary">
-                                    Questions to answer
-                                  </p>
-                                  {step.questions_to_answer &&
-                                  step.questions_to_answer.length > 0 ? (
-                                    <ul className="space-y-1">
-                                      {step.questions_to_answer.map(
-                                        (question, questionIdx) => (
+                                  <div>
+                                    <p className="font-ui text-[10px] font-semibold text-text-secondary">
+                                      Questions to answer
+                                    </p>
+                                    {step.questions_to_answer &&
+                                    step.questions_to_answer.length > 0 ? (
+                                      <ul className="space-y-1">
+                                        {step.questions_to_answer.map((question, questionIdx) => (
                                           <li
                                             key={`${phase.id}-${stepNumber}-question-${questionIdx}`}
                                             className="font-ui text-[11px] text-foreground leading-relaxed"
                                           >
                                             {question}
                                           </li>
-                                        ),
-                                      )}
-                                    </ul>
-                                  ) : (
-                                    <p className="font-ui text-[11px] text-text-secondary">
-                                      No questions listed.
-                                    </p>
-                                  )}
-                                </div>
+                                        ))}
+                                      </ul>
+                                    ) : (
+                                      <p className="font-ui text-[11px] text-text-secondary">
+                                        No questions listed.
+                                      </p>
+                                    )}
+                                  </div>
 
-                                <div>
-                                  <p className="font-ui text-[10px] font-semibold text-text-secondary">
-                                    Expected output
-                                  </p>
-                                  <p className="font-ui text-[11px] text-foreground leading-relaxed">
-                                    {step.expected_output ||
-                                      'No expected output provided.'}
-                                  </p>
+                                  <div>
+                                    <p className="font-ui text-[10px] font-semibold text-text-secondary">
+                                      Expected output
+                                    </p>
+                                    <p className="font-ui text-[11px] text-foreground leading-relaxed">
+                                      {step.expected_output ||
+                                        'No expected output provided.'}
+                                    </p>
+                                  </div>
                                 </div>
-                              </div>
-                            )
-                          })
-                        )}
-                      </div>
-                    </CollapsibleContent>
-                  </Collapsible>
-                )
-              })
-            )}
-          </div>
+                              )
+                            })
+                          )}
+                        </div>
+                      </CollapsibleContent>
+                    </Collapsible>
+                  )
+                })
+              )}
+            </div>
 
           <div className="px-2 pt-2 pb-1">
             <Collapsible
@@ -530,6 +524,7 @@ const PaperNavigation = ({
             </Collapsible>
           </div>
         </ScrollArea>
+        </div>
 
         <div className="px-4 pb-4 pt-3 border-t border-border/40 bg-gradient-to-b from-panel to-canvas/50">
           <input

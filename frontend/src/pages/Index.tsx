@@ -20,7 +20,9 @@ import {
 
 const SELECTED_PAPER_KEY = 'researchagent.selectedPaperId'
 
-const Index = () => {
+// Wrap entire component to catch errors
+const IndexContent = () => {
+  console.log("IndexContent rendering");
   const queryClient = useQueryClient()
   const [authUser, setAuthUser] = useState<AuthUser | null>(getCachedAuthUser())
   const [authSubmitting, setAuthSubmitting] = useState(false)
@@ -45,6 +47,9 @@ const Index = () => {
     null,
   )
   const [showHomeView, setShowHomeView] = useState(false)
+  const [uploadTransitioning, setUploadTransitioning] = useState(false)
+  const [uploadedFileName, setUploadedFileName] = useState<string>('')
+  const [selectedPdfTerms, setSelectedPdfTerms] = useState<string[]>([])
   const viewerRef = useRef<PaperViewerHandle>(null)
 
   // Resize functionality
@@ -190,6 +195,8 @@ const Index = () => {
     mutationFn: uploadPaper,
     onMutate: (file: File) => {
       setUploadError(null)
+      setUploadTransitioning(true)
+      setUploadedFileName(file.name)
     },
     onSuccess: async (data) => {
       const newPaperId = data.paper.id
@@ -198,6 +205,8 @@ const Index = () => {
       setFocusedSection(null)
       setPaperLoaded(true)
       setShowHomeView(false) // Exit home view after successful upload
+      setUploadTransitioning(false)
+      setUploadedFileName('')
 
       await queryClient.invalidateQueries({ queryKey: ['papers'] })
       await queryClient.invalidateQueries({
@@ -206,6 +215,8 @@ const Index = () => {
     },
     onError: (error: Error) => {
       setUploadError(error.message || 'Upload failed')
+      setUploadTransitioning(false)
+      setUploadedFileName('')
     },
   })
 
@@ -224,6 +235,7 @@ const Index = () => {
   const sections = paperBundleQuery.data?.sections ?? []
   const paper = paperBundleQuery.data?.paper ?? null
   const images = paperBundleQuery.data?.images ?? []
+  const tables = paperBundleQuery.data?.tables ?? []
   const technicalTerms = paperBundleQuery.data?.technical_terms ?? []
 
   const navSections = sections.map((section, idx) => ({
@@ -247,8 +259,24 @@ const Index = () => {
     setActiveSection(sectionId)
   }, [])
 
+  const handlePdfTermSelect = useCallback((term: string) => {
+    const normalized = term.trim()
+    if (!normalized) return
+
+    setSelectedPdfTerms((prev) => {
+      const withoutExisting = prev.filter(
+        (item) => item.toLowerCase() !== normalized.toLowerCase(),
+      )
+      return [normalized, ...withoutExisting].slice(0, 30)
+    })
+  }, [])
+
+  useEffect(() => {
+    setSelectedPdfTerms([])
+  }, [effectivePaperId])
+
   const handlePaperSelect = useCallback((paperId: number) => {
-    setShowUploadHome(false)
+    setShowHomeView(false)
     setSelectedPaperId(paperId)
     setActiveSection('')
     setFocusedSection(null)
@@ -264,7 +292,7 @@ const Index = () => {
 
   const handleFileUploaded = useCallback(
     (file: File) => {
-      setShowUploadHome(false)
+      setShowHomeView(false)
       uploadPaperMutation.mutate(file)
     },
     [uploadPaperMutation],
@@ -314,28 +342,28 @@ const Index = () => {
 
   if (!authUser) {
     return (
-      <div className="h-screen w-full bg-canvas flex items-center justify-center px-6">
-        <div className="w-full max-w-md bg-panel border border-border/60 rounded-xl shadow-sm overflow-hidden">
-          <div className="px-6 py-4 border-b border-accent/20 bg-gradient-to-r from-accent/10 via-accent/5 to-transparent">
-            <h1 className="font-ui text-[22px] font-bold text-foreground mb-1">
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', minHeight: '100vh', padding: '24px', backgroundColor: '#f5f5f0' }}>
+        <div style={{ width: '100%', maxWidth: '400px', border: '1px solid #d1ccc0', borderRadius: '12px', overflow: 'hidden', boxShadow: '0 1px 3px rgba(0,0,0,0.1)' }}>
+          {/* Header */}
+          <div style={{ padding: '24px', borderBottom: '1px solid #e8e4db', background: 'linear-gradient(to right, rgba(116,105,87,0.1), rgba(116,105,87,0.05), transparent)' }}>
+            <h1 style={{ fontSize: '22px', fontWeight: 'bold', color: '#1a1411', marginBottom: '8px' }}>
               AcadAI
             </h1>
-            <p className="font-ui text-[13px] text-text-secondary">
-              {authMode === 'register'
-                ? 'Create your account'
-                : 'Sign in to continue'}
+            <p style={{ fontSize: '13px', color: '#7a7573' }}>
+              {authMode === 'register' ? 'Create your account' : 'Sign in to continue'}
             </p>
           </div>
 
-          <div className="p-6 bg-canvas">
-            <form className="space-y-3" onSubmit={handleAuthSubmit}>
+          {/* Form */}
+          <div style={{ padding: '24px', backgroundColor: '#fafaf8' }}>
+            <form style={{ display: 'flex', flexDirection: 'column', gap: '12px' }} onSubmit={handleAuthSubmit}>
               {authMode === 'register' ? (
                 <input
                   type="text"
                   value={authDisplayName}
                   onChange={(e) => setAuthDisplayName(e.target.value)}
                   placeholder="Display name"
-                  className="w-full rounded-md bg-canvas border border-border/60 px-3 py-2 text-sm text-foreground"
+                  style={{ width: '100%', borderRadius: '6px', backgroundColor: '#fafaf8', border: '1px solid #d1ccc0', padding: '8px 12px', fontSize: '14px', color: '#1a1411' }}
                 />
               ) : null}
               <input
@@ -344,7 +372,7 @@ const Index = () => {
                 onChange={(e) => setAuthEmail(e.target.value)}
                 placeholder="Email"
                 required
-                className="w-full rounded-md bg-canvas border border-border/60 px-3 py-2 text-sm text-foreground"
+                style={{ width: '100%', borderRadius: '6px', backgroundColor: '#fafaf8', border: '1px solid #d1ccc0', padding: '8px 12px', fontSize: '14px', color: '#1a1411' }}
               />
               <input
                 type="password"
@@ -352,12 +380,14 @@ const Index = () => {
                 onChange={(e) => setAuthPassword(e.target.value)}
                 placeholder="Password"
                 required
-                className="w-full rounded-md bg-canvas border border-border/60 px-3 py-2 text-sm text-foreground"
+                style={{ width: '100%', borderRadius: '6px', backgroundColor: '#fafaf8', border: '1px solid #d1ccc0', padding: '8px 12px', fontSize: '14px', color: '#1a1411' }}
               />
               <button
                 type="submit"
                 disabled={authSubmitting}
-                className="w-full rounded-md bg-accent/20 hover:bg-accent/30 text-foreground px-3 py-2 text-sm font-semibold transition-colors disabled:opacity-60"
+                style={{ width: '100%', borderRadius: '6px', backgroundColor: 'rgba(116,105,87,0.2)', color: '#1a1411', padding: '8px 12px', fontSize: '14px', fontWeight: '600', border: 'none', cursor: 'pointer', opacity: authSubmitting ? 0.6 : 1, transition: 'background-color 0.2s' }}
+                onMouseEnter={(e) => !authSubmitting && (e.currentTarget.style.backgroundColor = 'rgba(116,105,87,0.3)')}
+                onMouseLeave={(e) => !authSubmitting && (e.currentTarget.style.backgroundColor = 'rgba(116,105,87,0.2)')}
               >
                 {authSubmitting
                   ? 'Please wait...'
@@ -367,15 +397,15 @@ const Index = () => {
               </button>
             </form>
             {authError ? (
-              <p className="mt-3 font-ui text-[12px] text-destructive">
+              <p style={{ marginTop: '12px', fontSize: '12px', color: '#dc2626' }}>
                 {authError}
               </p>
             ) : null}
             <button
-              onClick={() =>
-                setAuthMode(authMode === 'register' ? 'login' : 'register')
-              }
-              className="mt-4 font-ui text-[12px] text-text-secondary hover:text-foreground transition-colors"
+              onClick={() => setAuthMode(authMode === 'register' ? 'login' : 'register')}
+              style={{ marginTop: '16px', fontSize: '12px', color: '#7a7573', backgroundColor: 'transparent', border: 'none', cursor: 'pointer', textDecoration: 'underline' }}
+              onMouseEnter={(e) => (e.currentTarget.style.color = '#1a1411')}
+              onMouseLeave={(e) => (e.currentTarget.style.color = '#7a7573')}
             >
               {authMode === 'register'
                 ? 'Already have an account? Sign in'
@@ -501,6 +531,7 @@ const Index = () => {
       <PaperViewer
         ref={viewerRef}
         onVisibleSectionChange={handleVisibleSectionChange}
+        onPdfTermSelect={handlePdfTermSelect}
         focusedSection={focusedSection}
         paper={paper}
         sections={sections}
@@ -537,6 +568,8 @@ const Index = () => {
             paper={paper}
             sections={sections}
             images={images}
+            technicalTerms={technicalTerms}
+            selectedPdfTerms={selectedPdfTerms}
             tables={tables}
           />
         </div>
@@ -548,6 +581,28 @@ const Index = () => {
       </div>
     </div>
   )
+}
+
+const Index = () => {
+  try {
+    return <IndexContent />
+  } catch (error) {
+    console.error("Page error:", error);
+    return (
+      <div className="h-screen w-full flex items-center justify-center bg-canvas">
+        <div className="text-center max-w-md">
+          <h2 className="text-2xl font-bold text-foreground mb-4">Page Error</h2>
+          <p className="text-text-secondary mb-4">{error instanceof Error ? error.message : "An unknown error occurred"}</p>
+          <button
+            onClick={() => window.location.reload()}
+            className="px-4 py-2 bg-primary text-primary-foreground rounded-md hover:opacity-90 transition"
+          >
+            Reload page
+          </button>
+        </div>
+      </div>
+    );
+  }
 }
 
 export default Index
