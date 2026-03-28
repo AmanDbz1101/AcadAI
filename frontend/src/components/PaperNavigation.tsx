@@ -1,5 +1,5 @@
-import { BookOpenText, ChevronDown } from 'lucide-react'
-import { useEffect, useState } from 'react'
+import { ChevronDown, ChevronLeft, Home, LogOut, Upload } from 'lucide-react'
+import { useEffect, useRef, useState } from 'react'
 import {
   Collapsible,
   CollapsibleContent,
@@ -25,6 +25,10 @@ interface PaperNavigationProps {
   collapsed?: boolean
   onToggleCollapse?: () => void
   onHomeClick?: () => void
+  onLogout?: () => void
+  onUploadPdf?: (file: File) => void
+  isUploadingPdf?: boolean
+  uploadErrorMessage?: string | null
   style?: React.CSSProperties
 }
 
@@ -146,6 +150,10 @@ const PaperNavigation = ({
   collapsed = false,
   onToggleCollapse,
   onHomeClick,
+  onLogout,
+  onUploadPdf,
+  isUploadingPdf = false,
+  uploadErrorMessage,
   style,
 }: PaperNavigationProps) => {
   // Extract phases from reading guide or use defaults
@@ -154,6 +162,8 @@ const PaperNavigation = ({
   const [openPhases, setOpenPhases] = useState<Record<string, boolean>>({
     [readingPhases[0]?.id || 'quick-understanding']: true,
   })
+  const [paperStructureOpen, setPaperStructureOpen] = useState(false)
+  const fileInputRef = useRef<HTMLInputElement | null>(null)
 
   // Keep collapsible state aligned when phases change between papers/guide types.
   useEffect(() => {
@@ -187,300 +197,359 @@ const PaperNavigation = ({
     }))
   }
 
+  const handleUploadButtonClick = () => {
+    fileInputRef.current?.click()
+  }
+
+  const handleFileInputChange = (
+    event: React.ChangeEvent<HTMLInputElement>,
+  ) => {
+    const file = event.target.files?.[0]
+    if (file && onUploadPdf) {
+      onUploadPdf(file)
+    }
+
+    // Allow selecting the same file again if needed.
+    event.currentTarget.value = ''
+  }
+
   return (
-    <aside className="bg-panel h-screen sticky top-0 flex flex-col border-r border-border/40" style={style}>
-      <div className="px-6 pt-8 pb-6">
-        <div className="flex items-center justify-between">
-          <button
-            onClick={onHomeClick}
-            className="flex items-center gap-2 hover:scale-105 transition-transform duration-200 ease-in-out cursor-pointer"
-          >
-            <BookOpenText size={18} className="text-text-active" />
-            <h1 className="font-ui text-[16px] font-bold text-foreground tracking-tight">
-              AcadAI
-            </h1>
-          </button>
-          <button
-            onClick={onToggleCollapse}
-            className="p-1 rounded-md hover:bg-canvas transition-colors"
-            title={collapsed ? "Expand guide panel" : "Collapse guide panel"}
-          >
-            <ChevronDown
-              size={14}
-              className={`text-text-secondary transition-transform ${collapsed ? 'rotate-90' : '-rotate-90'}`}
-            />
-          </button>
-        </div>
-        <p className="font-ui text-[11px] text-text-secondary pl-[26px]">
-          Research Paper Assistant
-        </p>
-      </div>
+    <aside
+      className="bg-panel/95 h-screen sticky top-0 flex flex-col border-r border-border/50 shadow-sm"
+      style={style}
+    >
+      <div className="relative flex h-full flex-col">
+        <div className="px-6 pt-4 pb-3 border-b border-border/40 bg-gradient-to-r from-accent/10 via-panel to-panel">
+          <div className="flex items-center justify-between">
+            <button
+              onClick={onHomeClick}
+              className="inline-flex h-7 w-7 items-center justify-center rounded-md border border-border/60 bg-canvas text-text-active hover:bg-accent/10 transition-colors"
+              title="Home"
+              aria-label="Home"
+            >
+              <Home size={14} />
+            </button>
 
-      <div className="px-6 mb-3">
-        <label className="font-ui text-[11px] font-semibold uppercase tracking-[0.18em] text-text-secondary block mb-2">
-          Paper
-        </label>
-        <select
-          value={selectedPaperId ?? ''}
-          onChange={(e) => onPaperSelect(Number(e.target.value))}
-          className="w-full font-ui text-[12px] bg-canvas border border-border/60 rounded-md px-2 py-1.5 text-foreground"
-        >
-          {papers.map((paper) => (
-            <option key={paper.id} value={paper.id}>
-              {paper.paper_name}
-            </option>
-          ))}
-        </select>
-      </div>
-
-      <div className="px-6 mb-3">
-        <h2 className="font-ui text-[11px] font-semibold uppercase tracking-[0.18em] text-text-secondary">
-          Reading Guide
-        </h2>
-      </div>
-
-      {readingGuide?.paper_title ? (
-        <div className="px-4 mb-3">
-          <div className="bg-canvas rounded-md border border-border/50 px-3 py-2 space-y-1">
-            <p className="font-ui text-[11px] text-foreground leading-snug">
-              {readingGuide.paper_title}
-            </p>
-            <div className="flex flex-wrap gap-1">
-              {readingGuide.reading_strategy?.paper_type ? (
-                <span className="font-ui text-[10px] px-1.5 py-0.5 rounded bg-accent/15 text-text-active">
-                  {readingGuide.reading_strategy.paper_type}
-                </span>
-              ) : null}
-              {readingGuide.reading_strategy?.estimated_total_time ? (
-                <span className="font-ui text-[10px] px-1.5 py-0.5 rounded bg-canvas text-text-secondary border border-border/50">
-                  {readingGuide.reading_strategy.estimated_total_time}
-                </span>
-              ) : null}
-            </div>
+            <button
+              onClick={onLogout}
+              className="inline-flex h-7 w-7 items-center justify-center rounded-md border border-primary/80 bg-primary text-primary-foreground hover:bg-primary/90 transition-colors"
+              title="Logout"
+              aria-label="Logout"
+            >
+              <LogOut size={14} />
+            </button>
           </div>
         </div>
-      ) : null}
 
-      <ScrollArea className="flex-1 px-4 py-1">
-        <div className="space-y-1 pb-4">
-          {readingPhases.length === 0 ? (
-            <div className="px-3 py-2 rounded-md bg-canvas">
-              <p className="font-ui text-[11px] text-text-secondary leading-relaxed">
-                No backend reading guide found for this paper yet.
-              </p>
+        <button
+          onClick={onToggleCollapse}
+          className="absolute right-0 top-1/2 z-20 inline-flex h-9 w-4 -translate-y-1/2 items-center justify-center rounded-l-md rounded-r-none border border-r-0 border-border/60 bg-canvas shadow-sm hover:bg-accent/10 transition-colors"
+          title={collapsed ? 'Expand guide panel' : 'Collapse guide panel'}
+          aria-label={collapsed ? 'Expand guide panel' : 'Collapse guide panel'}
+        >
+          <ChevronLeft size={14} className="text-text-secondary" />
+        </button>
+
+        <div className="px-6 mt-4 mb-3">
+          <label className="font-ui text-[11px] font-semibold uppercase tracking-[0.18em] text-text-secondary block mb-2">
+            Paper
+          </label>
+          <select
+            value={selectedPaperId ?? ''}
+            onChange={(e) => onPaperSelect(Number(e.target.value))}
+            className="w-full font-ui text-[12px] bg-canvas border border-border/70 rounded-md px-2 py-1.5 text-foreground shadow-sm"
+          >
+            {papers.map((paper) => (
+              <option key={paper.id} value={paper.id}>
+                {paper.paper_name}
+              </option>
+            ))}
+          </select>
+        </div>
+
+        <div className="px-6 mb-3">
+          <h2 className="font-ui text-[11px] font-semibold uppercase tracking-[0.18em] text-text-secondary">
+            Reading Guide
+          </h2>
+        </div>
+
+        {readingGuide?.paper_title ? (
+          <div className="px-4 mb-3">
+            <div className="bg-canvas rounded-md border border-border/50 px-3 py-2 space-y-1">
+              <div className="flex flex-wrap gap-1">
+                {readingGuide.reading_strategy?.paper_type ? (
+                  <span className="font-ui text-[10px] px-1.5 py-0.5 rounded bg-accent/15 text-text-active">
+                    {readingGuide.reading_strategy.paper_type}
+                  </span>
+                ) : null}
+                {readingGuide.reading_strategy?.estimated_total_time ? (
+                  <span className="font-ui text-[10px] px-1.5 py-0.5 rounded bg-canvas text-text-secondary border border-border/50">
+                    {readingGuide.reading_strategy.estimated_total_time}
+                  </span>
+                ) : null}
+              </div>
             </div>
-          ) : (
-            readingPhases.map((phase, idx) => {
-              return (
-                <Collapsible
-                  key={phase.id}
-                  open={openPhases[phase.id] ?? false}
-                  onOpenChange={(isOpen) => setPhaseOpenState(phase.id, isOpen)}
-                >
-                  <CollapsibleTrigger className="w-full text-left px-3 py-2.5 rounded-md hover:bg-canvas transition-colors duration-200 group flex items-center gap-2">
-                    <span className="font-mono text-[10px] text-text-secondary/60">
-                      {String(idx + 1).padStart(2, '0')}
-                    </span>
-                    <div className="flex-1 min-w-0">
-                      <p className="font-ui text-[12px] font-semibold text-foreground truncate">
-                        {phase.title}
-                      </p>
-                    </div>
-                    <ChevronDown
-                      size={14}
-                      className={`text-text-secondary transition-transform duration-200 ${
-                        openPhases[phase.id] ? 'rotate-180' : ''
-                      }`}
-                    />
-                  </CollapsibleTrigger>
+          </div>
+        ) : null}
 
-                  <CollapsibleContent className="animate-fade-in">
-                    <div className="ml-[26px] mr-1 mb-2 space-y-2 border-l-2 border-border/40 pl-3 py-2">
-                      <div className="bg-canvas rounded-md border border-border/40 px-2.5 py-2 space-y-1">
-                        <p className="font-ui text-[10px] font-semibold uppercase tracking-wider text-text-active">
-                          Pass Goal
-                        </p>
-                        <p className="font-ui text-[11px] text-foreground leading-relaxed">
-                          {phase.goal}
-                        </p>
-                        <p className="font-ui text-[10px] text-text-secondary">
-                          Estimated time: {phase.estimatedTime}
+        <ScrollArea className="flex-1 px-4 py-2">
+          <div className="space-y-1 pb-4">
+            {readingPhases.length === 0 ? (
+              <div className="px-3 py-2 rounded-md bg-canvas">
+                <p className="font-ui text-[11px] text-text-secondary leading-relaxed">
+                  No backend reading guide found for this paper yet.
+                </p>
+              </div>
+            ) : (
+              readingPhases.map((phase, idx) => {
+                return (
+                  <Collapsible
+                    key={phase.id}
+                    open={openPhases[phase.id] ?? false}
+                    onOpenChange={(isOpen) =>
+                      setPhaseOpenState(phase.id, isOpen)
+                    }
+                  >
+                    <CollapsibleTrigger className="w-full text-left px-3 py-2.5 rounded-md hover:bg-canvas transition-colors duration-200 group flex items-center gap-2">
+                      <span className="font-mono text-[10px] text-text-secondary/60">
+                        {String(idx + 1).padStart(2, '0')}
+                      </span>
+                      <div className="flex-1 min-w-0">
+                        <p className="font-ui text-[12px] font-semibold text-foreground truncate">
+                          {phase.title}
                         </p>
                       </div>
+                      <ChevronDown
+                        size={14}
+                        className={`text-text-secondary transition-transform duration-200 ${
+                          openPhases[phase.id] ? 'rotate-180' : ''
+                        }`}
+                      />
+                    </CollapsibleTrigger>
 
-                      {phase.steps.length === 0 ? (
-                        <p className="font-ui text-[11px] text-text-secondary leading-relaxed">
-                          No step details available for this pass.
-                        </p>
-                      ) : (
-                        phase.steps.map((step, stepIdx) => {
-                          const stepNumber = step.step_number || stepIdx + 1
-                          const guideSections = step.section_to_read || []
+                    <CollapsibleContent className="animate-fade-in">
+                      <div className="ml-[26px] mr-1 mb-2 space-y-2 border-l-2 border-border/40 pl-3 py-2">
+                        <div className="bg-canvas rounded-md border border-border/40 px-2.5 py-2 space-y-1">
+                          <p className="font-ui text-[10px] font-semibold uppercase tracking-wider text-text-active">
+                            Pass Goal
+                          </p>
+                          <p className="font-ui text-[11px] text-foreground leading-relaxed">
+                            {phase.goal}
+                          </p>
+                          <p className="font-ui text-[10px] text-text-secondary">
+                            Estimated time: {phase.estimatedTime}
+                          </p>
+                        </div>
 
-                          return (
-                            <div
-                              key={`${phase.id}-step-${stepNumber}`}
-                              className="bg-canvas rounded-md border border-border/40 px-2.5 py-2 space-y-1.5"
-                            >
-                              <div className="flex items-center justify-between gap-2">
-                                <p className="font-ui text-[10px] font-semibold uppercase tracking-wider text-text-active">
-                                  Step {stepNumber}
-                                </p>
-                                <div className="flex gap-1">
-                                  {step.needs_figures ? (
-                                    <span className="font-ui text-[9px] px-1.5 py-0.5 rounded bg-accent/15 text-text-secondary">
-                                      figures
-                                    </span>
-                                  ) : null}
-                                  {step.needs_tables ? (
-                                    <span className="font-ui text-[9px] px-1.5 py-0.5 rounded bg-accent/15 text-text-secondary">
-                                      tables
-                                    </span>
-                                  ) : null}
+                        {phase.steps.length === 0 ? (
+                          <p className="font-ui text-[11px] text-text-secondary leading-relaxed">
+                            No step details available for this pass.
+                          </p>
+                        ) : (
+                          phase.steps.map((step, stepIdx) => {
+                            const stepNumber = step.step_number || stepIdx + 1
+                            const guideSections = step.section_to_read || []
+
+                            return (
+                              <div
+                                key={`${phase.id}-step-${stepNumber}`}
+                                className="bg-canvas rounded-md border border-border/40 px-2.5 py-2 space-y-1.5"
+                              >
+                                <div className="flex items-center justify-between gap-2">
+                                  <p className="font-ui text-[10px] font-semibold uppercase tracking-wider text-text-active">
+                                    Step {stepNumber}
+                                  </p>
+                                  <div className="flex gap-1">
+                                    {step.needs_figures ? (
+                                      <span className="font-ui text-[9px] px-1.5 py-0.5 rounded bg-accent/15 text-text-secondary">
+                                        figures
+                                      </span>
+                                    ) : null}
+                                    {step.needs_tables ? (
+                                      <span className="font-ui text-[9px] px-1.5 py-0.5 rounded bg-accent/15 text-text-secondary">
+                                        tables
+                                      </span>
+                                    ) : null}
+                                  </div>
+                                </div>
+
+                                <div>
+                                  <p className="font-ui text-[10px] font-semibold text-text-secondary mb-1">
+                                    Sections to read
+                                  </p>
+                                  {guideSections.length > 0 ? (
+                                    <div className="flex flex-wrap gap-1">
+                                      {guideSections.map(
+                                        (sectionName, sectionIdx) => {
+                                          const matched =
+                                            findSectionByGuideName(
+                                              sectionName,
+                                              sections,
+                                            )
+                                          const isActive = matched
+                                            ? activeSection === matched.id
+                                            : false
+
+                                          return matched ? (
+                                            <button
+                                              key={`${phase.id}-${stepNumber}-section-${sectionIdx}`}
+                                              onClick={() =>
+                                                onSectionClick(matched.id)
+                                              }
+                                              className={`font-ui text-[10px] px-2 py-0.5 rounded transition-colors ${
+                                                isActive
+                                                  ? 'bg-accent/25 text-foreground font-medium'
+                                                  : 'bg-accent/10 text-foreground hover:bg-accent/20'
+                                              }`}
+                                            >
+                                              {sectionName}
+                                            </button>
+                                          ) : (
+                                            <span
+                                              key={`${phase.id}-${stepNumber}-section-${sectionIdx}`}
+                                              className="font-ui text-[10px] px-2 py-0.5 rounded bg-canvas border border-border/50 text-text-secondary"
+                                            >
+                                              {sectionName}
+                                            </span>
+                                          )
+                                        },
+                                      )}
+                                    </div>
+                                  ) : (
+                                    <p className="font-ui text-[11px] text-text-secondary">
+                                      No sections specified.
+                                    </p>
+                                  )}
+                                </div>
+
+                                <div>
+                                  <p className="font-ui text-[10px] font-semibold text-text-secondary">
+                                    Objective
+                                  </p>
+                                  <p className="font-ui text-[11px] text-foreground leading-relaxed">
+                                    {step.objective || 'No objective provided.'}
+                                  </p>
+                                </div>
+
+                                <div>
+                                  <p className="font-ui text-[10px] font-semibold text-text-secondary">
+                                    Questions to answer
+                                  </p>
+                                  {step.questions_to_answer &&
+                                  step.questions_to_answer.length > 0 ? (
+                                    <ul className="space-y-1">
+                                      {step.questions_to_answer.map(
+                                        (question, questionIdx) => (
+                                          <li
+                                            key={`${phase.id}-${stepNumber}-question-${questionIdx}`}
+                                            className="font-ui text-[11px] text-foreground leading-relaxed"
+                                          >
+                                            {question}
+                                          </li>
+                                        ),
+                                      )}
+                                    </ul>
+                                  ) : (
+                                    <p className="font-ui text-[11px] text-text-secondary">
+                                      No questions listed.
+                                    </p>
+                                  )}
+                                </div>
+
+                                <div>
+                                  <p className="font-ui text-[10px] font-semibold text-text-secondary">
+                                    Expected output
+                                  </p>
+                                  <p className="font-ui text-[11px] text-foreground leading-relaxed">
+                                    {step.expected_output ||
+                                      'No expected output provided.'}
+                                  </p>
                                 </div>
                               </div>
+                            )
+                          })
+                        )}
+                      </div>
+                    </CollapsibleContent>
+                  </Collapsible>
+                )
+              })
+            )}
+          </div>
 
-                              <div>
-                                <p className="font-ui text-[10px] font-semibold text-text-secondary mb-1">
-                                  Sections to read
-                                </p>
-                                {guideSections.length > 0 ? (
-                                  <div className="flex flex-wrap gap-1">
-                                    {guideSections.map(
-                                      (sectionName, sectionIdx) => {
-                                        const matched = findSectionByGuideName(
-                                          sectionName,
-                                          sections,
-                                        )
-                                        const isActive = matched
-                                          ? activeSection === matched.id
-                                          : false
+          <div className="px-2 pt-2 pb-1">
+            <Collapsible
+              open={paperStructureOpen}
+              onOpenChange={setPaperStructureOpen}
+            >
+              <CollapsibleTrigger className="w-full text-left rounded-md px-1 py-1.5 hover:bg-canvas transition-colors duration-200 flex items-center justify-between gap-2">
+                <h3 className="font-ui text-[11px] font-semibold uppercase tracking-[0.18em] text-text-secondary">
+                  Paper Structure
+                </h3>
+                <ChevronDown
+                  size={14}
+                  className={`text-text-secondary transition-transform duration-200 ${
+                    paperStructureOpen ? 'rotate-180' : ''
+                  }`}
+                />
+              </CollapsibleTrigger>
 
-                                        return matched ? (
-                                          <button
-                                            key={`${phase.id}-${stepNumber}-section-${sectionIdx}`}
-                                            onClick={() =>
-                                              onSectionClick(matched.id)
-                                            }
-                                            className={`font-ui text-[10px] px-2 py-0.5 rounded transition-colors ${
-                                              isActive
-                                                ? 'bg-accent/25 text-foreground font-medium'
-                                                : 'bg-accent/10 text-foreground hover:bg-accent/20'
-                                            }`}
-                                          >
-                                            {sectionName}
-                                          </button>
-                                        ) : (
-                                          <span
-                                            key={`${phase.id}-${stepNumber}-section-${sectionIdx}`}
-                                            className="font-ui text-[10px] px-2 py-0.5 rounded bg-canvas border border-border/50 text-text-secondary"
-                                          >
-                                            {sectionName}
-                                          </span>
-                                        )
-                                      },
-                                    )}
-                                  </div>
-                                ) : (
-                                  <p className="font-ui text-[11px] text-text-secondary">
-                                    No sections specified.
-                                  </p>
-                                )}
-                              </div>
+              <CollapsibleContent className="animate-fade-in">
+                <ul className="space-y-0.5 mt-1">
+                  {sections.map((section) => {
+                    const isActive = activeSection === section.id
+                    return (
+                      <li key={section.id}>
+                        <button
+                          onClick={() => onSectionClick(section.id)}
+                          className={`
+                          w-full text-left py-2 px-2.5 font-ui text-[12px] rounded-md transition-all duration-200 flex items-center gap-2.5
+                          ${
+                            isActive
+                              ? 'text-text-active bg-accent/10 font-semibold'
+                              : 'text-text-secondary hover:text-foreground hover:bg-canvas font-normal'
+                          }
+                        `}
+                        >
+                          <span
+                            className={`text-[10px] font-mono ${isActive ? 'text-text-active' : 'text-text-secondary/50'}`}
+                          >
+                            {section.label}
+                          </span>
+                          <span className="truncate">{section.title}</span>
+                        </button>
+                      </li>
+                    )
+                  })}
+                </ul>
+              </CollapsibleContent>
+            </Collapsible>
+          </div>
+        </ScrollArea>
 
-                              <div>
-                                <p className="font-ui text-[10px] font-semibold text-text-secondary">
-                                  Objective
-                                </p>
-                                <p className="font-ui text-[11px] text-foreground leading-relaxed">
-                                  {step.objective || 'No objective provided.'}
-                                </p>
-                              </div>
-
-                              <div>
-                                <p className="font-ui text-[10px] font-semibold text-text-secondary">
-                                  Questions to answer
-                                </p>
-                                {step.questions_to_answer &&
-                                step.questions_to_answer.length > 0 ? (
-                                  <ul className="space-y-1">
-                                    {step.questions_to_answer.map(
-                                      (question, questionIdx) => (
-                                        <li
-                                          key={`${phase.id}-${stepNumber}-question-${questionIdx}`}
-                                          className="font-ui text-[11px] text-foreground leading-relaxed"
-                                        >
-                                          {question}
-                                        </li>
-                                      ),
-                                    )}
-                                  </ul>
-                                ) : (
-                                  <p className="font-ui text-[11px] text-text-secondary">
-                                    No questions listed.
-                                  </p>
-                                )}
-                              </div>
-
-                              <div>
-                                <p className="font-ui text-[10px] font-semibold text-text-secondary">
-                                  Expected output
-                                </p>
-                                <p className="font-ui text-[11px] text-foreground leading-relaxed">
-                                  {step.expected_output ||
-                                    'No expected output provided.'}
-                                </p>
-                              </div>
-                            </div>
-                          )
-                        })
-                      )}
-                    </div>
-                  </CollapsibleContent>
-                </Collapsible>
-              )
-            })
-          )}
+        <div className="px-4 pb-4 pt-3 border-t border-border/40 bg-gradient-to-b from-panel to-canvas/50">
+          <input
+            ref={fileInputRef}
+            type="file"
+            accept=".pdf,application/pdf"
+            className="hidden"
+            onChange={handleFileInputChange}
+          />
+          <button
+            type="button"
+            onClick={handleUploadButtonClick}
+            disabled={isUploadingPdf}
+            className="w-full rounded-md border border-primary/70 bg-primary text-primary-foreground hover:bg-primary/90 disabled:opacity-60 px-3 py-2 font-ui text-[12px] font-semibold transition-colors flex items-center justify-center gap-2 shadow-md"
+          >
+            <Upload size={14} className="text-primary-foreground" />
+            {isUploadingPdf ? 'Uploading PDF...' : 'Upload PDF'}
+          </button>
+          {uploadErrorMessage ? (
+            <p className="mt-2 font-ui text-[11px] text-destructive leading-snug">
+              {uploadErrorMessage}
+            </p>
+          ) : null}
         </div>
-
-        <div className="px-2 pt-2 pb-1">
-          <h3 className="font-ui text-[11px] font-semibold uppercase tracking-[0.18em] text-text-secondary mb-2">
-            Paper Structure
-          </h3>
-          <ul className="space-y-0.5">
-            {sections.map((section) => {
-              const isActive = activeSection === section.id
-              return (
-                <li key={section.id}>
-                  <button
-                    onClick={() => onSectionClick(section.id)}
-                    className={`
-                      w-full text-left py-2 px-2.5 font-ui text-[12px] rounded-md transition-all duration-200 flex items-center gap-2.5
-                      ${
-                        isActive
-                          ? 'text-text-active bg-accent/10 font-semibold'
-                          : 'text-text-secondary hover:text-foreground hover:bg-canvas font-normal'
-                      }
-                    `}
-                  >
-                    <span
-                      className={`text-[10px] font-mono ${isActive ? 'text-text-active' : 'text-text-secondary/50'}`}
-                    >
-                      {section.label}
-                    </span>
-                    <span className="truncate">{section.title}</span>
-                  </button>
-                </li>
-              )
-            })}
-          </ul>
-        </div>
-      </ScrollArea>
-
-      <div className="px-6 pb-6 pt-4 border-t border-border/40">
-        <p className="font-ui text-[10px] text-text-secondary/50 tracking-wide">
-          Powered by AcadAI
-        </p>
       </div>
     </aside>
   )

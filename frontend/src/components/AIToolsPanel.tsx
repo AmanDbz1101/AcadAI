@@ -1,5 +1,4 @@
 import InsightExtractor from './InsightExtractor'
-import ChatAssistant from './ChatAssistant'
 import type {
   PaperImage,
   PaperSection,
@@ -23,17 +22,14 @@ const AIToolsPanel = ({
   style,
 }: AIToolsPanelProps) => {
   return (
-    <aside className="w-[300px] min-w-[300px] bg-panel h-screen sticky top-0 flex flex-col border-l border-border/40" style={style}>
-      <div className="px-5 pt-8 pb-2 flex-shrink-0">
+    <aside className="h-full flex flex-col" style={style}>
+      <div className="relative z-0 flex-1 min-h-0 overflow-hidden px-5 pt-4 pb-5 bg-gradient-to-b from-accent/5 via-panel to-canvas/40">
         <InsightExtractor
           paper={paper}
           sections={sections}
           images={images}
           tables={tables}
         />
-      </div>
-      <div className="flex-1 min-h-0 px-5 pb-5 flex flex-col">
-        <ChatAssistant />
       </div>
     </aside>
   )

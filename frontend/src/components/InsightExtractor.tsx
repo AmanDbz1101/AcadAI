@@ -1,4 +1,5 @@
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
+import { Maximize2, Minimize2 } from 'lucide-react'
 import type {
   PaperImage,
   PaperSection,
@@ -129,51 +130,104 @@ const InsightExtractor = ({
   }, [paper, sections, images, tables])
 
   const [activeTab, setActiveTab] = useState<TabKey>('terms')
+  const [isFullscreen, setIsFullscreen] = useState(false)
+
+  useEffect(() => {
+    if (!isFullscreen) return
+
+    const previousOverflow = document.body.style.overflow
+    document.body.style.overflow = 'hidden'
+
+    const handleEsc = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') {
+        setIsFullscreen(false)
+      }
+    }
+
+    window.addEventListener('keydown', handleEsc)
+
+    return () => {
+      document.body.style.overflow = previousOverflow
+      window.removeEventListener('keydown', handleEsc)
+    }
+  }, [isFullscreen])
 
   return (
-    <div className="mb-6">
-      <h3 className="font-ui text-xs font-medium uppercase tracking-[0.15em] text-text-secondary mb-4">
-        Insight Extractor
-      </h3>
+    <>
+      {isFullscreen ? (
+        <div
+          className="fixed inset-0 z-[998] bg-black/35 backdrop-blur-[1px]"
+          onClick={() => setIsFullscreen(false)}
+        />
+      ) : null}
 
-      {/* Tabs */}
-      <div className="flex gap-1 mb-4">
-        {tabs.map((tab) => (
+      <div
+        className={`flex flex-col min-h-0 rounded-xl border border-accent/30 bg-canvas shadow-sm overflow-hidden ${
+          isFullscreen
+            ? 'fixed inset-y-4 inset-x-12 z-[999] border-2 border-accent/40 shadow-2xl md:inset-x-20'
+            : 'h-full'
+        }`}
+      >
+        <div className="flex items-center justify-between gap-3 px-3 py-2.5 border-b border-accent/20 bg-gradient-to-r from-accent/10 via-accent/5 to-transparent">
+          <h3 className="font-ui text-[11px] font-semibold uppercase tracking-[0.18em] text-foreground">
+            Insight Extractor
+          </h3>
           <button
-            key={tab.key}
-            onClick={() => setActiveTab(tab.key)}
-            className={`
-              font-ui text-[12px] py-1.5 px-3 rounded-sm transition-all duration-200
+            type="button"
+            onClick={() => setIsFullscreen((prev) => !prev)}
+            className="h-7 w-7 inline-flex items-center justify-center rounded-md border border-border/60 bg-canvas text-text-secondary hover:text-foreground hover:border-accent/40 transition-colors"
+            aria-label={
+              isFullscreen
+                ? 'Exit fullscreen insight extractor'
+                : 'Fullscreen insight extractor'
+            }
+            title={isFullscreen ? 'Exit fullscreen' : 'Fullscreen'}
+          >
+            {isFullscreen ? <Minimize2 size={14} /> : <Maximize2 size={14} />}
+          </button>
+        </div>
+
+        <div className="flex-1 min-h-0 p-3 bg-gradient-to-b from-canvas to-panel/30 flex flex-col">
+          {/* Tabs */}
+          <div className="flex gap-1 mb-4 flex-shrink-0">
+            {tabs.map((tab) => (
+              <button
+                key={tab.key}
+                onClick={() => setActiveTab(tab.key)}
+                className={`
+              font-ui text-[12px] py-1.5 px-3 rounded-md border transition-all duration-200
               ${
                 activeTab === tab.key
-                  ? 'bg-primary text-primary-foreground font-medium'
-                  : 'text-text-secondary hover:text-foreground'
+                  ? 'bg-primary text-primary-foreground border-primary/70 font-medium shadow-sm'
+                  : 'text-text-secondary border-border/60 bg-panel hover:text-foreground hover:border-accent/30'
               }
             `}
-          >
-            {tab.label}
-          </button>
-        ))}
-      </div>
-
-      {/* Cards */}
-      <div className="space-y-2">
-        {insightData[activeTab].map((item, i) => (
-          <div
-            key={i}
-            className="p-3 rounded-sm bg-canvas animate-fade-in"
-            style={{ animationDelay: `${i * 80}ms` }}
-          >
-            <h4 className="font-ui text-[13px] font-medium text-foreground mb-1">
-              {item.title}
-            </h4>
-            <p className="font-ui text-[12px] text-text-secondary leading-relaxed">
-              {item.description}
-            </p>
+              >
+                {tab.label}
+              </button>
+            ))}
           </div>
-        ))}
+
+          {/* Cards */}
+          <div className="flex-1 min-h-0 overflow-y-auto pr-1 space-y-2">
+            {insightData[activeTab].map((item, i) => (
+              <div
+                key={i}
+                className="p-3 rounded-lg border border-border/60 bg-panel animate-fade-in shadow-sm"
+                style={{ animationDelay: `${i * 80}ms` }}
+              >
+                <h4 className="font-ui text-[13px] font-medium text-foreground mb-1">
+                  {item.title}
+                </h4>
+                <p className="font-ui text-[12px] text-text-secondary leading-relaxed">
+                  {item.description}
+                </p>
+              </div>
+            ))}
+          </div>
+        </div>
       </div>
-    </div>
+    </>
   )
 }
 

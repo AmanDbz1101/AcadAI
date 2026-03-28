@@ -16,6 +16,12 @@ pdfjs.GlobalWorkerOptions.workerSrc = `https://unpkg.com/pdfjs-dist@${pdfjs.vers
 // Positive value nudges landing upward so section clicks do not land below target.
 const SECTION_JUMP_TOP_OFFSET_PX = 500
 const SCROLL_ANIMATION_MS = 500
+const MIN_PDF_SCALE = 0.6
+const MAX_PDF_SCALE = 2.5
+
+interface WebkitGestureEvent extends Event {
+  scale: number
+}
 
 export interface PaperViewerHandle {
   scrollToSection: (sectionId: string) => void
@@ -36,6 +42,7 @@ const PaperViewer = forwardRef<PaperViewerHandle, PaperViewerProps>(
     const alignAfterRenderPageRef = useRef<number | null>(null)
     const scrollAnimationFrameRef = useRef<number | null>(null)
     const scrollTickingRef = useRef(false)
+    const lastGestureScaleRef = useRef(1)
 
     const [isLoading, setIsLoading] = useState(true)
     const [error, setError] = useState<string | null>(null)
@@ -275,7 +282,7 @@ const PaperViewer = forwardRef<PaperViewerHandle, PaperViewerProps>(
 
         const token = localStorage.getItem('researchagent.auth.token')
         const apiBase =
-          import.meta.env.VITE_API_BASE_URL || 'http://localhost:8001'
+          import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000'
         const url = `${apiBase}${paper.pdf_url}`
 
         try {
@@ -319,11 +326,29 @@ const PaperViewer = forwardRef<PaperViewerHandle, PaperViewerProps>(
     const canGoNext = pageNumber < totalPages
 
     const zoomOut = () =>
-      setScale((prev) => Math.max(0.6, +(prev - 0.1).toFixed(2)))
+      setScale((prev) => Math.max(MIN_PDF_SCALE, +(prev - 0.1).toFixed(2)))
     const zoomIn = () =>
-      setScale((prev) => Math.min(2.5, +(prev + 0.1).toFixed(2)))
+      setScale((prev) => Math.min(MAX_PDF_SCALE, +(prev + 0.1).toFixed(2)))
     const goPrev = () => canGoPrev && jumpToPage(pageNumber - 1)
     const goNext = () => canGoNext && jumpToPage(pageNumber + 1)
+
+    const handleViewerWheel = useCallback(
+      (event: React.WheelEvent<HTMLDivElement>) => {
+        // Trackpad pinch is surfaced as ctrl/meta+wheel in most browsers.
+        if (!event.ctrlKey && !event.metaKey) return
+
+        event.preventDefault()
+        event.stopPropagation()
+
+        const zoomStep = -event.deltaY * 0.0025
+        setScale((prev) => {
+          const next = prev + zoomStep
+          const clamped = Math.min(MAX_PDF_SCALE, Math.max(MIN_PDF_SCALE, next))
+          return +clamped.toFixed(2)
+        })
+      },
+      [],
+    )
 
     const handleViewerScroll = useCallback(() => {
       if (scrollTickingRef.current) return
@@ -356,23 +381,68 @@ const PaperViewer = forwardRef<PaperViewerHandle, PaperViewerProps>(
       })
     }, [numPages])
 
+    useEffect(() => {
+      const container = scrollContainerRef.current
+      if (!container) return
+
+      // Safari trackpad pinch emits gesture events rather than ctrl+wheel.
+      const handleGestureStart = (event: Event) => {
+        const gestureEvent = event as WebkitGestureEvent
+        event.preventDefault()
+        lastGestureScaleRef.current = gestureEvent.scale || 1
+      }
+
+      const handleGestureChange = (event: Event) => {
+        const gestureEvent = event as WebkitGestureEvent
+        event.preventDefault()
+        const currentScale = gestureEvent.scale || 1
+        const ratio =
+          currentScale / Math.max(0.0001, lastGestureScaleRef.current)
+        lastGestureScaleRef.current = currentScale
+
+        setScale((prev) => {
+          const next = prev * ratio
+          const clamped = Math.min(MAX_PDF_SCALE, Math.max(MIN_PDF_SCALE, next))
+          return +clamped.toFixed(2)
+        })
+      }
+
+      const handleGestureEnd = (event: Event) => {
+        event.preventDefault()
+        lastGestureScaleRef.current = 1
+      }
+
+      container.addEventListener('gesturestart', handleGestureStart, {
+        passive: false,
+      })
+      container.addEventListener('gesturechange', handleGestureChange, {
+        passive: false,
+      })
+      container.addEventListener('gestureend', handleGestureEnd, {
+        passive: false,
+      })
+
+      return () => {
+        container.removeEventListener('gesturestart', handleGestureStart)
+        container.removeEventListener('gesturechange', handleGestureChange)
+        container.removeEventListener('gestureend', handleGestureEnd)
+      }
+    }, [])
+
     return (
       <div className="flex-1 h-screen overflow-hidden bg-canvas flex flex-col">
         {/* Paper header */}
-        <div className="border-b border-border/40 px-6 py-4 flex-shrink-0 bg-panel">
-          <h1 className="font-serif text-[22px] leading-tight font-semibold text-foreground mb-2">
+        <div className="border-b border-border/40 px-6 py-4 flex-shrink-0 bg-gradient-to-r from-accent/10 via-panel to-panel shadow-sm">
+          <h1 className="font-serif text-[22px] leading-tight font-semibold text-foreground">
             {paper?.paper_name || 'No paper selected'}
           </h1>
-          <p className="font-ui text-[12px] text-text-secondary">
-            {paper?.title || 'Research Paper'}
-          </p>
         </div>
 
         {/* PDF Viewer or Loading/Error State */}
         {paper && pdfBlob ? (
-          <div className="flex-1 relative bg-canvas overflow-hidden">
-            <div className="h-full flex flex-col">
-              <div className="h-12 border-b border-border/40 bg-panel px-4 flex items-center justify-between">
+          <div className="flex-1 relative bg-canvas overflow-hidden p-4">
+            <div className="h-full flex flex-col rounded-xl border border-border/60 bg-panel shadow-sm overflow-hidden">
+              <div className="h-12 border-b border-border/40 bg-gradient-to-r from-accent/10 via-panel to-panel px-4 flex items-center justify-between">
                 <div className="flex items-center gap-2">
                   <button
                     onClick={goPrev}
@@ -382,7 +452,7 @@ const PaperViewer = forwardRef<PaperViewerHandle, PaperViewerProps>(
                   >
                     <ChevronLeft size={16} />
                   </button>
-                  <div className="px-2 py-1 rounded-md border border-border/60 bg-canvas min-w-[86px] text-center">
+                  <div className="px-2 py-1 rounded-md border border-border/70 bg-canvas min-w-[86px] text-center shadow-sm">
                     <span className="font-ui text-[12px] text-foreground">
                       {pageNumber} / {totalPages}
                     </span>
@@ -405,7 +475,7 @@ const PaperViewer = forwardRef<PaperViewerHandle, PaperViewerProps>(
                   >
                     <ZoomOut size={15} />
                   </button>
-                  <div className="px-2 py-1 rounded-md border border-border/60 bg-canvas min-w-[72px] text-center">
+                  <div className="px-2 py-1 rounded-md border border-border/70 bg-canvas min-w-[72px] text-center shadow-sm">
                     <span className="font-ui text-[12px] text-foreground">
                       {Math.round(scale * 100)}%
                     </span>
@@ -422,8 +492,9 @@ const PaperViewer = forwardRef<PaperViewerHandle, PaperViewerProps>(
 
               <div
                 ref={scrollContainerRef}
-                className="flex-1 overflow-auto p-6"
+                className="flex-1 overflow-auto p-5 bg-canvas"
                 onScroll={handleViewerScroll}
+                onWheel={handleViewerWheel}
               >
                 <div className="min-h-full flex justify-center">
                   <Document
