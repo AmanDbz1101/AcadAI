@@ -86,6 +86,8 @@ def _content_type_filter_supported(pipeline: RetrievalPipeline) -> bool:
     """Return True when Qdrant has a payload index for `content_type`."""
     try:
         store_manager = pipeline._get_store_manager()  # noqa: SLF001
+        # Ensure indexes for existing collections before checking schema.
+        store_manager.ensure_indexes()
         info = store_manager.client.get_collection(store_manager.collection_name)
         payload_schema = getattr(info, "payload_schema", None)
         if isinstance(payload_schema, dict):
@@ -96,6 +98,11 @@ def _content_type_filter_supported(pipeline: RetrievalPipeline) -> bool:
 
 
 def load_guide(document_id: str) -> list:
+    document_id = (document_id or "").strip()
+    if not document_id:
+        print("  WARNING: document_id is empty; expected guide filename format '{document_id}_guide.json'")
+        return []
+
     # Guide files are saved at:
     # /home/aman/storage/Python/Projects/Research Paper Assistant/output/{document_id}_guide.json
     guide_name = f"{document_id}_guide.json"
@@ -107,7 +114,10 @@ def load_guide(document_id: str) -> list:
     ]
     guide_path = next((p for p in guide_candidates if p.exists()), guide_candidates[0])
     if not guide_path.exists():
-        print(f"  WARNING: Guide file not found at {guide_path}")
+        print(
+            f"  WARNING: Guide file not found for document_id={document_id}. "
+            f"Expected filename: {guide_name}"
+        )
         return []
     with open(guide_path, "r", encoding="utf-8") as f:
         data = json.load(f)
@@ -243,8 +253,9 @@ def export_for_annotation() -> None:
                 )
                 section_id = None
                 section_title = section_label
+                resolved_section_title = section_label
                 if query_results:
-                    section_id, section_title = _resolve_section_from_results(
+                    section_id, resolved_section_title = _resolve_section_from_results(
                         pipeline=pipeline,
                         query_results=query_results,
                         section_label=section_label,
@@ -271,15 +282,23 @@ def export_for_annotation() -> None:
                     rerank=True,
                 )
 
-                chunk_ids = [
-                    chunk.metadata["_id"]
-                    for chunk in chunks
-                    if hasattr(chunk, "metadata") and isinstance(chunk.metadata, dict) and chunk.metadata.get("_id")
-                ]
+                chunk_entries: list[dict[str, str]] = []
+                for chunk in chunks:
+                    metadata = getattr(chunk, "metadata", {})
+                    if not isinstance(metadata, dict):
+                        continue
 
-                section_context = "\n\n".join(
-                    chunk.content for chunk in chunks if hasattr(chunk, "content") and chunk.content
-                )
+                    chunk_id = str(metadata.get("_id") or "").strip()
+                    chunk_text = str(getattr(chunk, "content", "") or "").strip()
+                    if not chunk_id:
+                        continue
+
+                    chunk_entries.append(
+                        {
+                            "chunk_id": chunk_id,
+                            "text": chunk_text,
+                        }
+                    )
 
                 figure_chunks = []
                 if needs_figures and can_filter_content_type:
@@ -341,13 +360,14 @@ def export_for_annotation() -> None:
                         "paper_type": paper_type,
                         "document_id": document_id,
                         "section_id": section_id,
+                        # Keep guide intent canonical in export output.
                         "section_title": section_title,
+                        "resolved_section_title": resolved_section_title,
                         "guide_step_number": step_number,
                         "guide_step_title": guide_step_title,
                         "guide_step_description": guide_step_description,
                         "guide_questions": guide_questions,
-                        "section_context": section_context,
-                        "chunk_ids": chunk_ids,
+                        "chunks": chunk_entries,
                         "figure_context": figure_context,
                         "figure_chunk_ids": figure_chunk_ids,
                         "table_context": table_context,

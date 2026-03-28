@@ -1,13 +1,14 @@
 import { useState, useRef, useCallback, useEffect, type FormEvent } from 'react'
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import PaperNavigation from '@/components/PaperNavigation'
 import PaperViewer, { PaperViewerHandle } from '@/components/PaperViewer'
 import AIToolsPanel from '@/components/AIToolsPanel'
 import ChatAssistant from '@/components/ChatAssistant'
 import EmptyStateUpload from '@/components/EmptyStateUpload'
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import {
   type AuthUser,
   clearAuthSession,
+  deleteCmsPaper,
   getCachedAuthUser,
   getMe,
   getPaperBundle,
@@ -22,6 +23,8 @@ const SELECTED_PAPER_KEY = 'researchagent.selectedPaperId'
 
 const Index = () => {
   const queryClient = useQueryClient()
+  const viewerRef = useRef<PaperViewerHandle>(null)
+
   const [authUser, setAuthUser] = useState<AuthUser | null>(getCachedAuthUser())
   const [authSubmitting, setAuthSubmitting] = useState(false)
   const [authMode, setAuthMode] = useState<'login' | 'register'>('login')
@@ -29,6 +32,7 @@ const Index = () => {
   const [authPassword, setAuthPassword] = useState('')
   const [authDisplayName, setAuthDisplayName] = useState('')
   const [authError, setAuthError] = useState<string | null>(null)
+
   const [paperLoaded, setPaperLoaded] = useState(false)
   const [activeSection, setActiveSection] = useState('')
   const [focusedSection, setFocusedSection] = useState<string | null>(null)
@@ -36,56 +40,52 @@ const Index = () => {
     const cached = localStorage.getItem(SELECTED_PAPER_KEY)
     return cached ? Number(cached) || null : null
   })
+
   const [uploadError, setUploadError] = useState<string | null>(null)
-<<<<<<< HEAD
   const [uploadTransitioning, setUploadTransitioning] = useState(false)
-  const [showUploadHome, setShowUploadHome] = useState(false)
-=======
+  const [uploadedFileName, setUploadedFileName] = useState<string | null>(null)
+  const [showHomeView, setShowHomeView] = useState(false)
+
   const [guideCollapsed, setGuideCollapsed] = useState(false)
-  const [guideWidth, setGuideWidth] = useState(320) // Default width in pixels
-  const [toolsWidth, setToolsWidth] = useState(300) // Default width for AI tools panel
+  const [guideWidth, setGuideWidth] = useState(320)
+  const [toolsWidth, setToolsWidth] = useState(300)
   const [isResizing, setIsResizing] = useState(false)
   const [resizeTarget, setResizeTarget] = useState<'guide' | 'tools' | null>(
     null,
   )
-  const [showHomeView, setShowHomeView] = useState(false)
->>>>>>> origin/main
-  const viewerRef = useRef<PaperViewerHandle>(null)
 
-  // Resize functionality
-  const handleGuideMouseDown = useCallback((e: React.MouseEvent) => {
+  const handleGuideMouseDown = useCallback((event: React.MouseEvent) => {
     setIsResizing(true)
     setResizeTarget('guide')
-    e.preventDefault()
+    event.preventDefault()
   }, [])
 
-  const handleToolsMouseDown = useCallback((e: React.MouseEvent) => {
+  const handleToolsMouseDown = useCallback((event: React.MouseEvent) => {
     setIsResizing(true)
     setResizeTarget('tools')
-    e.preventDefault()
+    event.preventDefault()
   }, [])
 
   const handleMouseMove = useCallback(
-    (e: MouseEvent) => {
+    (event: MouseEvent) => {
       if (!isResizing || !resizeTarget) return
 
       if (resizeTarget === 'guide') {
-        // Constrain the guide width between 250px and 50% of viewport width
         const minWidth = 250
         const maxWidth = Math.min(600, window.innerWidth * 0.4)
-        const newWidth = Math.max(minWidth, Math.min(maxWidth, e.clientX))
+        const newWidth = Math.max(minWidth, Math.min(maxWidth, event.clientX))
         setGuideWidth(newWidth)
-      } else if (resizeTarget === 'tools') {
-        // Calculate tools width from the right side
-        const viewportWidth = window.innerWidth
-        const toolsMinWidth = 250
-        const toolsMaxWidth = Math.min(500, viewportWidth * 0.4)
-        const newToolsWidth = Math.max(
-          toolsMinWidth,
-          Math.min(toolsMaxWidth, viewportWidth - e.clientX),
-        )
-        setToolsWidth(newToolsWidth)
+        return
       }
+
+      const viewportWidth = window.innerWidth
+      const minWidth = 250
+      const maxWidth = Math.min(500, viewportWidth * 0.4)
+      const newWidth = Math.max(
+        minWidth,
+        Math.min(maxWidth, viewportWidth - event.clientX),
+      )
+      setToolsWidth(newWidth)
     },
     [isResizing, resizeTarget],
   )
@@ -96,38 +96,33 @@ const Index = () => {
   }, [])
 
   useEffect(() => {
-    if (isResizing) {
-      document.addEventListener('mousemove', handleMouseMove)
-      document.addEventListener('mouseup', handleMouseUp)
-      document.body.style.cursor = 'col-resize'
-      document.body.style.userSelect = 'none'
-      // Prevent text selection during resize
-      document.body.style.WebkitUserSelect = 'none'
-      document.body.style.MozUserSelect = 'none'
-      document.body.style.msUserSelect = 'none'
-    } else {
+    if (!isResizing) {
       document.removeEventListener('mousemove', handleMouseMove)
       document.removeEventListener('mouseup', handleMouseUp)
       document.body.style.cursor = ''
       document.body.style.userSelect = ''
-      document.body.style.WebkitUserSelect = ''
-      document.body.style.MozUserSelect = ''
-      document.body.style.msUserSelect = ''
+      document.body.style.webkitUserSelect = ''
+      return
     }
+
+    document.addEventListener('mousemove', handleMouseMove)
+    document.addEventListener('mouseup', handleMouseUp)
+    document.body.style.cursor = 'col-resize'
+    document.body.style.userSelect = 'none'
+    document.body.style.webkitUserSelect = 'none'
 
     return () => {
       document.removeEventListener('mousemove', handleMouseMove)
       document.removeEventListener('mouseup', handleMouseUp)
       document.body.style.cursor = ''
       document.body.style.userSelect = ''
-      document.body.style.WebkitUserSelect = ''
-      document.body.style.MozUserSelect = ''
-      document.body.style.msUserSelect = ''
+      document.body.style.webkitUserSelect = ''
     }
   }, [isResizing, handleMouseMove, handleMouseUp])
 
   useEffect(() => {
     if (!authUser) return
+
     let cancelled = false
 
     getMe()
@@ -153,6 +148,7 @@ const Index = () => {
       localStorage.removeItem(SELECTED_PAPER_KEY)
       return
     }
+
     localStorage.setItem(SELECTED_PAPER_KEY, String(selectedPaperId))
   }, [selectedPaperId])
 
@@ -164,28 +160,23 @@ const Index = () => {
 
   const papers = papersQuery.data ?? []
 
-  // Auto-select first paper when papers load and no paper is selected
-  // OR restore paperLoaded flag if we have a selectedPaperId from localStorage
-  // Skip if showHomeView is true (user clicked logo to go to upload page)
   useEffect(() => {
     if (!authUser || papersQuery.isLoading || showHomeView) return
 
     if (papers.length > 0) {
       if (!selectedPaperId) {
-        // No paper selected, auto-select first one
         setSelectedPaperId(papers[0].id)
-        setPaperLoaded(true)
-      } else if (!paperLoaded) {
-        // Paper was selected (from localStorage) but paperLoaded flag was lost on reload
+      }
+      if (!paperLoaded) {
         setPaperLoaded(true)
       }
     }
   }, [
-    papers,
-    selectedPaperId,
     authUser,
+    papers,
     papersQuery.isLoading,
     paperLoaded,
+    selectedPaperId,
     showHomeView,
   ])
 
@@ -195,11 +186,8 @@ const Index = () => {
     mutationFn: uploadPaper,
     onMutate: (file: File) => {
       setUploadError(null)
-<<<<<<< HEAD
       setUploadedFileName(file.name)
       setUploadTransitioning(true)
-=======
->>>>>>> origin/main
     },
     onSuccess: async (data) => {
       const newPaperId = data.paper.id
@@ -207,24 +195,41 @@ const Index = () => {
       setActiveSection('')
       setFocusedSection(null)
       setPaperLoaded(true)
-<<<<<<< HEAD
+      setShowHomeView(false)
       setUploadTransitioning(false)
-=======
-      setShowHomeView(false) // Exit home view after successful upload
->>>>>>> origin/main
+
+      await queryClient.invalidateQueries({ queryKey: ['papers'] })
+      await queryClient.invalidateQueries({ queryKey: ['paper-bundle', newPaperId] })
+    },
+    onError: (error: Error) => {
+      setUploadTransitioning(false)
+      setUploadedFileName(null)
+      setUploadError(error.message || 'Upload failed')
+    },
+  })
+
+  const deletePaperMutation = useMutation({
+    mutationFn: deleteCmsPaper,
+    onSuccess: async (_data, deletedPaperId) => {
+      const remainingPapers = papers.filter((item) => item.id !== deletedPaperId)
+
+      if (selectedPaperId === deletedPaperId) {
+        const nextPaperId = remainingPapers[0]?.id ?? null
+        setSelectedPaperId(nextPaperId)
+      }
+
+      if (remainingPapers.length === 0) {
+        setShowHomeView(true)
+        setPaperLoaded(false)
+      }
+
+      setActiveSection('')
+      setFocusedSection(null)
 
       await queryClient.invalidateQueries({ queryKey: ['papers'] })
       await queryClient.invalidateQueries({
-        queryKey: ['paper-bundle', newPaperId],
+        queryKey: ['paper-bundle', deletedPaperId],
       })
-    },
-    onError: (error: Error) => {
-<<<<<<< HEAD
-      setUploadTransitioning(false)
-      setUploadedFileName(null)
-=======
->>>>>>> origin/main
-      setUploadError(error.message || 'Upload failed')
     },
   })
 
@@ -244,11 +249,12 @@ const Index = () => {
   const paper = paperBundleQuery.data?.paper ?? null
   const images = paperBundleQuery.data?.images ?? []
   const technicalTerms = paperBundleQuery.data?.technical_terms ?? []
+  const tables = paperBundleQuery.data?.tables ?? []
 
-  const navSections = sections.map((section, idx) => ({
+  const navSections = sections.map((section, index) => ({
     id: section.id,
     title: section.title,
-    label: String(idx + 1).padStart(2, '0'),
+    label: String(index + 1).padStart(2, '0'),
   }))
 
   const handleSectionClick = useCallback((sectionId: string) => {
@@ -256,7 +262,6 @@ const Index = () => {
     setFocusedSection(sectionId)
     viewerRef.current?.scrollToSection(sectionId)
 
-    // Clear focus effect after scroll completes
     setTimeout(() => {
       setFocusedSection(null)
     }, 1500)
@@ -267,12 +272,26 @@ const Index = () => {
   }, [])
 
   const handlePaperSelect = useCallback((paperId: number) => {
-    setShowUploadHome(false)
     setSelectedPaperId(paperId)
     setActiveSection('')
     setFocusedSection(null)
-    setShowHomeView(false) // Exit home view when selecting a paper
+    setShowHomeView(false)
+    setPaperLoaded(true)
   }, [])
+
+  const handlePaperDelete = useCallback(
+    (paperId: number, paperName: string) => {
+      if (deletePaperMutation.isPending) return
+
+      const confirmed = window.confirm(
+        `Delete "${paperName}" from CMS? This also removes it from Postgres and Qdrant.`,
+      )
+      if (!confirmed) return
+
+      deletePaperMutation.mutate(paperId)
+    },
+    [deletePaperMutation],
+  )
 
   const handleHomeClick = useCallback(() => {
     setSelectedPaperId(null)
@@ -283,30 +302,17 @@ const Index = () => {
 
   const handleFileUploaded = useCallback(
     (file: File) => {
-      setShowUploadHome(false)
       uploadPaperMutation.mutate(file)
     },
     [uploadPaperMutation],
   )
 
-<<<<<<< HEAD
-  const handleGoHome = useCallback(() => {
-    setShowUploadHome(true)
-    setUploadError(null)
-    setUploadedFileName(null)
-  }, [])
-
-  const handleFileBadgeClear = useCallback((fileName: string | null) => {
-    setUploadedFileName(fileName)
-  }, [])
-
-=======
->>>>>>> origin/main
   const handleAuthSubmit = useCallback(
     async (event: FormEvent<HTMLFormElement>) => {
       event.preventDefault()
       setAuthError(null)
       setAuthSubmitting(true)
+
       try {
         const response =
           authMode === 'register'
@@ -332,7 +338,7 @@ const Index = () => {
         setAuthSubmitting(false)
       }
     },
-    [authMode, authEmail, authPassword, authDisplayName, queryClient],
+    [authDisplayName, authEmail, authMode, authPassword, queryClient],
   )
 
   const handleLogout = useCallback(() => {
@@ -341,6 +347,9 @@ const Index = () => {
     setPaperLoaded(false)
     setSelectedPaperId(null)
     setUploadError(null)
+    setUploadTransitioning(false)
+    setUploadedFileName(null)
+    setShowHomeView(false)
     queryClient.clear()
   }, [queryClient])
 
@@ -365,7 +374,7 @@ const Index = () => {
                 <input
                   type="text"
                   value={authDisplayName}
-                  onChange={(e) => setAuthDisplayName(e.target.value)}
+                  onChange={(event) => setAuthDisplayName(event.target.value)}
                   placeholder="Display name"
                   className="w-full rounded-md bg-canvas border border-border/60 px-3 py-2 text-sm text-foreground"
                 />
@@ -373,7 +382,7 @@ const Index = () => {
               <input
                 type="email"
                 value={authEmail}
-                onChange={(e) => setAuthEmail(e.target.value)}
+                onChange={(event) => setAuthEmail(event.target.value)}
                 placeholder="Email"
                 required
                 className="w-full rounded-md bg-canvas border border-border/60 px-3 py-2 text-sm text-foreground"
@@ -381,7 +390,7 @@ const Index = () => {
               <input
                 type="password"
                 value={authPassword}
-                onChange={(e) => setAuthPassword(e.target.value)}
+                onChange={(event) => setAuthPassword(event.target.value)}
                 placeholder="Password"
                 required
                 className="w-full rounded-md bg-canvas border border-border/60 px-3 py-2 text-sm text-foreground"
@@ -419,7 +428,6 @@ const Index = () => {
     )
   }
 
-  // Show loading while papers query is fetching
   if (papersQuery.isLoading) {
     return (
       <div className="h-screen w-full flex items-center justify-center bg-canvas">
@@ -428,7 +436,6 @@ const Index = () => {
     )
   }
 
-  // Show error if papers query failed
   if (papersQuery.error) {
     return (
       <div className="h-screen w-full flex items-center justify-center bg-canvas px-6">
@@ -440,25 +447,7 @@ const Index = () => {
     )
   }
 
-<<<<<<< HEAD
-  // Show upload page if no papers exist
-  if (papers.length === 0 && !uploadTransitioning) {
-    return (
-      <div className="flex h-screen overflow-hidden">
-        <EmptyStateUpload
-          onFileUploaded={handleFileUploaded}
-          isUploading={uploadPaperMutation.isPending}
-          errorMessage={uploadError}
-        />
-      </div>
-    )
-  }
-
-  if (showUploadHome && !uploadTransitioning) {
-=======
-  // Show upload page if no papers exist OR if user clicked home to upload new PDF
   if (papers.length === 0 || showHomeView) {
->>>>>>> origin/main
     return (
       <div className="flex h-screen overflow-hidden">
         <EmptyStateUpload
@@ -470,18 +459,6 @@ const Index = () => {
     )
   }
 
-  // Show loading while bundle is fetching
-  if (paperBundleQuery.isLoading && effectivePaperId === null && !uploadTransitioning) {
-    return (
-      <div className="h-screen w-full flex items-center justify-center bg-canvas">
-        <p className="font-ui text-sm text-text-secondary">
-          Loading paper data from backend...
-        </p>
-      </div>
-    )
-  }
-
-  // Show error if bundle query failed
   if (paperBundleQuery.error) {
     return (
       <div className="h-screen w-full flex items-center justify-center bg-canvas px-6">
@@ -493,39 +470,18 @@ const Index = () => {
     )
   }
 
+  if (paperBundleQuery.isLoading && !paper) {
+    return (
+      <div className="h-screen w-full flex items-center justify-center bg-canvas">
+        <p className="font-ui text-sm text-text-secondary">
+          Loading paper data from backend...
+        </p>
+      </div>
+    )
+  }
+
   return (
-<<<<<<< HEAD
-    <div className="flex h-screen overflow-hidden relative">
-      <button
-        onClick={handleLogout}
-        className="absolute top-3 right-4 z-50 bg-panel border border-border/50 rounded-md px-3 py-1.5 text-[12px] text-text-secondary hover:text-foreground"
-      >
-        Logout
-      </button>
-      <PaperNavigation
-        activeSection={activeSection}
-        onSectionClick={handleSectionClick}
-        sections={navSections}
-        papers={papers}
-        selectedPaperId={effectivePaperId}
-        onPaperSelect={handlePaperSelect}
-        uploadedFileName={uploadedFileName}
-        onFileChange={handleFileBadgeClear}
-        onFileUpload={handleFileUploaded}
-        isUploading={uploadPaperMutation.isPending}
-        uploadError={uploadError}
-        readingGuide={paperBundleQuery.data?.reading_guide ?? null}
-        guideStatus={
-          paperBundleQuery.data?.guide_status ??
-          ((paperBundleQuery.isLoading || (papers.length === 0 && uploadTransitioning))
-            ? { status: 'pending', error: null, updated_at: null }
-            : null)
-        }
-        onGoHome={handleGoHome}
-      />
-=======
     <div className="flex h-screen overflow-hidden relative bg-canvas">
-      {/* Collapsed Guide Panel */}
       {guideCollapsed ? (
         <div
           className="flex items-center bg-white border-r border-border/50 cursor-pointer hover:bg-canvas transition-colors"
@@ -533,7 +489,7 @@ const Index = () => {
           onClick={() => setGuideCollapsed(false)}
           onMouseEnter={() => setGuideCollapsed(false)}
         >
-          <div className="w-full h-8 bg-border/30 rounded-r-sm"></div>
+          <div className="w-full h-8 bg-border/30 rounded-r-sm" />
         </div>
       ) : (
         <>
@@ -544,7 +500,19 @@ const Index = () => {
             papers={papers}
             selectedPaperId={effectivePaperId}
             onPaperSelect={handlePaperSelect}
+            onPaperDelete={handlePaperDelete}
+            deletingPaperId={
+              deletePaperMutation.isPending
+                ? (deletePaperMutation.variables ?? null)
+                : null
+            }
             readingGuide={paperBundleQuery.data?.reading_guide ?? null}
+            guideStatus={
+              paperBundleQuery.data?.guide_status ??
+              (paperBundleQuery.isLoading
+                ? { status: 'pending', error: null, updated_at: null }
+                : null)
+            }
             collapsed={guideCollapsed}
             onToggleCollapse={() => setGuideCollapsed(!guideCollapsed)}
             onHomeClick={handleHomeClick}
@@ -555,65 +523,48 @@ const Index = () => {
             style={{ width: `${guideWidth}px` }}
           />
 
-          {/* Resizer */}
           <div
             className="relative flex items-center justify-center w-2 bg-transparent hover:bg-accent/20 cursor-col-resize transition-all duration-200 group"
             onMouseDown={handleGuideMouseDown}
             title="Drag to resize guide panel"
           >
-            {/* Resizer Handle */}
             <div className="absolute inset-y-0 left-1/2 transform -translate-x-1/2 w-0.5 bg-border/40 group-hover:bg-accent/60 group-hover:w-1 transition-all duration-200 rounded-full" />
-            {/* Grip Lines */}
             <div className="absolute inset-y-0 left-1/2 transform -translate-x-1/2 flex flex-col justify-center space-y-1 opacity-0 group-hover:opacity-100 transition-opacity duration-200">
               <div className="w-3 h-0.5 bg-border/60 rounded-full" />
               <div className="w-3 h-0.5 bg-border/60 rounded-full" />
               <div className="w-3 h-0.5 bg-border/60 rounded-full" />
             </div>
-            {/* Active resize indicator */}
-            {isResizing && resizeTarget === 'guide' && (
+            {isResizing && resizeTarget === 'guide' ? (
               <div className="absolute inset-0 bg-accent/30 border-x border-accent/50" />
-            )}
+            ) : null}
           </div>
         </>
       )}
 
->>>>>>> origin/main
       <PaperViewer
         ref={viewerRef}
         onVisibleSectionChange={handleVisibleSectionChange}
         focusedSection={focusedSection}
         paper={paper}
         sections={sections}
-        isProcessingUpload={papers.length === 0 && uploadTransitioning}
+        isProcessingUpload={uploadTransitioning}
         processingFileName={uploadedFileName}
       />
-<<<<<<< HEAD
-      <AIToolsPanel
-        paper={paper}
-        sections={sections}
-        images={images}
-        technicalTerms={technicalTerms}
-      />
-=======
 
-      {/* Right Resizer */}
       <div
         className="relative flex items-center justify-center w-2 bg-transparent hover:bg-accent/20 cursor-col-resize transition-all duration-200 group"
         onMouseDown={handleToolsMouseDown}
         title="Drag to resize AI tools panel"
       >
-        {/* Resizer Handle */}
         <div className="absolute inset-y-0 left-1/2 transform -translate-x-1/2 w-0.5 bg-border/40 group-hover:bg-accent/60 group-hover:w-1 transition-all duration-200 rounded-full" />
-        {/* Grip Lines */}
         <div className="absolute inset-y-0 left-1/2 transform -translate-x-1/2 flex flex-col justify-center space-y-1 opacity-0 group-hover:opacity-100 transition-opacity duration-200">
           <div className="w-3 h-0.5 bg-border/60 rounded-full" />
           <div className="w-3 h-0.5 bg-border/60 rounded-full" />
           <div className="w-3 h-0.5 bg-border/60 rounded-full" />
         </div>
-        {/* Active resize indicator */}
-        {isResizing && resizeTarget === 'tools' && (
+        {isResizing && resizeTarget === 'tools' ? (
           <div className="absolute inset-0 bg-accent/30 border-x border-accent/50" />
-        )}
+        ) : null}
       </div>
 
       <div
@@ -625,6 +576,7 @@ const Index = () => {
             paper={paper}
             sections={sections}
             images={images}
+            technicalTerms={technicalTerms}
             tables={tables}
           />
         </div>
@@ -634,7 +586,6 @@ const Index = () => {
           </div>
         </div>
       </div>
->>>>>>> origin/main
     </div>
   )
 }

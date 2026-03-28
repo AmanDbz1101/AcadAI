@@ -11,7 +11,7 @@ import logging
 from dataclasses import dataclass
 from datetime import datetime
 import re
-from typing import Any, Dict, List, Optional, Tuple
+from typing import Any, Callable, Dict, List, Optional, Tuple
 
 from sqlalchemy import (
     BigInteger,
@@ -845,19 +845,27 @@ class PostgresPaperStore:
         user_id: int,
         paper_id: int,
         delete_even_if_shared: bool = False,
+        before_global_delete: Optional[Callable[[str], bool]] = None,
     ) -> Dict[str, Any]:
         """
         Remove a paper from a user and optionally delete the paper globally.
 
-        Behavior:
-        - If the user does not have access, no changes are made.
-        - User link is always removed when present.
-        - The paper row is deleted only if no other user links remain,
-          unless ``delete_even_if_shared`` is True.
+                Behavior:
+                - If the user does not have access, no changes are made.
+                - User link is always removed when present.
+                - The paper row is deleted only if no other user links remain,
+                    unless ``delete_even_if_shared`` is True.
+                - If ``before_global_delete`` is provided, it must return True before
+                    the final paper row is deleted and committed.
         """
         self.ensure_schema()
         with self._Session() as session:
-            paper = session.query(PaperRecord).filter(PaperRecord.id == paper_id).first()
+            paper = (
+                session.query(PaperRecord)
+                .filter(PaperRecord.id == paper_id)
+                .with_for_update()
+                .first()
+            )
             if paper is None:
                 return {
                     "deleted": False,
@@ -906,6 +914,36 @@ class PostgresPaperStore:
                     "source_pdf_path": source_pdf_path,
                     "remaining_links": int(remaining_links),
                 }
+
+            if before_global_delete:
+                try:
+                    predelete_ok = bool(before_global_delete(str(document_uuid or "")))
+                except Exception as exc:  # noqa: BLE001
+                    session.rollback()
+                    return {
+                        "deleted": False,
+                        "paper_deleted": False,
+                        "reason": "qdrant_delete_failed",
+                        "error": str(exc),
+                        "paper_id": int(paper_id),
+                        "paper_name": paper_name,
+                        "document_uuid": document_uuid,
+                        "source_pdf_path": source_pdf_path,
+                        "remaining_links": int(remaining_links),
+                    }
+
+                if not predelete_ok:
+                    session.rollback()
+                    return {
+                        "deleted": False,
+                        "paper_deleted": False,
+                        "reason": "qdrant_delete_failed",
+                        "paper_id": int(paper_id),
+                        "paper_name": paper_name,
+                        "document_uuid": document_uuid,
+                        "source_pdf_path": source_pdf_path,
+                        "remaining_links": int(remaining_links),
+                    }
 
             session.delete(paper)
             session.commit()

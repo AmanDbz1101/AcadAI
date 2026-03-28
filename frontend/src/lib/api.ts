@@ -58,8 +58,23 @@ export interface GenerateTechnicalTermDefinitionResponse {
   }
 }
 
+export interface CmsDeletePaperResponse {
+  paper_id: number
+  deleted: boolean
+  paper_deleted: boolean
+  reason?: string | null
+  remaining_links?: number
+  qdrant?: {
+    deleted?: boolean
+    reason?: string
+    document_id?: string
+    collection?: string
+    was_indexed?: boolean
+  }
+}
+
 const API_BASE_URL =
-  import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000'
+  import.meta.env.VITE_API_BASE_URL || 'http://localhost:8001'
 
 const AUTH_TOKEN_KEY = 'researchagent.auth.token'
 const AUTH_USER_KEY = 'researchagent.auth.user'
@@ -118,6 +133,20 @@ async function postJson<T>(path: string, body: unknown): Promise<T> {
   return response.json() as Promise<T>
 }
 
+async function deleteJson<T>(path: string): Promise<T> {
+  const response = await fetch(`${API_BASE_URL}${path}`, {
+    method: 'DELETE',
+    headers: {
+      ...getAuthHeader(),
+    },
+  })
+  if (!response.ok) {
+    const text = await response.text()
+    throw new Error(`API ${response.status}: ${text || response.statusText}`)
+  }
+  return response.json() as Promise<T>
+}
+
 export async function registerUser(
   payload: RegisterPayload,
 ): Promise<AuthResponse> {
@@ -159,6 +188,12 @@ export async function uploadPaper(file: File): Promise<UploadPaperResponse> {
   }
 
   return response.json() as Promise<UploadPaperResponse>
+}
+
+export async function deleteCmsPaper(
+  paperId: number,
+): Promise<CmsDeletePaperResponse> {
+  return deleteJson<CmsDeletePaperResponse>(`/api/cms/papers/${paperId}`)
 }
 
 export async function getPaperQuestions(

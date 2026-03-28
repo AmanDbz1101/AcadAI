@@ -24,30 +24,13 @@ from typing import Any, Optional
 
 from docling.datamodel.base_models import InputFormat
 from docling.datamodel.pipeline_options import (
-    AcceleratorDevice,
-    AcceleratorOptions,
     PdfPipelineOptions,
 )
 from docling.document_converter import DocumentConverter, PdfFormatOption
 from docling_core.types.doc import DoclingDocument
+from backend.extraction.app.pdf_loader import _get_accelerator_options
 
 logger = logging.getLogger(__name__)
-
-_MIN_FREE_GPU_GB = 1.5
-
-
-def _get_accelerator_options(num_threads: int = 4) -> AcceleratorOptions:
-    try:
-        import torch
-        if torch.cuda.is_available():
-            free_bytes, _ = torch.cuda.mem_get_info()
-            if free_bytes / (1024 ** 3) >= _MIN_FREE_GPU_GB:
-                return AcceleratorOptions(
-                    num_threads=num_threads, device=AcceleratorDevice.CUDA
-                )
-    except Exception:
-        pass
-    return AcceleratorOptions(num_threads=num_threads, device=AcceleratorDevice.CPU)
 
 
 # ---------------------------------------------------------------------------

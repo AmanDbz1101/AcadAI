@@ -9,6 +9,7 @@ Detects machine-readability and determines if OCR is needed.
 import time
 import logging
 import os
+import signal
 import subprocess
 from pathlib import Path
 from typing import Optional, List, Dict, Any
@@ -61,6 +62,90 @@ def _other_gpu_compute_pids() -> List[int]:
     return sorted(set(pids))
 
 
+def _parse_pid_list(raw: str) -> List[int]:
+    """Parse comma-separated PID list from env var."""
+    parsed: List[int] = []
+    for token in raw.split(","):
+        token = token.strip()
+        if not token:
+            continue
+        try:
+            pid = int(token)
+        except ValueError:
+            continue
+        if pid > 1:
+            parsed.append(pid)
+    return sorted(set(parsed))
+
+
+def _pid_exists(pid: int) -> bool:
+    try:
+        os.kill(pid, 0)
+    except ProcessLookupError:
+        return False
+    except PermissionError:
+        # Process exists but ownership/permissions block signaling.
+        return True
+    return True
+
+
+def _terminate_pid(pid: int, term_timeout_sec: float, force_kill: bool) -> bool:
+    """Try to terminate a PID cleanly, optionally escalating to SIGKILL."""
+    if pid <= 1:
+        return False
+
+    try:
+        os.kill(pid, signal.SIGTERM)
+    except ProcessLookupError:
+        return True
+    except PermissionError:
+        _loader_logger.warning("No permission to SIGTERM competing GPU PID=%s", pid)
+        return False
+
+    deadline = time.time() + max(0.0, term_timeout_sec)
+    while time.time() < deadline:
+        if not _pid_exists(pid):
+            return True
+        time.sleep(0.2)
+
+    if not force_kill:
+        return not _pid_exists(pid)
+
+    try:
+        os.kill(pid, signal.SIGKILL)
+    except ProcessLookupError:
+        return True
+    except PermissionError:
+        _loader_logger.warning("No permission to SIGKILL competing GPU PID=%s", pid)
+        return False
+
+    # Give the kernel a short window to reap the process.
+    for _ in range(15):
+        if not _pid_exists(pid):
+            return True
+        time.sleep(0.1)
+    return not _pid_exists(pid)
+
+
+def _kill_competing_gpu_processes(
+    pids: List[int],
+    exclude_pids: List[int],
+    term_timeout_sec: float,
+    force_kill: bool,
+) -> List[int]:
+    """Terminate competing GPU compute processes and return killed PID list."""
+    excluded = set(exclude_pids)
+    killed: List[int] = []
+
+    for pid in sorted(set(pids)):
+        if pid in excluded or pid <= 1:
+            continue
+        if _terminate_pid(pid, term_timeout_sec=term_timeout_sec, force_kill=force_kill):
+            killed.append(pid)
+
+    return killed
+
+
 def _cuda_ready(min_free_gpu_gb: float, require_exclusive: bool) -> tuple[bool, float, List[int]]:
     """
     Check whether CUDA can be used right now.
@@ -86,9 +171,16 @@ def _get_accelerator_options(num_threads: int = 4) -> AcceleratorOptions:
     require_cuda = _env_flag("DOCLING_REQUIRE_CUDA", forced_device == "cuda")
     require_gpu_exclusive = _env_flag("DOCLING_GPU_EXCLUSIVE", True)
     wait_for_gpu = _env_flag("DOCLING_WAIT_FOR_GPU", True)
-    wait_timeout_seconds = float(os.getenv("DOCLING_GPU_WAIT_TIMEOUT_SEC", "300"))
+    wait_timeout_seconds = float(os.getenv("DOCLING_GPU_WAIT_TIMEOUT_SEC", "0"))
     poll_interval_seconds = float(os.getenv("DOCLING_GPU_POLL_INTERVAL_SEC", "2"))
     min_free_gpu_gb = float(os.getenv("DOCLING_MIN_FREE_GPU_GB", str(_MIN_FREE_GPU_GB)))
+    kill_competing_gpu_procs = _env_flag("DOCLING_KILL_OTHER_GPU_PROCS", True)
+    kill_term_timeout_sec = float(os.getenv("DOCLING_GPU_KILL_TERM_TIMEOUT_SEC", "5"))
+    kill_force = _env_flag("DOCLING_GPU_FORCE_KILL", True)
+    excluded_pids = _parse_pid_list(os.getenv("DOCLING_GPU_KILL_EXCLUDE_PIDS", ""))
+
+    if os.getpid() not in excluded_pids:
+        excluded_pids.append(os.getpid())
 
     if forced_device == "cpu":
         _loader_logger.info("DOCLING_DEVICE=cpu set; using CPU for docling")
@@ -103,7 +195,8 @@ def _get_accelerator_options(num_threads: int = 4) -> AcceleratorOptions:
             _loader_logger.info("Using CPU for docling (CUDA unavailable)")
             return AcceleratorOptions(num_threads=num_threads, device=AcceleratorDevice.CPU)
 
-        deadline = time.time() + max(0.0, wait_timeout_seconds)
+        deadline = None if wait_timeout_seconds <= 0 else time.time() + wait_timeout_seconds
+        attempted_kill_pids: set[int] = set()
         while True:
             ready, free_gb, competing_pids = _cuda_ready(
                 min_free_gpu_gb=min_free_gpu_gb,
@@ -117,7 +210,30 @@ def _get_accelerator_options(num_threads: int = 4) -> AcceleratorOptions:
                 )
                 return AcceleratorOptions(num_threads=num_threads, device=AcceleratorDevice.CUDA)
 
-            if not wait_for_gpu or time.time() >= deadline:
+            if kill_competing_gpu_procs:
+                # Kill candidates include competing PIDs reported by exclusivity mode;
+                # when VRAM is low without exclusivity, inspect all compute PIDs.
+                kill_candidates = competing_pids or _other_gpu_compute_pids()
+                kill_candidates = [
+                    pid for pid in kill_candidates if pid not in attempted_kill_pids
+                ]
+                if kill_candidates:
+                    attempted_kill_pids.update(kill_candidates)
+                    killed = _kill_competing_gpu_processes(
+                        pids=kill_candidates,
+                        exclude_pids=excluded_pids,
+                        term_timeout_sec=kill_term_timeout_sec,
+                        force_kill=kill_force,
+                    )
+                    if killed:
+                        _loader_logger.warning(
+                            "Terminated competing GPU process(es): %s",
+                            killed,
+                        )
+                        time.sleep(max(0.2, poll_interval_seconds))
+                        continue
+
+            if not wait_for_gpu or (deadline is not None and time.time() >= deadline):
                 reason = (
                     f"GPU not ready (free VRAM={free_gb:.2f} GB, "
                     f"required>={min_free_gpu_gb:.2f} GB, competing_pids={competing_pids})"
@@ -133,7 +249,11 @@ def _get_accelerator_options(num_threads: int = 4) -> AcceleratorOptions:
                 competing_pids,
             )
             time.sleep(max(0.2, poll_interval_seconds))
-    except Exception:
+    except Exception as exc:
+        _loader_logger.exception(
+            "GPU accelerator selection failed with %s; evaluating CPU fallback",
+            type(exc).__name__,
+        )
         if require_cuda or forced_device == "cuda":
             raise
     _loader_logger.info("Using CPU for docling")

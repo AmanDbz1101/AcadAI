@@ -294,7 +294,7 @@ const PaperViewer = forwardRef<PaperViewerHandle, PaperViewerProps>(
 
         const token = localStorage.getItem('researchagent.auth.token')
         const apiBase =
-          import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000'
+          import.meta.env.VITE_API_BASE_URL || 'http://localhost:8001'
         const url = `${apiBase}${paper.pdf_url}`
 
         try {

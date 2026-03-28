@@ -77,16 +77,13 @@ Relevant Content:
 
 Instructions:
 - Answer the question directly and concisely
-- Cite specific evidence from the provided content
 - If the content doesn't contain enough information, say so
 - Use academic language but keep it accessible
 - For technical questions, explain key concepts briefly
-- Include page/section references when available in metadata
 
 Format your answer as:
-1. Direct answer (2-3 sentences)
-2. Supporting evidence with citations
-3. Additional context if needed
+Direct answer (2-3 sentences)
+
 
 Answer:"""
 

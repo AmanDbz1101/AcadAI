@@ -141,6 +141,7 @@ class QdrantStoreManager:
         - ``section_title`` — TEXT (full-text) index required by ``MatchText``.
         - ``section_path`` — KEYWORD index for section-scoped ``MatchAny``.
         - ``chunk_level`` — KEYWORD index for fine/coarse filtering.
+        - ``content_type`` — KEYWORD index for figure/table filtering.
 
         Safe to call multiple times; silently ignores conflicts.
         """
@@ -197,6 +198,17 @@ class QdrantStoreManager:
             logger.info("QdrantStoreManager: ensured keyword index on 'chunk_level'")
         except Exception as exc:  # noqa: BLE001
             logger.debug("chunk_level index already exists or failed: %s", exc)
+
+        # content_type: exact match on chunk type (e.g., text/figure/table).
+        try:
+            self.client.create_payload_index(
+                collection_name=self.collection_name,
+                field_name="content_type",
+                field_schema=PayloadSchemaType.KEYWORD,
+            )
+            logger.info("QdrantStoreManager: ensured keyword index on 'content_type'")
+        except Exception as exc:  # noqa: BLE001
+            logger.debug("content_type index already exists or failed: %s", exc)
 
         # section_id: exact match on canonical section numbering IDs (e.g., "3.2.1")
         try:

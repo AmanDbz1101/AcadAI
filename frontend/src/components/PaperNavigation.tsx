@@ -1,4 +1,4 @@
-import { ChevronDown, ChevronLeft, Home, LogOut, Upload } from 'lucide-react'
+import { ChevronDown, ChevronLeft, Home, LogOut, Upload, X } from 'lucide-react'
 import { useEffect, useRef, useState } from 'react'
 import {
   Collapsible,
@@ -21,11 +21,11 @@ interface PaperNavigationProps {
   papers: PaperSummary[]
   selectedPaperId: number | null
   onPaperSelect: (paperId: number) => void
+  onPaperDelete?: (paperId: number, paperName: string) => void
+  deletingPaperId?: number | null
   readingGuide?: ReadingGuide | null
-<<<<<<< HEAD
   guideStatus?: GuideStatus | null
   onGoHome?: () => void
-=======
   collapsed?: boolean
   onToggleCollapse?: () => void
   onHomeClick?: () => void
@@ -34,7 +34,6 @@ interface PaperNavigationProps {
   isUploadingPdf?: boolean
   uploadErrorMessage?: string | null
   style?: React.CSSProperties
->>>>>>> origin/main
 }
 
 interface ReadingPhase {
@@ -151,21 +150,22 @@ const PaperNavigation = ({
   papers,
   selectedPaperId,
   onPaperSelect,
+  onPaperDelete,
+  deletingPaperId,
   readingGuide,
-<<<<<<< HEAD
   guideStatus,
-  onGoHome,
-=======
   collapsed = false,
   onToggleCollapse,
   onHomeClick,
+  onGoHome,
   onLogout,
   onUploadPdf,
   isUploadingPdf = false,
   uploadErrorMessage,
   style,
->>>>>>> origin/main
 }: PaperNavigationProps) => {
+  void guideStatus
+
   // Extract phases from reading guide or use defaults
   const readingPhases = extractPhasesFromGuide(readingGuide)
   const phaseIdsSignature = readingPhases.map((phase) => phase.id).join('|')
@@ -207,30 +207,11 @@ const PaperNavigation = ({
     }))
   }
 
-<<<<<<< HEAD
-  return (
-    <aside className="w-[320px] min-w-[280px] max-w-[88vw] bg-panel h-screen sticky top-0 flex flex-col border-r border-border/40">
-      <div className="px-6 pt-8 pb-6">
-        <button
-          type="button"
-          onClick={onGoHome}
-          className="flex items-center gap-2 text-left hover:opacity-90 transition-opacity"
-          title="Go to home"
-        >
-          <BookOpenText size={18} className="text-text-active" />
-          <h1 className="font-ui text-[16px] font-bold text-foreground tracking-tight">
-            AcadAI
-          </h1>
-        </button>
-        <p className="font-ui text-[11px] text-text-secondary pl-[26px]">
-          Research Paper Assistant
-        </p>
-      </div>
-=======
+  const homeHandler = onHomeClick ?? onGoHome
+
   const handleUploadButtonClick = () => {
     fileInputRef.current?.click()
   }
->>>>>>> origin/main
 
   const handleFileInputChange = (
     event: React.ChangeEvent<HTMLInputElement>,
@@ -253,7 +234,7 @@ const PaperNavigation = ({
         <div className="px-6 pt-4 pb-3 border-b border-border/40 bg-gradient-to-r from-accent/10 via-panel to-panel">
           <div className="flex items-center justify-between">
             <button
-              onClick={onHomeClick}
+              onClick={homeHandler}
               className="inline-flex h-7 w-7 items-center justify-center rounded-md border border-border/60 bg-canvas text-text-active hover:bg-accent/10 transition-colors"
               title="Home"
               aria-label="Home"
@@ -261,25 +242,29 @@ const PaperNavigation = ({
               <Home size={14} />
             </button>
 
-            <button
-              onClick={onLogout}
-              className="inline-flex h-7 w-7 items-center justify-center rounded-md border border-primary/80 bg-primary text-primary-foreground hover:bg-primary/90 transition-colors"
-              title="Logout"
-              aria-label="Logout"
-            >
-              <LogOut size={14} />
-            </button>
+            {onLogout ? (
+              <button
+                onClick={onLogout}
+                className="inline-flex h-7 w-7 items-center justify-center rounded-md border border-primary/80 bg-primary text-primary-foreground hover:bg-primary/90 transition-colors"
+                title="Logout"
+                aria-label="Logout"
+              >
+                <LogOut size={14} />
+              </button>
+            ) : null}
           </div>
         </div>
 
-        <button
-          onClick={onToggleCollapse}
-          className="absolute right-0 top-1/2 z-20 inline-flex h-9 w-4 -translate-y-1/2 items-center justify-center rounded-l-md rounded-r-none border border-r-0 border-border/60 bg-canvas shadow-sm hover:bg-accent/10 transition-colors"
-          title={collapsed ? 'Expand guide panel' : 'Collapse guide panel'}
-          aria-label={collapsed ? 'Expand guide panel' : 'Collapse guide panel'}
-        >
-          <ChevronLeft size={14} className="text-text-secondary" />
-        </button>
+        {onToggleCollapse ? (
+          <button
+            onClick={onToggleCollapse}
+            className="absolute right-0 top-1/2 z-20 inline-flex h-9 w-4 -translate-y-1/2 items-center justify-center rounded-l-md rounded-r-none border border-r-0 border-border/60 bg-canvas shadow-sm hover:bg-accent/10 transition-colors"
+            title={collapsed ? 'Expand guide panel' : 'Collapse guide panel'}
+            aria-label={collapsed ? 'Expand guide panel' : 'Collapse guide panel'}
+          >
+            <ChevronLeft size={14} className="text-text-secondary" />
+          </button>
+        ) : null}
 
         <div className="px-6 mt-4 mb-3">
           <label className="font-ui text-[11px] font-semibold uppercase tracking-[0.18em] text-text-secondary block mb-2">
@@ -296,6 +281,52 @@ const PaperNavigation = ({
               </option>
             ))}
           </select>
+
+          <div className="mt-2 space-y-1 max-h-28 overflow-y-auto pr-1">
+            {papers.map((paper) => {
+              const isSelected = selectedPaperId === paper.id
+              const isDeleting = deletingPaperId === paper.id
+
+              return (
+                <div
+                  key={`paper-delete-item-${paper.id}`}
+                  className={`flex items-center justify-between gap-2 rounded-md border px-2 py-1 ${
+                    isSelected
+                      ? 'border-accent/60 bg-accent/10'
+                      : 'border-border/50 bg-canvas'
+                  }`}
+                >
+                  <button
+                    type="button"
+                    onClick={() => onPaperSelect(paper.id)}
+                    className={`min-w-0 flex-1 truncate text-left font-ui text-[11px] ${
+                      isSelected ? 'text-foreground font-semibold' : 'text-text-secondary hover:text-foreground'
+                    }`}
+                    title={paper.paper_name}
+                  >
+                    {paper.paper_name}
+                  </button>
+
+                  {onPaperDelete ? (
+                    <button
+                      type="button"
+                      onClick={() => onPaperDelete(paper.id, paper.paper_name)}
+                      disabled={Boolean(deletingPaperId)}
+                      className="inline-flex h-5 w-5 items-center justify-center rounded border border-destructive/30 bg-destructive/10 text-destructive hover:bg-destructive/20 disabled:opacity-60"
+                      title={`Delete ${paper.paper_name}`}
+                      aria-label={`Delete ${paper.paper_name}`}
+                    >
+                      {isDeleting ? (
+                        <span className="font-ui text-[10px]">...</span>
+                      ) : (
+                        <X size={12} />
+                      )}
+                    </button>
+                  ) : null}
+                </div>
+              )
+            })}
+          </div>
         </div>
 
         <div className="px-6 mb-3">
@@ -323,78 +354,6 @@ const PaperNavigation = ({
           </div>
         ) : null}
 
-<<<<<<< HEAD
-      <ScrollArea className="flex-1 px-4 py-1">
-        <div className="space-y-1 pb-4">
-          {readingPhases.length === 0 ? (
-            <div className="px-3 py-2 rounded-md bg-canvas">
-              {guideStatus?.status === 'pending' ? (
-                <>
-                  <p className="font-ui text-[11px] text-text-secondary leading-relaxed">
-                    Reading guide is being generated from your uploaded PDF.
-                  </p>
-                  <div className="mt-2 flex items-center gap-1.5">
-                    <span
-                      className="w-1.5 h-1.5 rounded-full bg-text-secondary/60 animate-bounce"
-                      style={{ animationDelay: '0ms' }}
-                    />
-                    <span
-                      className="w-1.5 h-1.5 rounded-full bg-text-secondary/60 animate-bounce"
-                      style={{ animationDelay: '150ms' }}
-                    />
-                    <span
-                      className="w-1.5 h-1.5 rounded-full bg-text-secondary/60 animate-bounce"
-                      style={{ animationDelay: '300ms' }}
-                    />
-                  </div>
-                </>
-              ) : guideStatus?.status === 'failed' ? (
-                <p className="font-ui text-[11px] text-destructive leading-relaxed">
-                  Guide generation failed. Re-upload the paper or try again.
-                </p>
-              ) : (
-                <p className="font-ui text-[11px] text-text-secondary leading-relaxed">
-                  No backend reading guide found for this paper yet.
-                </p>
-              )}
-            </div>
-          ) : (
-            readingPhases.map((phase, idx) => {
-              return (
-                <Collapsible
-                  key={phase.id}
-                  open={openPhases[phase.id] ?? false}
-                  onOpenChange={(isOpen) => setPhaseOpenState(phase.id, isOpen)}
-                >
-                  <CollapsibleTrigger className="w-full text-left px-3 py-2.5 rounded-md hover:bg-canvas transition-colors duration-200 group flex items-center gap-2">
-                    <span className="font-mono text-[10px] text-text-secondary/60">
-                      {String(idx + 1).padStart(2, '0')}
-                    </span>
-                    <div className="flex-1 min-w-0">
-                      <p className="font-ui text-[12px] font-semibold text-foreground truncate">
-                        {phase.title}
-                      </p>
-                    </div>
-                    <ChevronDown
-                      size={14}
-                      className={`text-text-secondary transition-transform duration-200 ${
-                        openPhases[phase.id] ? 'rotate-180' : ''
-                      }`}
-                    />
-                  </CollapsibleTrigger>
-
-                  <CollapsibleContent className="animate-fade-in">
-                    <div className="ml-[26px] mr-1 mb-2 space-y-2 border-l-2 border-border/40 pl-3 py-2">
-                      <div className="bg-canvas rounded-md border border-border/40 px-2.5 py-2 space-y-1">
-                        <p className="font-ui text-[10px] font-semibold uppercase tracking-wider text-text-active">
-                          Pass Goal
-                        </p>
-                        <p className="font-ui text-[11px] text-foreground leading-relaxed">
-                          {phase.goal}
-                        </p>
-                        <p className="font-ui text-[10px] text-text-secondary">
-                          Estimated time: {phase.estimatedTime}
-=======
         <ScrollArea className="flex-1 px-4 py-2">
           <div className="space-y-1 pb-4">
             {readingPhases.length === 0 ? (
@@ -420,7 +379,6 @@ const PaperNavigation = ({
                       <div className="flex-1 min-w-0">
                         <p className="font-ui text-[12px] font-semibold text-foreground truncate">
                           {phase.title}
->>>>>>> origin/main
                         </p>
                       </div>
                       <ChevronDown
@@ -639,15 +597,17 @@ const PaperNavigation = ({
             className="hidden"
             onChange={handleFileInputChange}
           />
-          <button
-            type="button"
-            onClick={handleUploadButtonClick}
-            disabled={isUploadingPdf}
-            className="w-full rounded-md border border-primary/70 bg-primary text-primary-foreground hover:bg-primary/90 disabled:opacity-60 px-3 py-2 font-ui text-[12px] font-semibold transition-colors flex items-center justify-center gap-2 shadow-md"
-          >
-            <Upload size={14} className="text-primary-foreground" />
-            {isUploadingPdf ? 'Uploading PDF...' : 'Upload PDF'}
-          </button>
+          {onUploadPdf ? (
+            <button
+              type="button"
+              onClick={handleUploadButtonClick}
+              disabled={isUploadingPdf}
+              className="w-full rounded-md border border-primary/70 bg-primary text-primary-foreground hover:bg-primary/90 disabled:opacity-60 px-3 py-2 font-ui text-[12px] font-semibold transition-colors flex items-center justify-center gap-2 shadow-md"
+            >
+              <Upload size={14} className="text-primary-foreground" />
+              {isUploadingPdf ? 'Uploading PDF...' : 'Upload PDF'}
+            </button>
+          ) : null}
           {uploadErrorMessage ? (
             <p className="mt-2 font-ui text-[11px] text-destructive leading-snug">
               {uploadErrorMessage}

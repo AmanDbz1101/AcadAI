@@ -22,5 +22,11 @@ PAPERS = [
         "paper_type": "Survey",
         "document_id": "e0960904-0d88-57cb-a52e-f60e01df2c7b",
         "title": "Pre-trained Models for Natural Language Processing: A Survey"
+    },
+    {
+        "paper_id": "paper_memgpt",
+        "paper_type": "Applied",
+        "document_id": "a85211d3-4ad5-52d0-9a49-7d351a58fe31",
+        "title": "MemGPT: Towards LLMs as Operating Systems"
     }
 ]

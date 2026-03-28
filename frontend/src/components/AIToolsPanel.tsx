@@ -3,6 +3,7 @@ import type {
   PaperImage,
   PaperSection,
   PaperSummary,
+  PaperTable,
   TechnicalTerm,
 } from '@/types/api'
 

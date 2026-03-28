@@ -3,11 +3,11 @@
   "reading_strategy": {
     "method": "three_pass_method",
     "paper_type": "applied",
-    "estimated_total_time": "60-90 minutes"
+    "estimated_total_time": "60 minutes"
   },
   "pass1_quick_scan": {
-    "goal": "Understand the overall structure and key contributions",
-    "estimated_time": "10-15 minutes",
+    "goal": "Understand the overall structure of the paper",
+    "estimated_time": "10 minutes",
     "steps": [
       {
         "step_number": 1,
@@ -18,38 +18,36 @@
         "relevant_table_ids": [],
         "needs_figures": false,
         "needs_tables": false,
-        "objective": "Understand the research context and problem statement",
+        "objective": "Get an overview of the paper",
         "questions_to_answer": [
-          "What is the primary problem that the Attention Is All You Need paper aims to address in the field of deep learning?",
-          "How does the paper's proposed approach differ from traditional sequence-to-sequence models with encoder-decoder structures?",
-          "What is the key contribution of the Attention Is All You Need paper in terms of improving the efficiency of neural machine translation models?"
+          "What machine translation tasks were used to evaluate the Transformer model's performance?",
+          "How does the Transformer model's BLEU score on the WMT 2014 English-to-German translation task compare to the existing best results?",
+          "What is the single-model state-of-the-art BLEU score achieved by the Transformer model on the WMT 2014 English-to-French translation task?"
         ],
-        "expected_output": "Summary of the research context and problem statement"
+        "expected_output": "Basic understanding of the paper's topic and structure"
       }
     ]
   },
   "pass2_method_understanding": {
     "goal": "Understand the model architecture and training",
-    "estimated_time": "20-30 minutes",
+    "estimated_time": "20 minutes",
     "steps": [
       {
         "step_number": 1,
         "section_to_read": [
           "3 Model Architecture"
         ],
-        "relevant_figure_ids": [
-          "224fe8dda46fcfb50fa3dcfda9520dd2"
-        ],
+        "relevant_figure_ids": [],
         "relevant_table_ids": [],
-        "needs_figures": true,
+        "needs_figures": false,
         "needs_tables": false,
-        "objective": "Understand the Transformer model architecture",
+        "objective": "Understand the Transformer model",
         "questions_to_answer": [
-          "Which specific claim in section 3 Model Architecture most directly achieves this step objective?",
-          "Which paper-specific evidence best supports the stated expected output for step 1?",
-          "Which paper-specific evidence best supports the stated expected output for step 1?"
+          "What is the primary mechanism used in the Transformer model architecture?",
+          "How does the Transformer model's performance compare to the existing best results on the WMT 2014 English-to-German translation task?",
+          "What is the BLEU score achieved by the Transformer model on the WMT 2014 English-to-French translation task?"
         ],
-        "expected_output": "Description of the Transformer model architecture"
+        "expected_output": "Knowledge of the model's components and how they interact"
       },
       {
         "step_number": 2,
@@ -57,45 +55,39 @@
           "5 Training"
         ],
         "relevant_figure_ids": [],
-        "relevant_table_ids": [
-          "8470418306dcd6e0bb89309a8a583968"
-        ],
+        "relevant_table_ids": [],
         "needs_figures": false,
-        "needs_tables": true,
-        "objective": "Understand the training process",
+        "needs_tables": false,
+        "objective": "Understand how the model is trained",
         "questions_to_answer": [
-          "What is the time complexity of the self-attention mechanism in the model architecture?",
-          "How does the maximum path length vary across different layer types during the training process?",
-          "What is the effect of sequence length n on the complexity per layer of the convolutional layer type?"
+          "What is the significance of the Transformer model achieving 28.4 BLEU on the WMT 2014 English-to-German translation task?",
+          "How does the training time of the Transformer model compare to the best models from the literature on the WMT 2014 English-to-French translation task?",
+          "What is the role of scaled dot-product attention in the training process of the Transformer model?"
         ],
-        "expected_output": "Description of the training process"
+        "expected_output": "Understanding of the training process and its significance"
       }
     ]
   },
   "pass3_deep_analysis": {
-    "goal": "Analyze the results and conclusion",
-    "estimated_time": "30-45 minutes",
+    "goal": "Analyze the results and conclusions",
+    "estimated_time": "30 minutes",
     "steps": [
       {
         "step_number": 1,
         "section_to_read": [
           "6 Results"
         ],
-        "relevant_figure_ids": [
-          "3dae6155f0a8b74110fff10bfcbbb25b"
-        ],
-        "relevant_table_ids": [
-          "e89268e9c3cff453095f105dcbd3f6c8"
-        ],
-        "needs_figures": true,
-        "needs_tables": true,
-        "objective": "Analyze the results",
+        "relevant_figure_ids": [],
+        "relevant_table_ids": [],
+        "needs_figures": false,
+        "needs_tables": false,
+        "objective": "Analyze the results of the experiments",
         "questions_to_answer": [
-          "What is the BLEU score achieved by the Transformer model on the English-to-German newstest2014 test?",
-          "How does the training cost of the Transformer model compare to that of the GNMT + RL model on the English-to-French task?",
-          "What is the relative training cost of the ByteNet model compared to the Deep-Att + PosUnk model on the English-to-German task?"
+          "What is the BLEU score achieved by the Transformer model on the WMT 2014 English-to-German translation task?",
+          "How does the training time of the Transformer model compare to the best models from the literature on the WMT 2014 English-to-French translation task?",
+          "What is the improvement in BLEU score over the existing best results, including ensembles, achieved by the Transformer model on the WMT 2014 English-to-German translation task?"
         ],
-        "expected_output": "Summary of the results"
+        "expected_output": "Understanding of the model's performance and its implications"
       },
       {
         "step_number": 2,
@@ -106,18 +98,18 @@
         "relevant_table_ids": [],
         "needs_figures": false,
         "needs_tables": false,
-        "objective": "Understand the conclusion and future work",
+        "objective": "Understand the conclusions and their significance",
         "questions_to_answer": [
-          "What are the key findings presented in the conclusion of the Attention Is All You Need paper?",
-          "How do the authors of Attention Is All You Need propose to extend their work in future research?",
-          "What potential applications or improvements are highlighted in the conclusion of the Attention Is All You Need paper?"
+          "What is the significance of the Transformer model achieving a 28.4 BLEU score on the WMT 2014 English-to-German translation task?",
+          "How does the Transformer model's performance on the WMT 2014 English-to-French translation task compare to the existing state-of-the-art results?",
+          "What is the impact of the Transformer model's ability to generalize well to other tasks, such as English constituency parsing, on its potential applications?"
         ],
-        "expected_output": "Summary of the conclusion and future work"
+        "expected_output": "Understanding of the paper's main contributions and impact"
       }
     ]
   },
   "final_user_task": {
-    "summary_task": "Summarize the key contributions and findings of the paper",
+    "summary_task": "Summarize the paper's main contributions and implications",
     "reflection_questions": []
   }
 }

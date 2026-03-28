@@ -380,14 +380,21 @@ def _remove_local_artifacts(document_uuid: str, source_pdf_path: Optional[str]) 
 
 def _delete_qdrant_document_points(document_uuid: str) -> Dict[str, Any]:
     if not document_uuid:
-        return {"deleted": False, "reason": "missing_document_uuid"}
+        return {
+            "deleted": True,
+            "reason": "missing_document_uuid_skipped",
+            "document_id": document_uuid,
+        }
     try:
         from rag.retrieval.indexing.qdrant_store import QdrantStoreManager
 
         manager = QdrantStoreManager()
+        was_indexed = manager.document_is_indexed(document_uuid)
         removed = manager.delete_document_points(document_uuid)
+        deleted = bool(removed) or not was_indexed
         return {
-            "deleted": bool(removed),
+            "deleted": deleted,
+            "was_indexed": bool(was_indexed),
             "collection": manager.collection_name,
             "document_id": document_uuid,
         }
@@ -879,23 +886,43 @@ def cms_delete_paper(
     user_id = _require_auth_user_id(authorization)
     store = _make_store()
 
-    result = store.delete_paper_for_user(user_id=user_id, paper_id=paper_id)
+    qdrant_cleanup = {"deleted": False, "reason": "not_run"}
+
+    def _qdrant_predelete(document_uuid: str) -> bool:
+        nonlocal qdrant_cleanup
+        qdrant_cleanup = _delete_qdrant_document_points(document_uuid)
+        return bool(qdrant_cleanup.get("deleted"))
+
+    result = store.delete_paper_for_user(
+        user_id=user_id,
+        paper_id=paper_id,
+        before_global_delete=_qdrant_predelete,
+    )
     if not result.get("deleted"):
         reason = result.get("reason")
         if reason == "paper_not_found":
             raise HTTPException(status_code=404, detail="Paper not found")
         if reason == "access_not_found":
             raise HTTPException(status_code=403, detail="You do not have access to this paper")
+        if reason == "qdrant_delete_failed":
+            raise HTTPException(
+                status_code=502,
+                detail={
+                    "message": "Delete aborted because Qdrant cleanup failed",
+                    "paper_id": paper_id,
+                    "qdrant": qdrant_cleanup,
+                },
+            )
         raise HTTPException(status_code=500, detail=f"Delete failed: {reason}")
 
-    qdrant_cleanup = {"deleted": False, "reason": "skipped_not_globally_deleted"}
+    if not bool(result.get("paper_deleted")):
+        qdrant_cleanup = {"deleted": False, "reason": "skipped_not_globally_deleted"}
+
     file_cleanup = {"removed_files": [], "errors": ["skipped_not_globally_deleted"]}
 
     if bool(result.get("paper_deleted")):
-        document_uuid = str(result.get("document_uuid") or "")
-        qdrant_cleanup = _delete_qdrant_document_points(document_uuid)
         file_cleanup = _remove_local_artifacts(
-            document_uuid=document_uuid,
+            document_uuid=str(result.get("document_uuid") or ""),
             source_pdf_path=result.get("source_pdf_path"),
         )
 
