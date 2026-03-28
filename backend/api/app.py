@@ -22,7 +22,7 @@ from fastapi.responses import FileResponse
 from pydantic import BaseModel
 
 from langchain_groq import ChatGroq
-from langchain_core.messages import HumanMessage
+from langchain_core.messages import AIMessage, HumanMessage
 
 from backend.extraction.extraction import extract_pdf, generate_reading_guide_state
 from backend.extraction.persistence import PostgresPaperStore
@@ -32,7 +32,7 @@ from backend.extraction.technical_terms import (
     set_llm_definition_override,
 )
 from backend.rag.prompts import qa_prompt
-from config import MIN_RELEVANCE_THRESHOLD
+from config import ENABLE_TECHNICAL_TERMS, MIN_RELEVANCE_THRESHOLD
 
 
 AUTH_SECRET_KEY = os.getenv("AUTH_SECRET_KEY", "dev-auth-secret-change-me")
@@ -56,6 +56,16 @@ class LoginRequest(BaseModel):
 
 class GenerateAnswerRequest(BaseModel):
     force_regenerate: bool = False
+
+
+class ChatMessageRequest(BaseModel):
+    role: str
+    content: str
+
+
+class PaperChatRequest(BaseModel):
+    messages: List[ChatMessageRequest]
+    allowed_sections: Optional[List[str]] = None
 
 
 def _b64url_encode(raw: bytes) -> str:
@@ -1003,7 +1013,9 @@ def get_paper_bundle(
     
     guide_row = store.get_paper_guide_for_paper_id(paper_id)
     guide_status = _guide_status_from_row(guide_row)
-    technical_terms = extract_technical_terms_for_bundle(paper_with_url, normalized_sections)
+    technical_terms: List[Dict[str, Any]] = []
+    if ENABLE_TECHNICAL_TERMS:
+        technical_terms = extract_technical_terms_for_bundle(paper_with_url, normalized_sections)
 
     # Legacy papers may still have reading_guide directly on papers table.
     reading_guide = paper_with_url.pop("reading_guide", None)
@@ -1369,6 +1381,55 @@ def get_paper_questions(paper_id: int) -> Dict[str, Any]:
     return {"paper": paper, "questions": questions}
 
 
+@app.post("/api/papers/{paper_id}/chat")
+def chat_with_paper(
+    paper_id: int,
+    payload: PaperChatRequest,
+    authorization: Optional[str] = Header(default=None, alias="Authorization"),
+) -> Dict[str, Any]:
+    user_id = _require_auth_user_id(authorization)
+    store = _make_store()
+
+    if not store.user_has_access_to_paper(user_id=user_id, paper_id=paper_id):
+        raise HTTPException(status_code=403, detail="You do not have access to this paper")
+
+    paper = store.get_paper_by_id(paper_id)
+    if not paper:
+        raise HTTPException(status_code=404, detail="Paper not found")
+
+    history: List[Any] = []
+    for turn in payload.messages:
+        content = str(turn.content or "").strip()
+        if not content:
+            continue
+        role = str(turn.role or "").strip().lower()
+        if role == "assistant":
+            history.append(AIMessage(content=content))
+        else:
+            history.append(HumanMessage(content=content))
+
+    if not history:
+        raise HTTPException(status_code=400, detail="At least one message is required")
+
+    try:
+        from backend.qa_bot.graph import graph as qa_graph
+    except Exception as exc:  # noqa: BLE001
+        raise HTTPException(status_code=500, detail=f"Failed to load chat graph: {exc}") from exc
+
+    state = {
+        "messages": history,
+        "allowed_sections": payload.allowed_sections or [],
+        "document_id": str(paper.get("document_uuid") or ""),
+    }
+    result = qa_graph.invoke(state)
+    result_messages = result.get("messages") or []
+    if not result_messages:
+        raise HTTPException(status_code=500, detail="Chat graph returned no response")
+
+    assistant_message = str(result_messages[-1].content or "").strip()
+    return {"paper": paper, "assistant_message": assistant_message}
+
+
 @app.post("/api/papers/{paper_id}/questions/{question_id}/generate")
 def generate_answer_for_question(
     paper_id: int,
@@ -1467,6 +1528,12 @@ def generate_technical_term_definition(
     payload: GenerateTermDefinitionRequest,
     authorization: Optional[str] = Header(default=None, alias="Authorization"),
 ) -> Dict[str, Any]:
+    if not ENABLE_TECHNICAL_TERMS:
+        raise HTTPException(
+            status_code=503,
+            detail="Technical-term generation is currently disabled on backend",
+        )
+
     user_id = _require_auth_user_id(authorization)
     store = _make_store()
 

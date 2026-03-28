@@ -54,6 +54,22 @@ def _compute_mrr(retrieved_ids: list[str], relevant_ids: set[str]) -> float:
     return 0.0
 
 
+def _precision_at_k(retrieved_ids: list[str], relevant_ids: set[str], k: int) -> float:
+    """Compute precision@k using a fixed k denominator."""
+    if k <= 0:
+        return 0.0
+    top_k = set(retrieved_ids[:k])
+    return len(top_k & relevant_ids) / k if retrieved_ids else 0.0
+
+
+def _recall_at_k(retrieved_ids: list[str], relevant_ids: set[str], k: int) -> float:
+    """Compute recall@k based on overlap with relevant IDs."""
+    if not relevant_ids:
+        return 0.0
+    top_k = set(retrieved_ids[:k])
+    return len(top_k & relevant_ids) / len(relevant_ids)
+
+
 def _evaluate_entry(
     pipeline: RetrievalPipeline,
     entry: dict[str, Any],
@@ -87,17 +103,14 @@ def _evaluate_entry(
         print(f"DEBUG first result full metadata: {chunks[0].metadata if chunks else 'no results'}")
         debug_count += 1
 
-    retrieved_set = set(retrieved_ids[:5])
-    intersection = retrieved_set & set(relevant_ids)
+    relevant_set = set(relevant_ids)
 
     # Metrics
-    precision_at_5 = len(intersection) / 5 if retrieved_ids else 0.0
-    recall_at_5 = (
-        len(intersection) / len(relevant_ids)
-        if relevant_ids
-        else 0.0
-    )
-    reciprocal_rank = _compute_mrr(retrieved_ids[:5], relevant_ids)
+    precision_at_2 = _precision_at_k(retrieved_ids, relevant_set, 2)
+    precision_at_5 = _precision_at_k(retrieved_ids, relevant_set, 5)
+    recall_at_3 = _recall_at_k(retrieved_ids, relevant_set, 3)
+    recall_at_5 = _recall_at_k(retrieved_ids, relevant_set, 5)
+    reciprocal_rank = _compute_mrr(retrieved_ids[:5], relevant_set)
 
     return {
         "question": question,
@@ -106,7 +119,9 @@ def _evaluate_entry(
         "question_type": entry.get("question_type", ""),
         "retrieved_ids": retrieved_ids[:5],
         "relevant_ids": list(relevant_ids),
+        "precision_at_2": round(precision_at_2, 3),
         "precision_at_5": round(precision_at_5, 3),
+        "recall_at_3": round(recall_at_3, 3),
         "recall_at_5": round(recall_at_5, 3),
         "reciprocal_rank": round(reciprocal_rank, 3),
     }, debug_count
@@ -131,7 +146,9 @@ def main() -> None:
             print(f"  {idx}/{len(entries)} evaluated")
 
     # Compute aggregates
+    mean_p2 = sum(r["precision_at_2"] for r in results) / len(results)
     mean_p5 = sum(r["precision_at_5"] for r in results) / len(results)
+    mean_recall3 = sum(r["recall_at_3"] for r in results) / len(results)
     mean_recall5 = sum(r["recall_at_5"] for r in results) / len(results)
     mean_mrr = sum(r["reciprocal_rank"] for r in results) / len(results)
 
@@ -149,25 +166,38 @@ def main() -> None:
     print(f"Total questions evaluated: {len(results)}\n")
 
     print("Overall:")
+    print(f"  Mean Precision@2 : {mean_p2:.3f}")
     print(f"  Mean Precision@5 : {mean_p5:.3f}")
+    print(f"  Mean Recall@3    : {mean_recall3:.3f}")
     print(f"  Mean Recall@5    : {mean_recall5:.3f}")
     print(f"  Mean MRR         : {mean_mrr:.3f}\n")
 
     print("By paper type:")
     for paper_type in sorted(by_paper_type.keys()):
         type_results = by_paper_type[paper_type]
+        p2 = sum(r["precision_at_2"] for r in type_results) / len(type_results)
         p5 = sum(r["precision_at_5"] for r in type_results) / len(type_results)
+        recall3 = sum(r["recall_at_3"] for r in type_results) / len(type_results)
         recall5 = sum(r["recall_at_5"] for r in type_results) / len(type_results)
         mrr = sum(r["reciprocal_rank"] for r in type_results) / len(type_results)
-        print(f"  {paper_type:10} — P@5: {p5:.2f}  Recall@5: {recall5:.2f}  MRR: {mrr:.2f}")
+        print(
+            f"  {paper_type:10} — P@2: {p2:.2f}  P@5: {p5:.2f}  "
+            f"Recall@3: {recall3:.2f}  Recall@5: {recall5:.2f}  MRR: {mrr:.2f}"
+        )
 
     print("\nBy question type:")
     for q_type in sorted(by_question_type.keys()):
         q_results = by_question_type[q_type]
         if q_results:
+            p2 = sum(r["precision_at_2"] for r in q_results) / len(q_results)
             p5 = sum(r["precision_at_5"] for r in q_results) / len(q_results)
+            recall3 = sum(r["recall_at_3"] for r in q_results) / len(q_results)
+            recall5 = sum(r["recall_at_5"] for r in q_results) / len(q_results)
             mrr = sum(r["reciprocal_rank"] for r in q_results) / len(q_results)
-            print(f"  {q_type:12} — P@5: {p5:.2f}  MRR: {mrr:.2f}")
+            print(
+                f"  {q_type:12} — P@2: {p2:.2f}  P@5: {p5:.2f}  "
+                f"Recall@3: {recall3:.2f}  Recall@5: {recall5:.2f}  MRR: {mrr:.2f}"
+            )
 
     # Save per-question results
     RESULTS_OUTPUT.parent.mkdir(parents=True, exist_ok=True)

@@ -582,7 +582,7 @@ const Index = () => {
         </div>
         <div className="border-t border-accent/15 bg-gradient-to-b from-panel via-panel to-canvas/40 px-5 pt-4 pb-0">
           <div className="h-[32vh] min-h-[210px] max-h-[320px] flex flex-col">
-            <ChatAssistant />
+            <ChatAssistant paperId={effectivePaperId} sections={sections} />
           </div>
         </div>
       </div>

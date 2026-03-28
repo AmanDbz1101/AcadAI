@@ -94,7 +94,7 @@ SCOPED_TOP_K = int(os.getenv("SCOPED_TOP_K", 8))
 FALLBACK_TOP_K = int(os.getenv("FALLBACK_TOP_K", 4))
 RERANKER_TOP_N = int(os.getenv("RERANKER_TOP_N", 12))    # final results after reranking
 QA_TOP_K = int(os.getenv("QA_TOP_K", 4))
-MIN_RELEVANCE_THRESHOLD = 0.35
+MIN_RELEVANCE_THRESHOLD = float(os.getenv("MIN_RELEVANCE_THRESHOLD", "0.35"))
 MAX_GUIDE_QUESTIONS = int(os.getenv("MAX_GUIDE_QUESTIONS", 6))
 MAX_REWRITE_QUERIES = int(os.getenv("MAX_REWRITE_QUERIES", 3))
 MAX_PARALLEL_QUESTIONS = int(os.getenv("MAX_PARALLEL_QUESTIONS", 6))
@@ -114,6 +114,7 @@ if LANGCHAIN_TRACING_V2 and not LANGCHAIN_API_KEY:
 # Feature Flags
 ENABLE_CLEANUP_ENDPOINT = os.getenv("ENABLE_CLEANUP_ENDPOINT", "true").lower() == "true"
 ENABLE_DETAILED_ERRORS = os.getenv("ENABLE_DETAILED_ERRORS", "true").lower() == "true"
+ENABLE_TECHNICAL_TERMS = os.getenv("ENABLE_TECHNICAL_TERMS", "false").lower() == "true"
 
 # Rate Limiting (if implemented)
 RATE_LIMIT_PER_MINUTE = int(os.getenv("RATE_LIMIT_PER_MINUTE", 10))

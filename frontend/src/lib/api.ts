@@ -58,6 +58,21 @@ export interface GenerateTechnicalTermDefinitionResponse {
   }
 }
 
+export interface ChatMessagePayload {
+  role: 'user' | 'assistant'
+  content: string
+}
+
+export interface PaperChatPayload {
+  messages: ChatMessagePayload[]
+  allowed_sections: string[] | null
+}
+
+export interface PaperChatResponse {
+  paper: PaperSummary
+  assistant_message: string
+}
+
 export interface CmsDeletePaperResponse {
   paper_id: number
   deleted: boolean
@@ -223,4 +238,11 @@ export async function generateTechnicalTermDefinition(
     `/api/papers/${paperId}/technical-terms/generate`,
     { term },
   )
+}
+
+export async function chatWithPaper(
+  paperId: number,
+  payload: PaperChatPayload,
+): Promise<PaperChatResponse> {
+  return postJson<PaperChatResponse>(`/api/papers/${paperId}/chat`, payload)
 }

@@ -53,6 +53,7 @@ CHUNK_MIN_CHARS: int = int(os.getenv("CHUNK_MIN_CHARS", 80)) # discard tiny chun
 
 # ── Retrieval ───────────────────────────────────────────────────────────────
 RETRIEVER_TOP_K: int = int(os.getenv("RETRIEVER_TOP_K", 20))  # candidates before rerank
+RRF_K: int = int(os.getenv("RRF_K", 60))
 SCOPED_TOP_K: int = int(os.getenv("SCOPED_TOP_K", 8))
 FALLBACK_TOP_K: int = int(os.getenv("FALLBACK_TOP_K", 4))
 RERANKER_TOP_N: int = int(os.getenv("RERANKER_TOP_N", 12))    # final results after rerank

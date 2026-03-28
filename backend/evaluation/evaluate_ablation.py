@@ -78,6 +78,22 @@ def _compute_mrr(retrieved_ids: list[str], relevant_ids: set[str]) -> float:
     return 0.0
 
 
+def _precision_at_k(retrieved_ids: list[str], relevant_ids: set[str], k: int) -> float:
+    """Compute precision@k using a fixed-k denominator."""
+    if k <= 0:
+        return 0.0
+    top_k = set(retrieved_ids[:k])
+    return len(top_k & relevant_ids) / k if retrieved_ids else 0.0
+
+
+def _recall_at_k(retrieved_ids: list[str], relevant_ids: set[str], k: int) -> float:
+    """Compute recall@k against all relevant IDs."""
+    if not relevant_ids:
+        return 0.0
+    top_k = set(retrieved_ids[:k])
+    return len(top_k & relevant_ids) / len(relevant_ids)
+
+
 def _retrieve_with_config(
     pipeline: RetrievalPipeline,
     config: dict,
@@ -156,22 +172,28 @@ def _evaluate_entry(
     retrieved_ids = []
     for result in results:
         metadata = result.metadata if isinstance(result.metadata, dict) else {}
-        chunk_id = metadata.get("chunk_id", "")
-        if chunk_id:
-            retrieved_ids.append(chunk_id)
+        # RetrievalResult metadata from LangChain/Qdrant exposes point IDs as
+        # `_id`; keep `chunk_id` as a fallback for compatibility.
+        retrieved_id = metadata.get("_id") or metadata.get("chunk_id") or ""
+        if retrieved_id:
+            retrieved_ids.append(str(retrieved_id))
 
     # Compute metrics
     retrieved_set = set(retrieved_ids[:5])
     intersection = retrieved_set & relevant_ids
 
-    precision_at_5 = len(intersection) / 5 if retrieved_ids else 0.0
+    precision_at_3 = _precision_at_k(retrieved_ids, relevant_ids, 3)
+    precision_at_5 = _precision_at_k(retrieved_ids, relevant_ids, 5)
+    recall_at_5 = _recall_at_k(retrieved_ids, relevant_ids, 5)
     reciprocal_rank = _compute_mrr(retrieved_ids[:5], relevant_ids)
 
     return {
         "question": question,
         "retrieved_ids": retrieved_ids[:5],
         "relevant_ids": list(relevant_ids),
+        "precision_at_3": precision_at_3,
         "precision_at_5": precision_at_5,
+        "recall_at_5": recall_at_5,
         "reciprocal_rank": reciprocal_rank,
     }
 
@@ -217,8 +239,18 @@ def main() -> None:
                 print(f"   [{idx}/{len(entries)}] evaluated...")
 
         # Aggregate metrics for this configuration
+        mean_p3 = (
+            sum(r["precision_at_3"] for r in results_for_config) / len(results_for_config)
+            if results_for_config
+            else 0.0
+        )
         mean_p5 = (
             sum(r["precision_at_5"] for r in results_for_config) / len(results_for_config)
+            if results_for_config
+            else 0.0
+        )
+        mean_recall5 = (
+            sum(r["recall_at_5"] for r in results_for_config) / len(results_for_config)
             if results_for_config
             else 0.0
         )
@@ -229,27 +261,34 @@ def main() -> None:
         )
 
         config_results[config_name] = {
+            "precision_at_3": round(mean_p3, 2),
             "precision_at_5": round(mean_p5, 2),
+            "recall_at_5": round(mean_recall5, 2),
             "reciprocal_rank": round(mean_mrr, 2),
             "num_evaluated": len(results_for_config),
             "detailed_results": results_for_config,
         }
 
-        print(f"   ✅ Precision@5: {mean_p5:.2f}, MRR: {mean_mrr:.2f}")
+        print(
+            f"   ✅ Precision@3: {mean_p3:.2f}, "
+            f"Precision@5: {mean_p5:.2f}, Recall@5: {mean_recall5:.2f}, MRR: {mean_mrr:.2f}"
+        )
 
     # Print ablation table
     print("\n" + "=" * 60)
     print("ABLATION STUDY RESULTS")
     print("=" * 60 + "\n")
-    print(f"{'Configuration':<35} {'P@5':>8} {'MRR':>8}")
+    print(f"{'Configuration':<35} {'P@3':>8} {'P@5':>8} {'R@5':>8} {'MRR':>8}")
     print("-" * 60)
 
     config_names = [cfg["name"] for cfg in CONFIGURATIONS]
+    p3_values = [config_results[name]["precision_at_3"] for name in config_names]
     p5_values = [config_results[name]["precision_at_5"] for name in config_names]
+    r5_values = [config_results[name]["recall_at_5"] for name in config_names]
     mrr_values = [config_results[name]["reciprocal_rank"] for name in config_names]
 
-    for name, p5, mrr in zip(config_names, p5_values, mrr_values):
-        print(f"{name:<35} {p5:>8.2f} {mrr:>8.2f}")
+    for name, p3, p5, r5, mrr in zip(config_names, p3_values, p5_values, r5_values, mrr_values):
+        print(f"{name:<35} {p3:>8.2f} {p5:>8.2f} {r5:>8.2f} {mrr:>8.2f}")
 
     print("-" * 60)
 
@@ -275,7 +314,9 @@ def main() -> None:
                 {
                     "name": cfg["name"],
                     "description": cfg["description"],
+                    "precision_at_3": config_results[cfg["name"]]["precision_at_3"],
                     "precision_at_5": config_results[cfg["name"]]["precision_at_5"],
+                    "recall_at_5": config_results[cfg["name"]]["recall_at_5"],
                     "reciprocal_rank": config_results[cfg["name"]]["reciprocal_rank"],
                     "num_questions": config_results[cfg["name"]]["num_evaluated"],
                 }

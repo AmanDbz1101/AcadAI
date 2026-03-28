@@ -22,7 +22,7 @@ import logging
 import re
 from typing import Optional
 
-from rag.retrieval.config import RETRIEVER_TOP_K, SPARSE_VECTOR_NAME, DENSE_VECTOR_NAME
+from rag.retrieval.config import RETRIEVER_TOP_K, RRF_K, SPARSE_VECTOR_NAME, DENSE_VECTOR_NAME
 
 logger = logging.getLogger(__name__)
 
@@ -54,11 +54,13 @@ class HybridRetriever:
         dense_encoder,
         sparse_encoder,
         top_k: int = RETRIEVER_TOP_K,
+        rrf_k: int | None = RRF_K,
     ) -> None:
         self.store_manager = store_manager
         self.dense_encoder = dense_encoder
         self.sparse_encoder = sparse_encoder
         self.top_k = top_k
+        self.rrf_k = rrf_k
         self._vector_store = None  # lazy
 
     # ── Vector store accessor ──────────────────────────────────────────────────
@@ -187,14 +189,24 @@ class HybridRetriever:
     # ── Low-level search helpers ──────────────────────────────────────────────
 
     def _hybrid_search(self, query: str, payload_filter):
-        from langchain_qdrant import RetrievalMode  # type: ignore
-
         vs = self._get_vector_store()
-        return vs.similarity_search_with_score(
-            query,
-            k=self.top_k,
-            filter=payload_filter,
-        )
+        fusion_query = self._build_hybrid_fusion_query()
+
+        # Newer LangChain/Qdrant builds accept explicit fusion query. Older
+        # versions ignore this argument, so we retry without it on TypeError.
+        try:
+            return vs.similarity_search_with_score(
+                query,
+                k=self.top_k,
+                filter=payload_filter,
+                hybrid_fusion=fusion_query,
+            )
+        except TypeError:
+            return vs.similarity_search_with_score(
+                query,
+                k=self.top_k,
+                filter=payload_filter,
+            )
 
     def _dense_search(self, query: str, payload_filter):
         """Dense-only fallback using the same vector store interface."""
@@ -204,6 +216,21 @@ class HybridRetriever:
             k=self.top_k,
             filter=payload_filter,
         )
+
+    def _build_hybrid_fusion_query(self):
+        """Build a Qdrant fusion query while staying compatible across versions."""
+        from qdrant_client import models  # type: ignore
+
+        if self.rrf_k is not None:
+            try:
+                return models.FusionQuery(fusion=models.Rrf(k=int(self.rrf_k)))
+            except Exception:  # noqa: BLE001
+                logger.debug(
+                    "HybridRetriever: rrf_k=%s not supported by FusionQuery in this qdrant-client; using default RRF",
+                    self.rrf_k,
+                )
+
+        return models.FusionQuery(fusion=models.Fusion.RRF)
 
     # ── Filter builder ────────────────────────────────────────────────────────
 

@@ -1,5 +1,7 @@
-import { useState, useRef, useEffect } from 'react'
+import { useState, useRef, useEffect, useMemo } from 'react'
 import { Maximize2, Minimize2, Send } from 'lucide-react'
+import type { PaperSection } from '@/types/api'
+import { chatWithPaper } from '@/lib/api'
 
 interface Message {
   role: 'user' | 'assistant'
@@ -8,17 +10,30 @@ interface Message {
 
 const initialMessages: Message[] = []
 
-const mockResponses: Record<string, string> = {
-  default:
-    'The paper proposes a hierarchical attention mechanism that combines local windowed attention with global summary tokens. This achieves near-linear complexity — O(n·(w+k)) instead of O(n²) — by exploiting the observation that most language dependencies are local. The approach reduces training time by 35-60% while maintaining performance within 0.3% of full-attention baselines.',
+interface ChatAssistantProps {
+  paperId: number | null
+  sections: PaperSection[]
 }
 
-const ChatAssistant = () => {
+const ChatAssistant = ({ paperId, sections }: ChatAssistantProps) => {
   const [messages, setMessages] = useState<Message[]>(initialMessages)
   const [input, setInput] = useState('')
   const [isTyping, setIsTyping] = useState(false)
   const [isFullscreen, setIsFullscreen] = useState(false)
+  const [selectedSections, setSelectedSections] = useState<string[]>([])
   const scrollRef = useRef<HTMLDivElement>(null)
+
+  const sectionNames = useMemo(
+    () =>
+      Array.from(
+        new Set(
+          sections
+            .map((section) => (section.title || '').trim())
+            .filter(Boolean),
+        ),
+      ),
+    [sections],
+  )
 
   useEffect(() => {
     if (scrollRef.current) {
@@ -46,23 +61,51 @@ const ChatAssistant = () => {
     }
   }, [isFullscreen])
 
-  const handleSend = (text?: string) => {
+  useEffect(() => {
+    setSelectedSections([])
+  }, [paperId])
+
+  const toggleSection = (sectionName: string) => {
+    setSelectedSections((prev) =>
+      prev.includes(sectionName)
+        ? prev.filter((item) => item !== sectionName)
+        : [...prev, sectionName],
+    )
+  }
+
+  const handleSend = async (text?: string) => {
     const msg = (text ?? input).trim()
-    if (!msg || isTyping) return
+    if (!msg || isTyping || !paperId) return
 
     const userMsg: Message = { role: 'user', content: msg }
-    setMessages((prev) => [...prev, userMsg])
+    const nextMessages = [...messages, userMsg]
+    setMessages(nextMessages)
     setInput('')
     setIsTyping(true)
 
-    setTimeout(() => {
-      const response: Message = {
+    try {
+      const response = await chatWithPaper(paperId, {
+        messages: nextMessages,
+        allowed_sections: selectedSections.length > 0 ? selectedSections : null,
+      })
+
+      const assistantMessage: Message = {
         role: 'assistant',
-        content: mockResponses.default,
+        content: response.assistant_message || 'No response received.',
       }
-      setMessages((prev) => [...prev, response])
+      setMessages((prev) => [...prev, assistantMessage])
+    } catch (error) {
+      const assistantError: Message = {
+        role: 'assistant',
+        content:
+          error instanceof Error
+            ? `Failed to get response: ${error.message}`
+            : 'Failed to get response from server.',
+      }
+      setMessages((prev) => [...prev, assistantError])
+    } finally {
       setIsTyping(false)
-    }, 1200)
+    }
   }
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
@@ -161,6 +204,31 @@ const ChatAssistant = () => {
           </div>
         </div>
 
+        <div className="px-3 pt-2">
+          <p className="mb-2 font-ui text-[11px] tracking-[0.08em] uppercase text-text-secondary/80">
+            Focus on sections (optional)
+          </p>
+          <div className="flex flex-wrap gap-2">
+            {sectionNames.map((sectionName) => {
+              const isSelected = selectedSections.includes(sectionName)
+              return (
+                <button
+                  key={sectionName}
+                  type="button"
+                  onClick={() => toggleSection(sectionName)}
+                  className={`rounded-full border px-3 py-1 font-ui text-[12px] transition-colors ${
+                    isSelected
+                      ? 'border-accent/70 bg-accent/20 text-foreground'
+                      : 'border-border/70 bg-panel/70 text-text-secondary hover:text-foreground hover:border-accent/40'
+                  }`}
+                >
+                  {sectionName}
+                </button>
+              )
+            })}
+          </div>
+        </div>
+
         {/* Input */}
         <div className="m-3 mt-2 flex items-center gap-2 bg-panel border border-border/60 rounded-lg p-1.5 transition-all duration-200 focus-within:border-accent/30">
           <input
@@ -172,7 +240,7 @@ const ChatAssistant = () => {
           />
           <button
             onClick={() => handleSend()}
-            disabled={!input.trim() || isTyping}
+            disabled={!input.trim() || isTyping || !paperId}
             className="p-2 rounded-md text-primary-foreground bg-primary border border-primary/70 hover:bg-primary/90 disabled:opacity-50 disabled:bg-primary/40 disabled:text-primary-foreground/80 transition-all duration-200 shadow-sm"
           >
             <Send size={14} />
