@@ -63,7 +63,7 @@ export interface TechnicalTerm {
   expansion?: string | null
   source_sections?: string[]
   definition?: string | null
-  definition_source?: 'cso' | 'inspire' | 'wikipedia' | 'llm' | null
+  definition_source?: 'dbpedia' | 'dictionary' | 'wikipedia' | 'llm' | null
   definition_status?: 'ready' | 'pending_llm' | null
 }
 

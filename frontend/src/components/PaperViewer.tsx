@@ -29,6 +29,7 @@ export interface PaperViewerHandle {
 
 interface PaperViewerProps {
   onVisibleSectionChange: (sectionId: string) => void
+  onPdfTermSelect?: (term: string) => void
   focusedSection: string | null
   paper: PaperSummary | null
   sections: PaperSection[]
@@ -42,6 +43,7 @@ const PaperViewer = forwardRef<PaperViewerHandle, PaperViewerProps>(
       paper,
       sections,
       onVisibleSectionChange,
+      onPdfTermSelect,
       focusedSection,
       isProcessingUpload = false,
       processingFileName = null,
@@ -63,6 +65,7 @@ const PaperViewer = forwardRef<PaperViewerHandle, PaperViewerProps>(
     const [pageNumber, setPageNumber] = useState<number>(1)
     const [scale, setScale] = useState<number>(1.1)
     const [pendingJumpPage, setPendingJumpPage] = useState<number | null>(null)
+    const [isViewerActive, setIsViewerActive] = useState(false)
 
     const sortedSections = useMemo(
       () =>
@@ -362,6 +365,64 @@ const PaperViewer = forwardRef<PaperViewerHandle, PaperViewerProps>(
       [],
     )
 
+    useEffect(() => {
+      const container = scrollContainerRef.current
+      if (!container) return
+
+      const handleNativeWheel = (event: WheelEvent) => {
+        if (!isViewerActive) return
+        if (!event.ctrlKey && !event.metaKey) return
+
+        event.preventDefault()
+        event.stopPropagation()
+
+        const zoomStep = -event.deltaY * 0.0025
+        setScale((prev) => {
+          const next = prev + zoomStep
+          const clamped = Math.min(MAX_PDF_SCALE, Math.max(MIN_PDF_SCALE, next))
+          return +clamped.toFixed(2)
+        })
+      }
+
+      container.addEventListener('wheel', handleNativeWheel, { passive: false })
+
+      return () => {
+        container.removeEventListener('wheel', handleNativeWheel)
+      }
+    }, [isViewerActive])
+
+    useEffect(() => {
+      const handleZoomKeys = (event: KeyboardEvent) => {
+        if (!isViewerActive) return
+        if (!event.metaKey && !event.ctrlKey) return
+
+        const key = event.key
+        if (key === '+' || key === '=' || key === '-') {
+          event.preventDefault()
+          event.stopPropagation()
+
+          setScale((prev) => {
+            const delta = key === '-' ? -0.1 : 0.1
+            const next = prev + delta
+            const clamped = Math.min(MAX_PDF_SCALE, Math.max(MIN_PDF_SCALE, next))
+            return +clamped.toFixed(2)
+          })
+          return
+        }
+
+        if (key === '0') {
+          event.preventDefault()
+          event.stopPropagation()
+          setScale(1.1)
+        }
+      }
+
+      window.addEventListener('keydown', handleZoomKeys)
+      return () => {
+        window.removeEventListener('keydown', handleZoomKeys)
+      }
+    }, [isViewerActive])
+
     const handleViewerScroll = useCallback(() => {
       if (scrollTickingRef.current) return
       scrollTickingRef.current = true
@@ -393,18 +454,61 @@ const PaperViewer = forwardRef<PaperViewerHandle, PaperViewerProps>(
       })
     }, [numPages])
 
-    useEffect(() => {
-      const container = scrollContainerRef.current
-      if (!container) return
+    const extractSelectedTerm = useCallback(() => {
+      const selectedText = window.getSelection()?.toString().trim() ?? ''
+      if (!selectedText) return null
 
+      const firstToken = selectedText.split(/\s+/)[0] ?? ''
+      const cleaned = firstToken
+        .replace(/^[^A-Za-z0-9]+/, '')
+        .replace(/[^A-Za-z0-9-]+$/, '')
+        .trim()
+
+      if (!cleaned) return null
+      return cleaned.slice(0, 80)
+    }, [])
+
+    const handleCtrlClickSelection = useCallback(
+      (event: React.MouseEvent<HTMLDivElement>) => {
+        if (!event.ctrlKey) return
+        if (!paper?.id || !onPdfTermSelect) return
+
+        const term = extractSelectedTerm()
+        if (!term) return
+
+        event.preventDefault()
+        event.stopPropagation()
+        onPdfTermSelect(term)
+      },
+      [extractSelectedTerm, onPdfTermSelect, paper?.id],
+    )
+
+    const handleCtrlContextSelection = useCallback(
+      (event: React.MouseEvent<HTMLDivElement>) => {
+        if (!event.ctrlKey) return
+        if (!paper?.id || !onPdfTermSelect) return
+
+        const term = extractSelectedTerm()
+        if (!term) return
+
+        event.preventDefault()
+        event.stopPropagation()
+        onPdfTermSelect(term)
+      },
+      [extractSelectedTerm, onPdfTermSelect, paper?.id],
+    )
+
+    useEffect(() => {
       // Safari trackpad pinch emits gesture events rather than ctrl+wheel.
       const handleGestureStart = (event: Event) => {
+        if (!isViewerActive) return
         const gestureEvent = event as WebkitGestureEvent
         event.preventDefault()
         lastGestureScaleRef.current = gestureEvent.scale || 1
       }
 
       const handleGestureChange = (event: Event) => {
+        if (!isViewerActive) return
         const gestureEvent = event as WebkitGestureEvent
         event.preventDefault()
         const currentScale = gestureEvent.scale || 1
@@ -420,26 +524,27 @@ const PaperViewer = forwardRef<PaperViewerHandle, PaperViewerProps>(
       }
 
       const handleGestureEnd = (event: Event) => {
+        if (!isViewerActive) return
         event.preventDefault()
         lastGestureScaleRef.current = 1
       }
 
-      container.addEventListener('gesturestart', handleGestureStart, {
+      window.addEventListener('gesturestart', handleGestureStart, {
         passive: false,
       })
-      container.addEventListener('gesturechange', handleGestureChange, {
+      window.addEventListener('gesturechange', handleGestureChange, {
         passive: false,
       })
-      container.addEventListener('gestureend', handleGestureEnd, {
+      window.addEventListener('gestureend', handleGestureEnd, {
         passive: false,
       })
 
       return () => {
-        container.removeEventListener('gesturestart', handleGestureStart)
-        container.removeEventListener('gesturechange', handleGestureChange)
-        container.removeEventListener('gestureend', handleGestureEnd)
+        window.removeEventListener('gesturestart', handleGestureStart)
+        window.removeEventListener('gesturechange', handleGestureChange)
+        window.removeEventListener('gestureend', handleGestureEnd)
       }
-    }, [])
+    }, [isViewerActive])
 
     return (
       <div className="flex-1 h-screen overflow-hidden bg-canvas flex flex-col">
@@ -507,6 +612,13 @@ const PaperViewer = forwardRef<PaperViewerHandle, PaperViewerProps>(
                 className="flex-1 overflow-auto p-5 bg-canvas"
                 onScroll={handleViewerScroll}
                 onWheel={handleViewerWheel}
+                onClick={handleCtrlClickSelection}
+                onContextMenu={handleCtrlContextSelection}
+                onMouseEnter={() => setIsViewerActive(true)}
+                onMouseLeave={() => setIsViewerActive(false)}
+                onFocus={() => setIsViewerActive(true)}
+                onBlur={() => setIsViewerActive(false)}
+                tabIndex={0}
               >
                 <div className="min-h-full flex justify-center">
                   <Document
@@ -548,7 +660,7 @@ const PaperViewer = forwardRef<PaperViewerHandle, PaperViewerProps>(
                             <Page
                               pageNumber={page}
                               scale={scale}
-                              renderTextLayer={false}
+                              renderTextLayer
                               renderAnnotationLayer={false}
                               loading={
                                 <div className="text-center py-8">

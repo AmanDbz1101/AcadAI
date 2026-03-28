@@ -12,6 +12,7 @@ interface AIToolsPanelProps {
   sections: PaperSection[]
   images: PaperImage[]
   technicalTerms: TechnicalTerm[]
+  selectedPdfTerms: string[]
   tables: PaperTable[]
   style?: React.CSSProperties
 }
@@ -21,6 +22,7 @@ const AIToolsPanel = ({
   sections,
   images,
   technicalTerms,
+  selectedPdfTerms,
   tables,
   style,
 }: AIToolsPanelProps) => {
@@ -32,6 +34,7 @@ const AIToolsPanel = ({
           sections={sections}
           images={images}
           technicalTerms={technicalTerms}
+          selectedPdfTerms={selectedPdfTerms}
         />
       </div>
     </aside>

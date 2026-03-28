@@ -114,7 +114,7 @@ if LANGCHAIN_TRACING_V2 and not LANGCHAIN_API_KEY:
 # Feature Flags
 ENABLE_CLEANUP_ENDPOINT = os.getenv("ENABLE_CLEANUP_ENDPOINT", "true").lower() == "true"
 ENABLE_DETAILED_ERRORS = os.getenv("ENABLE_DETAILED_ERRORS", "true").lower() == "true"
-ENABLE_TECHNICAL_TERMS = os.getenv("ENABLE_TECHNICAL_TERMS", "false").lower() == "true"
+ENABLE_TECHNICAL_TERMS = os.getenv("ENABLE_TECHNICAL_TERMS", "true").lower() == "true"
 
 # Rate Limiting (if implemented)
 RATE_LIMIT_PER_MINUTE = int(os.getenv("RATE_LIMIT_PER_MINUTE", 10))

@@ -182,11 +182,11 @@ def extract_technical_terms_for_bundle(
             item["definition_status"] = override["definition_status"]
 
     priority = {
-        "cso": 0,
-        "inspire": 0,
-        "wikipedia": 1,
-        "llm": 2,
-        None: 2,
+        "dbpedia": 0,
+        "dictionary": 1,
+        "wikipedia": 2,
+        "llm": 3,
+        None: 4,
     }
     terms.sort(
         key=lambda item: (

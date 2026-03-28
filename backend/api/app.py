@@ -31,6 +31,7 @@ from backend.extraction.technical_terms import (
     get_term_context_text,
     set_llm_definition_override,
 )
+from backend.extraction.technical_terms.definition_lookup import DefinitionLookup
 from backend.rag.prompts import qa_prompt
 from config import ENABLE_TECHNICAL_TERMS, MIN_RELEVANCE_THRESHOLD
 
@@ -498,6 +499,7 @@ class GenerateAnswerRequest(BaseModel):
 
 class GenerateTermDefinitionRequest(BaseModel):
     term: str
+    force_llm: bool = False
 
 
 def _pick_sections_by_keywords(
@@ -1547,6 +1549,20 @@ def generate_technical_term_definition(
     term = str(payload.term or "").strip()
     if not term:
         raise HTTPException(status_code=400, detail="term is required")
+
+    # By default, try non-LLM sources first. LLM is used only when explicitly requested.
+    if not bool(payload.force_llm):
+        lookup = DefinitionLookup()
+        definition, source = lookup.lookup_api_definition(term)
+        return {
+            "paper": paper,
+            "technical_term": {
+                "term": term,
+                "definition": definition,
+                "definition_source": source,
+                "definition_status": "ready" if definition else "pending_llm",
+            },
+        }
 
     sections = store.get_sections_for_paper_id(paper_id)
     text_blocks = store.get_text_blocks_for_paper_id(paper_id)
