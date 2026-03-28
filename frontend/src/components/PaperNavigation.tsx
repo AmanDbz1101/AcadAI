@@ -1,4 +1,4 @@
-import { ChevronDown, ChevronLeft, Home, LogOut, Upload, X } from 'lucide-react'
+import { ChevronDown, ChevronLeft, Home, LogOut, Upload } from 'lucide-react'
 import { useEffect, useRef, useState } from 'react'
 import {
   Collapsible,
@@ -21,8 +21,6 @@ interface PaperNavigationProps {
   papers: PaperSummary[]
   selectedPaperId: number | null
   onPaperSelect: (paperId: number) => void
-  onPaperDelete?: (paperId: number, paperName: string) => void
-  deletingPaperId?: number | null
   readingGuide?: ReadingGuide | null
   guideStatus?: GuideStatus | null
   onGoHome?: () => void
@@ -150,22 +148,18 @@ const PaperNavigation = ({
   papers,
   selectedPaperId,
   onPaperSelect,
-  onPaperDelete,
-  deletingPaperId,
   readingGuide,
   guideStatus,
+  onGoHome,
   collapsed = false,
   onToggleCollapse,
   onHomeClick,
-  onGoHome,
   onLogout,
   onUploadPdf,
   isUploadingPdf = false,
   uploadErrorMessage,
   style,
 }: PaperNavigationProps) => {
-  void guideStatus
-
   // Extract phases from reading guide or use defaults
   const readingPhases = extractPhasesFromGuide(readingGuide)
   const phaseIdsSignature = readingPhases.map((phase) => phase.id).join('|')
@@ -207,8 +201,6 @@ const PaperNavigation = ({
     }))
   }
 
-  const homeHandler = onHomeClick ?? onGoHome
-
   const handleUploadButtonClick = () => {
     fileInputRef.current?.click()
   }
@@ -234,7 +226,7 @@ const PaperNavigation = ({
         <div className="px-6 pt-4 pb-3 border-b border-border/40 bg-gradient-to-r from-accent/10 via-panel to-panel">
           <div className="flex items-center justify-between">
             <button
-              onClick={homeHandler}
+              onClick={onHomeClick}
               className="inline-flex h-7 w-7 items-center justify-center rounded-md border border-border/60 bg-canvas text-text-active hover:bg-accent/10 transition-colors"
               title="Home"
               aria-label="Home"
@@ -242,29 +234,25 @@ const PaperNavigation = ({
               <Home size={14} />
             </button>
 
-            {onLogout ? (
-              <button
-                onClick={onLogout}
-                className="inline-flex h-7 w-7 items-center justify-center rounded-md border border-primary/80 bg-primary text-primary-foreground hover:bg-primary/90 transition-colors"
-                title="Logout"
-                aria-label="Logout"
-              >
-                <LogOut size={14} />
-              </button>
-            ) : null}
+            <button
+              onClick={onLogout}
+              className="inline-flex h-7 w-7 items-center justify-center rounded-md border border-primary/80 bg-primary text-primary-foreground hover:bg-primary/90 transition-colors"
+              title="Logout"
+              aria-label="Logout"
+            >
+              <LogOut size={14} />
+            </button>
           </div>
         </div>
 
-        {onToggleCollapse ? (
-          <button
-            onClick={onToggleCollapse}
-            className="absolute right-0 top-1/2 z-20 inline-flex h-9 w-4 -translate-y-1/2 items-center justify-center rounded-l-md rounded-r-none border border-r-0 border-border/60 bg-canvas shadow-sm hover:bg-accent/10 transition-colors"
-            title={collapsed ? 'Expand guide panel' : 'Collapse guide panel'}
-            aria-label={collapsed ? 'Expand guide panel' : 'Collapse guide panel'}
-          >
-            <ChevronLeft size={14} className="text-text-secondary" />
-          </button>
-        ) : null}
+        <button
+          onClick={onToggleCollapse}
+          className="absolute right-0 top-1/2 z-20 inline-flex h-9 w-4 -translate-y-1/2 items-center justify-center rounded-l-md rounded-r-none border border-r-0 border-border/60 bg-canvas shadow-sm hover:bg-accent/10 transition-colors"
+          title={collapsed ? 'Expand guide panel' : 'Collapse guide panel'}
+          aria-label={collapsed ? 'Expand guide panel' : 'Collapse guide panel'}
+        >
+          <ChevronLeft size={14} className="text-text-secondary" />
+        </button>
 
         <div className="px-6 mt-4 mb-3">
           <label className="font-ui text-[11px] font-semibold uppercase tracking-[0.18em] text-text-secondary block mb-2">
@@ -281,52 +269,6 @@ const PaperNavigation = ({
               </option>
             ))}
           </select>
-
-          <div className="mt-2 space-y-1 max-h-28 overflow-y-auto pr-1">
-            {papers.map((paper) => {
-              const isSelected = selectedPaperId === paper.id
-              const isDeleting = deletingPaperId === paper.id
-
-              return (
-                <div
-                  key={`paper-delete-item-${paper.id}`}
-                  className={`flex items-center justify-between gap-2 rounded-md border px-2 py-1 ${
-                    isSelected
-                      ? 'border-accent/60 bg-accent/10'
-                      : 'border-border/50 bg-canvas'
-                  }`}
-                >
-                  <button
-                    type="button"
-                    onClick={() => onPaperSelect(paper.id)}
-                    className={`min-w-0 flex-1 truncate text-left font-ui text-[11px] ${
-                      isSelected ? 'text-foreground font-semibold' : 'text-text-secondary hover:text-foreground'
-                    }`}
-                    title={paper.paper_name}
-                  >
-                    {paper.paper_name}
-                  </button>
-
-                  {onPaperDelete ? (
-                    <button
-                      type="button"
-                      onClick={() => onPaperDelete(paper.id, paper.paper_name)}
-                      disabled={Boolean(deletingPaperId)}
-                      className="inline-flex h-5 w-5 items-center justify-center rounded border border-destructive/30 bg-destructive/10 text-destructive hover:bg-destructive/20 disabled:opacity-60"
-                      title={`Delete ${paper.paper_name}`}
-                      aria-label={`Delete ${paper.paper_name}`}
-                    >
-                      {isDeleting ? (
-                        <span className="font-ui text-[10px]">...</span>
-                      ) : (
-                        <X size={12} />
-                      )}
-                    </button>
-                  ) : null}
-                </div>
-              )
-            })}
-          </div>
         </div>
 
         <div className="px-6 mb-3">
@@ -597,17 +539,15 @@ const PaperNavigation = ({
             className="hidden"
             onChange={handleFileInputChange}
           />
-          {onUploadPdf ? (
-            <button
-              type="button"
-              onClick={handleUploadButtonClick}
-              disabled={isUploadingPdf}
-              className="w-full rounded-md border border-primary/70 bg-primary text-primary-foreground hover:bg-primary/90 disabled:opacity-60 px-3 py-2 font-ui text-[12px] font-semibold transition-colors flex items-center justify-center gap-2 shadow-md"
-            >
-              <Upload size={14} className="text-primary-foreground" />
-              {isUploadingPdf ? 'Uploading PDF...' : 'Upload PDF'}
-            </button>
-          ) : null}
+          <button
+            type="button"
+            onClick={handleUploadButtonClick}
+            disabled={isUploadingPdf}
+            className="w-full rounded-md border border-primary/70 bg-primary text-primary-foreground hover:bg-primary/90 disabled:opacity-60 px-3 py-2 font-ui text-[12px] font-semibold transition-colors flex items-center justify-center gap-2 shadow-md"
+          >
+            <Upload size={14} className="text-primary-foreground" />
+            {isUploadingPdf ? 'Uploading PDF...' : 'Upload PDF'}
+          </button>
           {uploadErrorMessage ? (
             <p className="mt-2 font-ui text-[11px] text-destructive leading-snug">
               {uploadErrorMessage}
