@@ -36,6 +36,16 @@ from langgraph.graph import StateGraph, START, END
 from langchain_groq import ChatGroq
 from langchain_core.messages import HumanMessage
 
+try:
+    from langsmith.run_helpers import traceable
+except Exception:  # noqa: BLE001
+    # Keep graph execution functional when LangSmith is not installed.
+    def traceable(*_args, **_kwargs):
+        def _decorator(func):
+            return func
+
+        return _decorator
+
 from config import MIN_RELEVANCE_THRESHOLD
 from rag.states import AgentState, RetrievalResult
 from rag.prompts import (
@@ -279,6 +289,32 @@ _REFERENCE_SECTION_HEADING_RE = re.compile(
     r"^\s*(?:\d+(?:\.\d+)*)?\s*[:.)-]?\s*(?:references?|bibliography|works cited)\b",
     flags=re.IGNORECASE,
 )
+
+_TRACE_CHAT_CHUNK_PREVIEW_COUNT = 8
+_TRACE_CHAT_CHUNK_TEXT_CHARS = 320
+_CHAT_TRACE_RUNNER_CACHE: dict[str, Any] = {}
+
+
+def _safe_chat_trace_stage_name(stage: str) -> str:
+    """Normalize stage names for stable LangSmith node labels."""
+    normalized = re.sub(r"[^a-zA-Z0-9_]+", "_", str(stage).strip())
+    normalized = re.sub(r"_+", "_", normalized).strip("_")
+    return normalized or "unknown"
+
+
+def _trace_chat_retrieval_stage(stage: str, payload: dict[str, Any]) -> dict[str, Any]:
+    """Emit a stage-specific LangSmith child run for chat retrieval internals."""
+    safe_stage = _safe_chat_trace_stage_name(stage)
+    runner = _CHAT_TRACE_RUNNER_CACHE.get(safe_stage)
+    if runner is None:
+        @traceable(name=f"chat_retrieval_stage:{safe_stage}", run_type="chain")
+        def _runner(event_payload: dict[str, Any]) -> dict[str, Any]:
+            return event_payload
+
+        runner = _runner
+        _CHAT_TRACE_RUNNER_CACHE[safe_stage] = runner
+
+    return runner({"stage": stage, **payload})
 
 
 def _normalize_section_name(section_name: str) -> str:
@@ -934,6 +970,16 @@ def _result_score(result: Any) -> float:
         return 0.0
 
 
+def _result_optional_float(value: Any) -> float | None:
+    """Best-effort float conversion used by trace preview payloads."""
+    try:
+        if value is None:
+            return None
+        return float(value)
+    except Exception:  # noqa: BLE001
+        return None
+
+
 def _result_content(result: Any) -> str:
     """Extract content string from RetrievalResult or dict."""
     content = getattr(result, "content", None)
@@ -961,6 +1007,50 @@ def _result_to_dict(result: Any) -> dict[str, Any]:
         "score": _result_score(result),
         "metadata": _result_metadata(result),
     }
+
+
+def _trace_chat_chunk_preview(
+    result: Any,
+    content_chars: int = _TRACE_CHAT_CHUNK_TEXT_CHARS,
+) -> dict[str, Any]:
+    """Build a compact preview for one chunk in chat retrieval traces."""
+    metadata = _result_metadata(result)
+    score_value = _result_score(result)
+    retrieval_score = _result_optional_float(metadata.get("retrieval_score"))
+    rerank_score = _result_optional_float(metadata.get("rerank_score"))
+
+    if retrieval_score is None:
+        retrieval_score = score_value
+
+    content = _result_content(result)
+    normalized_content = " ".join(content.split())
+    if len(normalized_content) > content_chars:
+        normalized_content = normalized_content[:content_chars] + "..."
+
+    preview = {
+        "chunk_id": metadata.get("_id") or metadata.get("chunk_id"),
+        "score": score_value,
+        "retrieval_score": retrieval_score,
+        "rerank_score": rerank_score,
+        "section_id": metadata.get("section_id"),
+        "section_title": metadata.get("section_title"),
+        "content_type": metadata.get("content_type"),
+        "chunk_level": metadata.get("chunk_level"),
+        "content_preview": normalized_content,
+    }
+    # Keep traces concise by dropping optional fields that are missing.
+    return {key: value for key, value in preview.items() if value is not None}
+
+
+def _trace_chat_chunk_previews(
+    results: list[Any],
+    limit: int = _TRACE_CHAT_CHUNK_PREVIEW_COUNT,
+) -> list[dict[str, Any]]:
+    """Serialize top chunks for LangSmith visibility in chat flow."""
+    return [
+        _trace_chat_chunk_preview(result)
+        for result in results[: max(0, int(limit))]
+    ]
 
 
 def _is_reference_heading(value: Any) -> bool:
@@ -1476,6 +1566,12 @@ def _retrieve_for_question(
             "expanded_queries": [],
             "resolved_sections": _resolve_section_paths(step_sections, document_id),
             "chunk_level": _pick_chunk_level(question),
+            "trace": {
+                "stage": "empty_query",
+                "question": question,
+                "document_id": document_id,
+                "step_sections": step_sections,
+            },
         }
 
     expanded_queries = [base_question]
@@ -1496,7 +1592,32 @@ def _retrieve_for_question(
             )
         )
 
+    _trace_chat_retrieval_stage(
+        "scoped_retrieval",
+        {
+            "question": question,
+            "document_id": document_id,
+            "expanded_queries": expanded_queries,
+            "resolved_sections": resolved_sections,
+            "chunk_level": chunk_level,
+            "top_k": SCOPED_TOP_K,
+            "retrieved_count": len(scoped_hits),
+            "chunks": _trace_chat_chunk_previews(scoped_hits),
+        },
+    )
+
     merged_hits = _dedupe_results(scoped_hits)
+
+    _trace_chat_retrieval_stage(
+        "scoped_dedup",
+        {
+            "question": question,
+            "document_id": document_id,
+            "before_count": len(scoped_hits),
+            "after_count": len(merged_hits),
+            "chunks": _trace_chat_chunk_previews(merged_hits),
+        },
+    )
 
     # If scoped pass under-recovers, add a smaller unrestricted pass.
     if len(merged_hits) < 3:
@@ -1512,7 +1633,30 @@ def _retrieve_for_question(
                     rerank=False,
                 )
             )
+
+        _trace_chat_retrieval_stage(
+            "fallback_retrieval",
+            {
+                "question": question,
+                "document_id": document_id,
+                "chunk_level": chunk_level,
+                "top_k": FALLBACK_TOP_K,
+                "retrieved_count": len(fallback_hits),
+                "chunks": _trace_chat_chunk_previews(fallback_hits),
+            },
+        )
+
         merged_hits = _dedupe_results(merged_hits + fallback_hits)
+
+        _trace_chat_retrieval_stage(
+            "fallback_merged_dedup",
+            {
+                "question": question,
+                "document_id": document_id,
+                "after_count": len(merged_hits),
+                "chunks": _trace_chat_chunk_previews(merged_hits),
+            },
+        )
 
     # Backward-compatibility: old indexes do not have ``chunk_level`` payload.
     # Retry without chunk filtering if nothing was retrieved.
@@ -1542,10 +1686,42 @@ def _retrieve_for_question(
                     )
                 )
 
+        _trace_chat_retrieval_stage(
+            "compatibility_retrieval",
+            {
+                "question": question,
+                "document_id": document_id,
+                "retrieved_count": len(compatibility_hits),
+                "chunks": _trace_chat_chunk_previews(compatibility_hits),
+            },
+        )
+
         merged_hits = _dedupe_results(compatibility_hits)
+
+        _trace_chat_retrieval_stage(
+            "compatibility_dedup",
+            {
+                "question": question,
+                "document_id": document_id,
+                "after_count": len(merged_hits),
+                "chunks": _trace_chat_chunk_previews(merged_hits),
+            },
+        )
 
     rerank_budget = max(RERANKER_TOP_N, SCOPED_TOP_K + FALLBACK_TOP_K)
     rerank_input = merged_hits[:rerank_budget]
+
+    _trace_chat_retrieval_stage(
+        "rerank_input",
+        {
+            "question": question,
+            "document_id": document_id,
+            "rerank_budget": rerank_budget,
+            "input_count": len(rerank_input),
+            "chunks": _trace_chat_chunk_previews(rerank_input),
+        },
+    )
+
     reranked_hits = pipeline.rerank_results(
         query=question,
         results=rerank_input,
@@ -1554,10 +1730,33 @@ def _retrieve_for_question(
 
     reranked_hits = [hit for hit in reranked_hits if not _is_reference_result(hit)]
 
+    _trace_chat_retrieval_stage(
+        "rerank_output",
+        {
+            "question": question,
+            "document_id": document_id,
+            "top_n": RERANKER_TOP_N,
+            "output_count": len(reranked_hits),
+            "chunks": _trace_chat_chunk_previews(reranked_hits),
+        },
+    )
+
     return reranked_hits, {
         "expanded_queries": expanded_queries,
         "resolved_sections": resolved_sections,
         "chunk_level": chunk_level,
+        "trace": {
+            "question": question,
+            "document_id": document_id,
+            "step_sections": step_sections,
+            "expanded_queries": expanded_queries,
+            "resolved_sections": resolved_sections,
+            "chunk_level": chunk_level,
+            "scoped_count": len(scoped_hits),
+            "merged_count": len(merged_hits),
+            "rerank_input_count": len(rerank_input),
+            "reranked_count": len(reranked_hits),
+        },
     }
 
 
@@ -1693,6 +1892,24 @@ def retrieve_and_qa_node(state: dict) -> dict:
 
             deduped_hits = _dedupe_near_identical_chunks(filtered_hits)
             top_hits = deduped_hits[:QA_TOP_K]
+
+            _trace_chat_retrieval_stage(
+                "chat_answer_input",
+                {
+                    "question": question,
+                    "document_id": document_id,
+                    "resolved_sections": retrieval_meta.get("resolved_sections", []),
+                    "chunk_level": retrieval_meta.get("chunk_level"),
+                    "raw_hits_count": len(hits),
+                    "threshold": MIN_RELEVANCE_THRESHOLD,
+                    "threshold_pass_count": len(filtered_hits),
+                    "deduped_count": len(deduped_hits),
+                    "qa_top_k": QA_TOP_K,
+                    "final_input_count": len(top_hits),
+                    "chunks": _trace_chat_chunk_previews(top_hits),
+                },
+            )
+
             logger.info(
                 "      → %d chunks retrieved, using top %d",
                 len(hits),

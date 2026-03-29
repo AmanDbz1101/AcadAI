@@ -41,6 +41,7 @@ from __future__ import annotations
 
 import logging
 import os
+import re
 from pathlib import Path
 from typing import Optional, Any
 
@@ -63,14 +64,43 @@ except Exception:  # noqa: BLE001
         return _decorator
 
 
-@traceable(name="retrieval_stage_counts", run_type="chain")
+_TRACE_RUNNER_CACHE: dict[str, Any] = {}
+
+
+def _safe_trace_stage_name(stage: str) -> str:
+    """Normalize stage names for stable LangSmith node labels."""
+    normalized = re.sub(r"[^a-zA-Z0-9_]+", "_", str(stage).strip())
+    normalized = re.sub(r"_+", "_", normalized).strip("_")
+    return normalized or "unknown"
+
+
 def _trace_retrieval_stage(stage: str, payload: dict[str, Any]) -> dict[str, Any]:
-    """Emit a LangSmith child run with retrieval-stage chunk counts."""
-    return {"stage": stage, **payload}
+    """Emit a stage-specific LangSmith child run with retrieval counts."""
+    safe_stage = _safe_trace_stage_name(stage)
+    runner = _TRACE_RUNNER_CACHE.get(safe_stage)
+    if runner is None:
+        @traceable(name=f"retrieval_stage:{safe_stage}", run_type="chain")
+        def _runner(event_payload: dict[str, Any]) -> dict[str, Any]:
+            return event_payload
+
+        runner = _runner
+        _TRACE_RUNNER_CACHE[safe_stage] = runner
+
+    return runner({"stage": stage, **payload})
 
 
 _TRACE_CHUNK_PREVIEW_COUNT = 8
 _TRACE_CHUNK_TEXT_CHARS = 280
+
+
+def _safe_float(value: Any) -> float | None:
+    """Convert values to float when possible, otherwise return None."""
+    try:
+        if value is None:
+            return None
+        return float(value)
+    except Exception:  # noqa: BLE001
+        return None
 
 
 def _trace_chunk_preview(result: Any, content_chars: int = _TRACE_CHUNK_TEXT_CHARS) -> dict[str, Any]:
@@ -85,20 +115,31 @@ def _trace_chunk_preview(result: Any, content_chars: int = _TRACE_CHUNK_TEXT_CHA
         normalized_content = normalized_content[:content_chars] + "..."
 
     score = getattr(result, "score", None)
-    try:
-        score_value = float(score) if score is not None else None
-    except Exception:  # noqa: BLE001
-        score_value = None
+    score_value = _safe_float(score)
+    retrieval_score = _safe_float(metadata.get("retrieval_score"))
+    rerank_score = _safe_float(metadata.get("rerank_score"))
 
-    return {
+    # Before reranking, score is the retrieval score.
+    if retrieval_score is None:
+        retrieval_score = score_value
+
+    # After reranking, score is typically the rerank score.
+    if rerank_score is None and metadata.get("rerank_score") is not None:
+        rerank_score = _safe_float(metadata.get("rerank_score"))
+
+    preview = {
         "chunk_id": metadata.get("_id") or metadata.get("chunk_id"),
         "score": score_value,
+        "retrieval_score": retrieval_score,
+        "rerank_score": rerank_score,
         "section_id": metadata.get("section_id"),
         "section_title": metadata.get("section_title"),
         "content_type": metadata.get("content_type"),
         "chunk_level": metadata.get("chunk_level"),
         "content_preview": normalized_content,
     }
+    # Keep traces concise by dropping optional fields that are missing.
+    return {key: value for key, value in preview.items() if value is not None}
 
 
 def _trace_chunk_previews(
@@ -111,6 +152,62 @@ def _trace_chunk_previews(
         _trace_chunk_preview(result, content_chars=content_chars)
         for result in results[: max(0, int(limit))]
     ]
+
+
+def _chunk_trace_key(preview: dict[str, Any], fallback_index: int) -> str:
+    """Create a best-effort stable key to align chunk scores across stages."""
+    chunk_id = preview.get("chunk_id")
+    if chunk_id:
+        return f"id:{chunk_id}"
+
+    content_preview = str(preview.get("content_preview") or "").strip()
+    if content_preview:
+        return f"content:{content_preview[:160]}"
+
+    return f"fallback:{fallback_index}"
+
+
+def _build_rerank_score_transitions(
+    input_results: list[Any],
+    output_results: list[Any],
+    limit: int = _TRACE_CHUNK_PREVIEW_COUNT,
+) -> list[dict[str, Any]]:
+    """Build side-by-side retrieval/rerank score pairs for reranked output chunks."""
+    input_previews = _trace_chunk_previews(input_results, limit=max(len(input_results), limit))
+    input_lookup: dict[str, tuple[int, dict[str, Any]]] = {}
+    for idx, preview in enumerate(input_previews, start=1):
+        key = _chunk_trace_key(preview, idx)
+        input_lookup[key] = (idx, preview)
+
+    transitions: list[dict[str, Any]] = []
+    output_previews = _trace_chunk_previews(output_results, limit=limit)
+    for idx, preview in enumerate(output_previews, start=1):
+        key = _chunk_trace_key(preview, idx)
+        input_rank, input_preview = input_lookup.get(key, (None, {}))
+
+        retrieval_score = _safe_float(preview.get("retrieval_score"))
+        if retrieval_score is None:
+            retrieval_score = _safe_float(input_preview.get("retrieval_score"))
+        rerank_score = _safe_float(preview.get("rerank_score"))
+        if rerank_score is None:
+            rerank_score = _safe_float(preview.get("score"))
+
+        transition = {
+            "chunk_id": preview.get("chunk_id"),
+            "rank_before": input_rank,
+            "rank_after": idx,
+            "retrieval_score": retrieval_score,
+            "rerank_score": rerank_score,
+            "score_delta": (
+                rerank_score - retrieval_score
+                if rerank_score is not None and retrieval_score is not None
+                else None
+            ),
+            "content_preview": preview.get("content_preview"),
+        }
+        transitions.append({k: v for k, v in transition.items() if v is not None})
+
+    return transitions
 
 
 class RetrievalPipeline:
@@ -424,6 +521,10 @@ class RetrievalPipeline:
                 "top_n_requested": top_n,
                 "input_chunks": _trace_chunk_previews(results),
                 "output_chunks": _trace_chunk_previews(trimmed),
+                "score_transitions": _build_rerank_score_transitions(
+                    input_results=results,
+                    output_results=trimmed,
+                ),
             },
         )
         return trimmed

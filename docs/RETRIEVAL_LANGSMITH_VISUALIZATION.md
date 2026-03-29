@@ -4,13 +4,27 @@ This guide shows how to visualize retrieval chunk flow from query to final outpu
 
 ## What is traced
 
-The retrieval pipeline now emits stage-level LangSmith runs with chunk counts:
+The retrieval pipeline now emits stage-specific LangSmith runs with chunk counts.
+Each child run is named as `retrieval_stage:<stage_name>`:
 
 - `candidate_retrieval`
 - `rerank` or `rerank_skipped`
 - `final_output`
 - `section_scoped_candidate_retrieval`
 - `section_scoped_final_output`
+
+The chatbot flow also emits graph-level retrieval stages.
+Each child run is named as `chat_retrieval_stage:<stage_name>`:
+
+- `scoped_retrieval`
+- `scoped_dedup`
+- `fallback_retrieval` (when scoped recall is low)
+- `fallback_merged_dedup`
+- `compatibility_retrieval` (legacy index fallback path)
+- `compatibility_dedup`
+- `rerank_input`
+- `rerank_output`
+- `chat_answer_input` (the exact chunks passed into QA answer generation)
 
 Each stage includes counts such as:
 
@@ -81,11 +95,11 @@ python backend/evaluation/evaluate_ablation.py
 
 For each query run, inspect child runs and compare:
 
-1. `candidate_count` vs `returned_count`
-2. `rerank` stage `input_count` vs `output_count`
+1. `retrieval_stage:candidate_retrieval` `candidate_count` vs `retrieval_stage:final_output` `returned_count`
+2. `retrieval_stage:rerank` `input_count` vs `output_count`
 3. `cutoff_count` after rerank
 4. `using_bm25` (true means hybrid retrieval, false means dense-only fallback)
-5. section-scoped runs for section filtering behavior
+5. `chat_retrieval_stage:*` runs for scoped/fallback/dedup behavior
 6. `candidate_chunks` and `returned_chunks` content previews to verify relevance
 
 Tip:
