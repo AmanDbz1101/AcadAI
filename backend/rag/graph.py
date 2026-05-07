@@ -37,7 +37,7 @@ from langchain_groq import ChatGroq
 from langchain_core.messages import HumanMessage
 
 try:
-    from langsmith.run_helpers import traceable
+    from langsmith.run_helpers import traceable, get_current_run_tree
 except Exception:  # noqa: BLE001
     # Keep graph execution functional when LangSmith is not installed.
     def traceable(*_args, **_kwargs):
@@ -1339,6 +1339,7 @@ def _build_fallback_guide_data(
 # Node functions
 # ---------------------------------------------------------------------------
 
+@traceable(name="extraction_node", run_type="chain")
 def extraction_node(state: dict) -> dict:
     """
     Extract metadata and content from PDF.
@@ -1398,6 +1399,7 @@ def extraction_node(state: dict) -> dict:
         return {**state, "extraction_error": str(e), "extraction_failed": True}
 
 
+@traceable(name="categorizer_node", run_type="chain")
 def categorizer_node(state: dict) -> dict:
     """
     Classify the paper into APPLIED/THEORETICAL/SURVEY via TF-IDF model.
@@ -1455,6 +1457,7 @@ def categorizer_node(state: dict) -> dict:
         }
 
 
+@traceable(name="_retrieve_for_question", run_type="chain")
 def _retrieve_for_question(
     pipeline,
     question: str,
@@ -1670,6 +1673,7 @@ def _retrieve_for_question(
     }
 
 
+@traceable(name="retrieve_and_qa_node", run_type="chain")
 def retrieve_and_qa_node(state: dict) -> dict:
     """
     Parallel retrieve-then-answer loop for guide questions.
@@ -1750,7 +1754,7 @@ def retrieve_and_qa_node(state: dict) -> dict:
         }
         rate_limit_event = threading.Event()
 
-        def _process_single_question(idx: int, pair: dict) -> tuple[int, dict, dict]:
+        def _process_single_question(idx: int, pair: dict, parent_run_tree=None) -> tuple[int, dict, dict]:
             question = pair["question"]
             step_sections: list[str] = pair.get("sections") or []
             needs_figures = bool(pair.get("needs_figures", False))
@@ -1905,9 +1909,16 @@ def retrieve_and_qa_node(state: dict) -> dict:
             }
 
         ordered_results: dict[int, tuple[dict, dict]] = {}
+        # Capture parent run tree before executor to maintain context across threads
+        parent_run_tree = None
+        try:
+            parent_run_tree = get_current_run_tree()
+        except Exception:
+            pass  # get_current_run_tree may fail if not in a traced context
+        
         with ThreadPoolExecutor(max_workers=workers) as pool:
             futures = {
-                pool.submit(_process_single_question, idx, pair): idx
+                pool.submit(_process_single_question, idx, pair, parent_run_tree): idx
                 for idx, pair in enumerate(pairs, 1)
             }
 
@@ -1977,6 +1988,7 @@ def retrieve_and_qa_node(state: dict) -> dict:
         }
 
 
+@traceable(name="summarizer_node", run_type="chain")
 def summarizer_node(state: dict) -> dict:
     """
     Generate a structured summary of the paper.
@@ -2219,6 +2231,7 @@ def _run_guide_node(
         }
 
 
+@traceable(name="applied_guide_node", run_type="chain")
 def applied_guide_node(state: dict) -> dict:
     """Generate a Three-Pass reading guide for APPLIED papers."""
     return _run_guide_node(
@@ -2229,6 +2242,7 @@ def applied_guide_node(state: dict) -> dict:
     )
 
 
+@traceable(name="theoretical_guide_node", run_type="chain")
 def theoretical_guide_node(state: dict) -> dict:
     """Generate a Three-Pass reading guide for THEORETICAL papers."""
     return _run_guide_node(
@@ -2239,6 +2253,7 @@ def theoretical_guide_node(state: dict) -> dict:
     )
 
 
+@traceable(name="survey_guide_node", run_type="chain")
 def survey_guide_node(state: dict) -> dict:
     """Generate a Three-Pass reading guide for SURVEY papers."""
     return _run_guide_node(

@@ -123,6 +123,9 @@ class DBIngestionPipeline:
     # Public API
     # ------------------------------------------------------------------
 
+    @traceable(name="db_ingestion_pipeline", run_type="chain")
+
+
     def ingest(
         self,
         pdf_path: Path,

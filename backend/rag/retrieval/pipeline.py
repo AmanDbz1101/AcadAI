@@ -326,6 +326,9 @@ class RetrievalPipeline:
 
     # ── Public API ────────────────────────────────────────────────────────────
 
+    @traceable(name="retrieval_index", run_type="chain")
+
+
     def index(
         self,
         hierarchy_json_path: Path,
@@ -345,6 +348,9 @@ class RetrievalPipeline:
             pdf_path=pdf_path,
             force_reindex=force_reindex,
         )
+
+    @traceable(name="retrieval_query", run_type="chain")
+
 
     def query(
         self,
@@ -451,19 +457,7 @@ class RetrievalPipeline:
             },
         )
 
-        if not candidates:
-            _trace_retrieval_stage(
-                "final_output",
-                {
-                    "query": query,
-                    "document_id": document_id,
-                    "returned_count": 0,
-                    "cutoff_count": 0,
-                    "rerank_enabled": rerank,
-                    "returned_chunks": [],
-                },
-            )
-            return []
+        if not candidates:            return []
 
         if rerank:
             results = self.rerank_results(query=query, results=candidates, top_n=top_n)
@@ -640,20 +634,7 @@ class RetrievalPipeline:
             },
         )
 
-        if not candidates:
-            _trace_retrieval_stage(
-                "section_scoped_final_output",
-                {
-                    "query": query,
-                    "document_id": document_id,
-                    "section_id": section_id,
-                    "returned_count": 0,
-                    "cutoff_count": 0,
-                    "rerank_enabled": rerank,
-                    "returned_chunks": [],
-                },
-            )
-            return []
+        if not candidates:            return []
 
         if rerank:
             results = self.rerank_results(query=query, results=candidates, top_n=top_n)

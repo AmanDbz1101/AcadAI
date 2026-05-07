@@ -80,6 +80,9 @@ class SectionHierarchyPipeline:
             use_docling_structure=use_docling_structure
         )
     
+    @traceable(name="section_hierarchy_pipeline", run_type="chain")
+
+    
     def process_from_processed_document(
         self,
         processed_doc: ProcessedDocument,

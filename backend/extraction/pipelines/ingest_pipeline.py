@@ -124,6 +124,9 @@ class IngestPipeline:
         
         logger.info("Ingestion pipeline initialized")
     
+    @traceable(name="ingest_pipeline", run_type="chain")
+
+    
     def process(
         self, 
         pdf_path: Path,

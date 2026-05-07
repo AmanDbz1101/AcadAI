@@ -52,7 +52,6 @@ def _safe_trace_stage_name(stage: str) -> str:
     return normalized or "unknown"
 
 
-def _trace_index_stage(stage: str, payload: dict[str, Any]) -> dict[str, Any]:
     safe_stage = _safe_trace_stage_name(stage)
     runner = _TRACE_RUNNER_CACHE.get(safe_stage)
     if runner is None:
@@ -120,6 +119,9 @@ class Indexer:
         return BM25SparseEncoder
 
     # ── Main entry point ──────────────────────────────────────────────────────
+
+    @traceable(name="index_document", run_type="chain")
+
 
     def index_document(
         self,
@@ -192,7 +194,6 @@ class Indexer:
             output_dir=doc_output_dir,
             pdf_path=pdf_path,
         )
-        _trace_index_stage("chunked", {"document_id": document_id, "num_chunks": len(chunks)})
 
         # Persist section-title lookup used by section-scoped retrieval.
         self._write_section_lookup(document_id=document_id, chunks=chunks)
@@ -221,7 +222,6 @@ class Indexer:
 
         # ── Embed ─────────────────────────────────────────────────────────────
         logger.info("Indexer: encoding %d chunks …", len(chunks))
-        _trace_index_stage("embedding_start", {"document_id": document_id, "num_chunks": len(chunks)})
         
         encode_start = time.time()
         dense_vecs = self.dense_encoder.encode_documents(corpus)
@@ -229,12 +229,9 @@ class Indexer:
         logger.info("Indexer: dense encoding %d chunks took %.2fs", len(chunks), encode_dense_time)
         
         sparse_vecs = sparse_enc.embed_documents(corpus)
-        _trace_index_stage("embedding_completed", {"document_id": document_id})
-
         # ── Upsert to Qdrant ──────────────────────────────────────────────────
         self._upsert_batches(chunks, dense_vecs, sparse_vecs)
 
-        _trace_index_stage("upsert_completed", {"document_id": document_id, "total_chunks": len(chunks)})
 
         duration = time.time() - t0
         logger.info(

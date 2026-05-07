@@ -52,28 +52,6 @@ except Exception:  # noqa: BLE001
 
         return _decorator
 
-_TRACE_RUNNER_CACHE: dict[str, Any] = {}
-
-
-def _safe_trace_stage_name(stage: str) -> str:
-    normalized = re.sub(r"[^a-zA-Z0-9_]+", "_", str(stage).strip())
-    normalized = re.sub(r"_+", "_", normalized).strip("_")
-    return normalized or "unknown"
-
-
-def _trace_chunk_stage(stage: str, payload: dict[str, Any]) -> dict[str, Any]:
-    safe_stage = _safe_trace_stage_name(stage)
-    runner = _TRACE_RUNNER_CACHE.get(safe_stage)
-    if runner is None:
-        @traceable(name=f"chunk_stage:{safe_stage}", run_type="chain")
-        def _runner(event_payload: dict[str, Any]) -> dict[str, Any]:
-            return event_payload
-
-        runner = _runner
-        _TRACE_RUNNER_CACHE[safe_stage] = runner
-
-    return runner({"stage": stage, **payload})
-
 _REFERENCE_SECTION_KEYWORDS = (
     "reference",
     "references",
@@ -697,6 +675,7 @@ def _strip_reference_text(text: str, reference_blocks: list[dict]) -> str:
     return cleaned.strip()
 
 
+@traceable(name="summarize_table", run_type="llm")
 def summarize_table(markdown_content: str) -> str:
     """Summarize markdown table content using Groq for better embedding quality."""
     import time
@@ -746,6 +725,7 @@ def summarize_table(markdown_content: str) -> str:
         return markdown_content
 
 
+@traceable(name="summarize_figure", run_type="llm")
 def summarize_figure(caption: str, image_path: str) -> str:
     """Summarize a figure using the image file and caption via Groq multimodal API."""
     import time
@@ -1401,6 +1381,7 @@ class SectionChunker:
         ]
 
 
+@traceable(name="chunk_paper", run_type="chain")
 def chunk_paper(
     sections: list[dict],
     paper_id: str,
@@ -1481,9 +1462,7 @@ def chunk_paper(
     True
     >>> chunks[0].paper_id
     'paper-uuid-123'
-    """
-    _trace_chunk_stage("start", {"paper_id": paper_id, "num_sections": len(sections)})
-    
+    """    
     splitter = TokenAwareSplitter(
         chunk_size=chunk_size,
         chunk_overlap=overlap,
@@ -1559,8 +1538,10 @@ def chunk_paper(
         len(sections),
         paper_id,
     )
-    _trace_chunk_stage("completed", {"paper_id": paper_id, "num_chunks": len(chunks)})
+
     return chunks
+
+
 
 
 def _flatten_sections(sections: list[dict]) -> list[dict]:

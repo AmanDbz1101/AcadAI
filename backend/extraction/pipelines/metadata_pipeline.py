@@ -119,6 +119,9 @@ class MetadataExtractionPipeline:
         merged.confidence_score = merged.get_field_coverage()
         return merged
     
+    @traceable(name="metadata_pipeline", run_type="chain")
+
+    
     def process(self, document: ValidatedDocument) -> ProcessedDocument:
         """
         Process a validated document to extract metadata.
