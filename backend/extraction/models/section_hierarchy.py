@@ -33,6 +33,7 @@ class SectionNode(BaseModel):
     # Content metadata
     has_subsections: bool = Field(False, description="Whether this section contains subsections")
     child_section_ids: List[str] = Field(default_factory=list, description="IDs of direct child sections")
+    section_type: Optional[str] = Field(None, description="Section type (appendix, references, etc.)")
     
     # Typography hints (optional, for detection confidence)
     font_size: Optional[float] = Field(None, description="Font size in points")
@@ -76,6 +77,7 @@ class SectionHierarchy(BaseModel):
     # Detection metadata
     detection_method: str = Field("docling+heuristics", description="Method used for detection")
     confidence_score: Optional[float] = Field(None, ge=0, le=1, description="Detection confidence")
+    cross_references: List[Dict[str, Any]] = Field(default_factory=list, description="Cross-reference links")
     
     def get_section(self, section_id: str) -> Optional[SectionNode]:
         """Get section by ID."""
@@ -169,7 +171,8 @@ class SectionHierarchy(BaseModel):
             "total_sections": self.total_sections,
             "max_depth": self.max_depth,
             "detection_method": self.detection_method,
-            "confidence_score": self.confidence_score
+            "confidence_score": self.confidence_score,
+            "cross_references": self.cross_references,
         }
     
     @classmethod
@@ -183,7 +186,8 @@ class SectionHierarchy(BaseModel):
             total_sections=data["total_sections"],
             max_depth=data["max_depth"],
             detection_method=data["detection_method"],
-            confidence_score=data.get("confidence_score")
+            confidence_score=data.get("confidence_score"),
+            cross_references=data.get("cross_references", []),
         )
 
 

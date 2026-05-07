@@ -32,6 +32,9 @@ from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column, relationship,
 
 logger = logging.getLogger(__name__)
 
+# Guard to avoid repeatedly running DDL/schema creation per request.
+_schema_initialized: bool = False
+
 
 class Base(DeclarativeBase):
     pass
@@ -346,7 +349,21 @@ class PostgresPaperStore:
         return {column.name: getattr(record, column.name) for column in record.__table__.columns}
 
     def ensure_schema(self) -> None:
-        """Create required tables and indexes if they do not exist."""
+        """Create required tables and indexes if they do not exist.
+
+        Runs schema creation and lightweight DDL migrations once per process.
+        Subsequent calls return quickly to avoid expensive DDL over the network
+        on every API request.
+        """
+        global _schema_initialized
+        try:
+            if _schema_initialized:
+                logger.debug("ensure_schema: already initialized, skipping")
+                return
+        except NameError:
+            # Module-level flag not yet defined; fall through to init.
+            pass
+
         Base.metadata.create_all(self._engine)
 
         # Backward-compatible migration for existing deployments where
@@ -357,6 +374,9 @@ class PostgresPaperStore:
                     "ALTER TABLE papers ADD COLUMN IF NOT EXISTS reading_guide JSONB"
                 )
             )
+
+        _schema_initialized = True
+        logger.info("Schema initialized (will not run again this process)")
 
     def persist_extraction(
         self,
@@ -439,6 +459,126 @@ class PostgresPaperStore:
 
         return PersistResult(True, paper_id, paper_name, "stored")
 
+    def create_pending_paper(
+        self,
+        *,
+        paper_name: str,
+        pdf_hash: Optional[str],
+        source_pdf_path: Optional[str],
+        document_uuid: Optional[str],
+    ) -> Dict[str, Any]:
+        """
+        Create a minimal paper row for async uploads.
+
+        Returns a payload with `paper_id`, `stored`, and `reason`.
+        If a duplicate is detected, returns the existing paper id.
+        """
+        paper_name = (paper_name or "").strip()
+        if not paper_name:
+            return {"stored": False, "paper_id": None, "reason": "missing_paper_name"}
+
+        self.ensure_schema()
+        with self._Session() as session:
+            existing_id, reason = self._find_existing_paper(session, paper_name, pdf_hash)
+            if existing_id is not None:
+                return {
+                    "stored": False,
+                    "paper_id": int(existing_id),
+                    "reason": reason,
+                }
+
+            paper = PaperRecord(
+                paper_name=paper_name,
+                title=None,
+                abstract=None,
+                pdf_hash=pdf_hash,
+                source_pdf_path=source_pdf_path,
+                document_uuid=document_uuid,
+                metadata_json={},
+                reading_guide=None,
+            )
+            session.add(paper)
+            session.commit()
+            session.refresh(paper)
+            return {
+                "stored": True,
+                "paper_id": int(paper.id),
+                "reason": "pending_created",
+            }
+
+    def update_paper_from_extraction(
+        self,
+        *,
+        paper_id: int,
+        paper_name: str,
+        title: Optional[str],
+        abstract: Optional[str],
+        pdf_hash: Optional[str],
+        source_pdf_path: Optional[str],
+        document_uuid: Optional[str],
+        metadata_json: Dict[str, Any],
+        sections: List[Dict[str, Any]],
+        extracted_elements: Dict[str, List[Dict[str, Any]]],
+        reading_guide: Optional[Dict[str, Any]] = None,
+    ) -> Dict[str, Any]:
+        """Overwrite a pending paper with extracted content."""
+        self.ensure_schema()
+        with self._Session() as session:
+            paper = (
+                session.query(PaperRecord)
+                .filter(PaperRecord.id == paper_id)
+                .with_for_update()
+                .first()
+            )
+            if paper is None:
+                raise ValueError("paper_not_found")
+
+            desired_name = (paper_name or "").strip()
+            if desired_name:
+                conflict = (
+                    session.query(PaperRecord.id)
+                    .filter(func.lower(PaperRecord.paper_name) == desired_name.lower())
+                    .filter(PaperRecord.id != paper_id)
+                    .first()
+                )
+                if conflict is None:
+                    paper.paper_name = desired_name
+
+            paper.title = title
+            paper.abstract = abstract
+            paper.pdf_hash = pdf_hash
+            paper.source_pdf_path = source_pdf_path
+            paper.document_uuid = document_uuid
+            paper.metadata_json = metadata_json or {}
+            if reading_guide is not None:
+                paper.reading_guide = reading_guide
+
+            # Clear existing extracted content before re-inserting.
+            session.query(SectionRecord).filter(SectionRecord.paper_id == paper_id).delete()
+            session.query(TextBlockRecord).filter(TextBlockRecord.paper_id == paper_id).delete()
+            session.query(TableDataRecord).filter(TableDataRecord.paper_id == paper_id).delete()
+            session.query(ImageRecord).filter(ImageRecord.paper_id == paper_id).delete()
+            session.query(ReferenceRecord).filter(ReferenceRecord.paper_id == paper_id).delete()
+
+            section_db_map = self._insert_sections(session, paper_id, sections)
+            text_map = self._insert_text_blocks(
+                session, paper_id, extracted_elements.get("text_blocks", [])
+            )
+            table_map = self._insert_tables(
+                session, paper_id, extracted_elements.get("tables", [])
+            )
+            image_map = self._insert_images(
+                session, paper_id, extracted_elements.get("figures", [])
+            )
+            references = self._resolve_references(extracted_elements)
+            self._insert_references(session, paper_id, references)
+
+            self._link_section_elements(session, section_db_map, text_map, table_map, image_map)
+
+            session.commit()
+            session.refresh(paper)
+            return self._to_dict(paper)
+
     def _resolve_references(self, extracted_elements: Dict[str, List[Dict[str, Any]]]) -> List[Dict[str, Any]]:
         references = extracted_elements.get("references")
         if not references:
@@ -462,6 +602,17 @@ class PostgresPaperStore:
             return int(by_name.id), "duplicate_paper_name"
 
         return None, ""
+
+    def get_paper_id_by_hash(self, pdf_hash: Optional[str]) -> Optional[int]:
+        if not pdf_hash:
+            return None
+
+        self.ensure_schema()
+        with self._Session() as session:
+            by_hash = session.query(PaperRecord).filter(PaperRecord.pdf_hash == pdf_hash).first()
+            if by_hash:
+                return int(by_hash.id)
+        return None
 
     def _insert_sections(self, session, paper_id: int, sections: List[Dict[str, Any]]) -> Dict[str, Dict[str, Any]]:
         section_map: Dict[str, Dict[str, Any]] = {}
@@ -1023,7 +1174,6 @@ class PostgresPaperStore:
                     TextBlockRecord.id.label("text_block_db_id"),
                     TextBlockRecord.element_id.label("text_block_element_id"),
                     TextBlockRecord.page_number,
-                    TextBlockRecord.text_content,
                 )
                 .join(
                     SectionTextBlockRecord,

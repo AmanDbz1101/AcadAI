@@ -81,15 +81,16 @@ class DenseEncoder(Embeddings):
 
             from sentence_transformers import SentenceTransformer  # type: ignore
 
-            logger.info("DenseEncoder: loading model %s …", self.model_name)
-            t0 = time.time()
+            logger.info(f"DenseEncoder: cold-loading model {self.model_name} ...")
+            start = time.perf_counter()
             cache_dir = MODEL_CACHE_DIR / "sentence_transformers"
             cache_dir.mkdir(parents=True, exist_ok=True)
             kwargs: dict = {"cache_folder": str(cache_dir)}
             if self._device is not None:
                 kwargs["device"] = self._device
             self._model = SentenceTransformer(self.model_name, **kwargs)
-            logger.info("DenseEncoder: model loaded in %.1fs", time.time() - t0)
+            elapsed = time.perf_counter() - start
+            logger.info(f"DenseEncoder: model loaded in {elapsed:.2f}s")
 
         return self._model
 

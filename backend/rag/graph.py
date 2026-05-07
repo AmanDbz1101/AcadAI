@@ -51,18 +51,14 @@ from rag.states import AgentState, RetrievalResult
 from rag.prompts import (
     qa_prompt,
     summarizer_prompt,
-    applied_guide_planner_prompt,
-    theoretical_guide_planner_prompt,
-    survey_guide_planner_prompt,
-    guide_step_question_prompt,
+    applied_guide_prompt,
+    theoretical_guide_prompt,
+    survey_guide_prompt,
 )
 from rag.guide_models import (
     AppliedReadingGuide,
     TheoreticalReadingGuide,
     SurveyReadingGuide,
-    AppliedReadingGuidePlan,
-    TheoreticalReadingGuidePlan,
-    SurveyReadingGuidePlan,
 )
 from rag.tfidf_categorizer import TfidfPaperCategorizer
 from rag.retrieval.config import (
@@ -71,7 +67,6 @@ from rag.retrieval.config import (
     RERANKER_TOP_N,
     QA_TOP_K,
     MAX_GUIDE_QUESTIONS,
-    MAX_PARALLEL_QUESTIONS,
 )
 
 # ---------------------------------------------------------------------------
@@ -91,9 +86,8 @@ _GUIDE_PASS_KEYS = (
 _GUIDE_VALIDATION_ATTEMPTS = 2
 _GUIDE_MAX_SECTIONS_PER_STEP = 3
 _ABSTRACT_HEADING = "Abstract"
-_GROQ_QGEN_MODEL = os.getenv("GROQ_QGEN_MODEL", "llama-3.3-70b-versatile")
-_QUESTION_GEN_ATTEMPTS = 3
-_QUESTIONS_PER_STEP = 3
+_MIN_QUESTIONS_PER_STEP = 1
+_MAX_QUESTIONS_PER_STEP = 2
 
 def _extract_guide_retrieval_info(guide_json: dict) -> list[dict]:
     """
@@ -224,9 +218,9 @@ def _get_retrieval_pipeline():
     """Return a process-wide RetrievalPipeline singleton."""
     global _retrieval_pipeline
     if _retrieval_pipeline is None:
-        from rag.retrieval import RetrievalPipeline
+        from rag.retrieval.pipeline import get_retrieval_pipeline
 
-        _retrieval_pipeline = RetrievalPipeline()
+        _retrieval_pipeline = get_retrieval_pipeline()
     return _retrieval_pipeline
 
 
@@ -315,6 +309,9 @@ def _trace_chat_retrieval_stage(stage: str, payload: dict[str, Any]) -> dict[str
         _CHAT_TRACE_RUNNER_CACHE[safe_stage] = runner
 
     return runner({"stage": stage, **payload})
+
+
+
 
 
 def _normalize_section_name(section_name: str) -> str:
@@ -407,13 +404,12 @@ def _normalize_id_list(values: Any) -> list[str]:
     normalized: list[str] = []
     seen: set[str] = set()
     for value in values:
-        if not isinstance(value, str):
+        # Convert to string (handles int, float, etc.) and strip whitespace
+        str_value = str(value).strip() if value is not None else ""
+        if not str_value or str_value in seen:
             continue
-        cleaned = value.strip()
-        if not cleaned or cleaned in seen:
-            continue
-        seen.add(cleaned)
-        normalized.append(cleaned)
+        seen.add(str_value)
+        normalized.append(str_value)
     return normalized
 
 
@@ -519,18 +515,42 @@ def _extract_visual_context(document_id: str, sections: list[dict[str, Any]]) ->
     }
 
 
-def _enforce_planner_skeleton(
+def _ensure_step_questions(step: dict[str, Any]) -> None:
+    """Ensure each step has 1-2 simple, section-specific questions."""
+    questions = step.get("questions_to_answer")
+    if not isinstance(questions, list):
+        questions = []
+
+    cleaned = [q.strip() for q in questions if isinstance(q, str) and q.strip()]
+    if cleaned:
+        step["questions_to_answer"] = cleaned[:_MAX_QUESTIONS_PER_STEP]
+        return
+
+    sections = step.get("section_to_read") or []
+    section_label = sections[0] if sections else "this section"
+    objective = str(step.get("objective") or "").strip()
+    expected = str(step.get("expected_output") or "").strip()
+
+    fallback = [
+        f"What is the main takeaway from {section_label}?",
+    ]
+    if objective:
+        fallback.append(f"How does {section_label} help with: {objective}?")
+    elif expected:
+        fallback.append(f"What should you be able to explain after reading {section_label}?")
+
+    step["questions_to_answer"] = fallback[:_MAX_QUESTIONS_PER_STEP]
+
+
+def _normalize_guide_steps(
     guide_json: dict[str, Any],
     section_visual_map: dict[str, dict[str, list[str]]],
 ) -> dict[str, Any]:
-    """Ensure Agent 1 output remains a skeleton with empty questions and normalized visual IDs."""
+    """Normalize step sections, visual IDs, and ensure simple questions exist."""
     for _, _, step in _iter_guide_steps(guide_json):
         raw_sections = step.get("section_to_read")
         sections = [s for s in raw_sections if isinstance(s, str) and s.strip()] if isinstance(raw_sections, list) else []
         step["section_to_read"] = sections
-
-        # Force empty questions in planner output.
-        step["questions_to_answer"] = []
 
         figure_ids = _normalize_id_list(step.get("relevant_figure_ids"))
         table_ids = _normalize_id_list(step.get("relevant_table_ids"))
@@ -550,131 +570,11 @@ def _enforce_planner_skeleton(
         step["needs_figures"] = bool(step.get("needs_figures", False) or figure_ids)
         step["needs_tables"] = bool(step.get("needs_tables", False) or table_ids)
 
+        _ensure_step_questions(step)
+
     return guide_json
 
 
-def _invoke_groq_question_agent(prompt: str) -> str:
-    """Call Groq (Agent 2) and return raw text response."""
-    llm = ChatGroq(model=_GROQ_QGEN_MODEL, temperature=0.1)
-    response = llm.invoke([HumanMessage(content=prompt)])
-    return str(getattr(response, "content", "") or "").strip()
-
-
-def _parse_json_array_strings(raw_text: str) -> list[str]:
-    """Parse first JSON array in text and return a string list."""
-    stripped = raw_text.strip()
-    start = stripped.find("[")
-    end = stripped.rfind("]")
-    if start == -1 or end == -1 or end <= start:
-        return []
-    candidate = stripped[start : end + 1]
-    try:
-        payload = json.loads(candidate)
-    except Exception:  # noqa: BLE001
-        return []
-    if not isinstance(payload, list):
-        return []
-    return [str(item).strip() for item in payload if isinstance(item, str) and item.strip()]
-
-
-def _normalize_single_question(question: str) -> str:
-    """Normalize whitespace and trailing punctuation to a single question form."""
-    cleaned = " ".join(question.strip().split())
-    cleaned = cleaned.rstrip(" .!;:")
-    return f"{cleaned}?" if cleaned and not cleaned.endswith("?") else cleaned
-
-
-def _is_strict_single_question(question: str) -> bool:
-    """Strict validator: one standalone question, no compound 'and' clauses."""
-    if not isinstance(question, str):
-        return False
-    q = " ".join(question.strip().split())
-    if len(q) < 20:
-        return False
-    if q.count("?") != 1:
-        return False
-    if not q.endswith("?"):
-        return False
-    # Reject obvious compound questions.
-    if re.search(r"\band\b", q, flags=re.IGNORECASE):
-        return False
-    # Avoid multi-part style punctuation.
-    if ";" in q or "??" in q:
-        return False
-    return True
-
-
-def _generate_step_questions_with_groq(
-    *,
-    category: str,
-    title: str,
-    abstract: str,
-    pass_key: str,
-    pass_goal: str,
-    step: dict[str, Any],
-    figure_summaries: dict[str, str],
-    table_summaries: dict[str, str],
-) -> list[str]:
-    """Agent 2 generation loop with strict single-question validation and retries."""
-    step_number = int(step.get("step_number") or 0)
-    section_to_read = [s for s in (step.get("section_to_read") or []) if isinstance(s, str)]
-    objective = str(step.get("objective") or "").strip()
-    expected_output = str(step.get("expected_output") or "").strip()
-    figure_ids = _normalize_id_list(step.get("relevant_figure_ids"))
-    table_ids = _normalize_id_list(step.get("relevant_table_ids"))
-
-    figure_context = [f"{fid}: {figure_summaries.get(fid, '')}" for fid in figure_ids if figure_summaries.get(fid)]
-    table_context = [f"{tid}: {table_summaries.get(tid, '')}" for tid in table_ids if table_summaries.get(tid)]
-
-    for attempt in range(1, _QUESTION_GEN_ATTEMPTS + 1):
-        prompt = guide_step_question_prompt(
-            category=category,
-            title=title,
-            abstract=abstract,
-            pass_key=pass_key,
-            pass_goal=pass_goal,
-            step_number=step_number,
-            section_to_read=section_to_read,
-            objective=objective,
-            expected_output=expected_output,
-            figure_summaries=figure_context,
-            table_summaries=table_context,
-        )
-
-        try:
-            raw = _invoke_groq_question_agent(prompt)
-        except Exception as exc:  # noqa: BLE001
-            logger.warning("Agent 2 (Groq) call failed on attempt %d: %s", attempt, exc)
-            continue
-
-        candidates = _parse_json_array_strings(raw)
-        normalized = [_normalize_single_question(q) for q in candidates]
-        strict = [q for q in normalized if _is_strict_single_question(q)]
-
-        # De-duplicate while preserving order.
-        strict = list(dict.fromkeys(strict))
-        if len(strict) >= _QUESTIONS_PER_STEP:
-            return strict[:_QUESTIONS_PER_STEP]
-
-    # Deterministic fallback that still satisfies strict single-question constraints.
-    fallback_questions = []
-    for section in section_to_read[:_QUESTIONS_PER_STEP]:
-        fq = _normalize_single_question(
-            f"Which specific claim in section {section} most directly achieves this step objective"
-        )
-        if _is_strict_single_question(fq):
-            fallback_questions.append(fq)
-
-    while len(fallback_questions) < _QUESTIONS_PER_STEP:
-        extra = _normalize_single_question(
-            f"Which paper-specific evidence best supports the stated expected output for step {step_number}"
-        )
-        if _is_strict_single_question(extra):
-            fallback_questions.append(extra)
-        else:
-            fallback_questions.append("Which concrete paper detail should be extracted to satisfy this step?")
-
-    return fallback_questions[:_QUESTIONS_PER_STEP]
 
 
 def _is_intentional_revisit_step(step: dict[str, Any]) -> bool:
@@ -1445,10 +1345,13 @@ def extraction_node(state: dict) -> dict:
     
     Entry point for the workflow when starting from a PDF file.
     """
+    import time
+    _t = time.perf_counter()
     logger.info("🔍 Extraction node: processing PDF...")
     
     pdf_path = state.get("pdf_path")
     if not pdf_path:
+        logger.info(f"Extraction node complete in {time.perf_counter() - _t:.2f}s (error)")
         return {
             **state,
             "errors": [*state.get("errors", []), "No pdf_path provided for extraction"],
@@ -1472,6 +1375,7 @@ def extraction_node(state: dict) -> dict:
         
         # Map extraction results to state
         metadata = result["metadata"]
+        logger.info(f"Extraction node complete in {time.perf_counter() - _t:.2f}s")
         return {
             **state,
             "document_id": result["document_id"],
@@ -1485,24 +1389,28 @@ def extraction_node(state: dict) -> dict:
             "db_paper_id": ((result.get("database") or {}).get("paper_id")),
         }
         
-    except Exception as exc:
-        logger.error(f"Extraction failed: {exc}")
-        return {
-            **state,
-            "errors": [*state.get("errors", []), f"Extraction error: {exc}"],
-        }
+    except Exception as e:
+        elapsed = time.perf_counter() - _t
+        logger.error(
+            f"Extraction node FAILED in {elapsed:.2f}s: {type(e).__name__}: {e}",
+            exc_info=True,
+        )
+        return {**state, "extraction_error": str(e), "extraction_failed": True}
 
 
 def categorizer_node(state: dict) -> dict:
     """
     Classify the paper into APPLIED/THEORETICAL/SURVEY via TF-IDF model.
     """
+    import time
+    _t = time.perf_counter()
     logger.info("📚 Categorizer node: classifying paper...")
     
     title = state.get("title", "").strip()
     abstract = state.get("abstract", "").strip()
     
     if not title and not abstract:
+        logger.info(f"Categorizer node complete in {time.perf_counter() - _t:.2f}s (error)")
         return {
             **state,
             "errors": [*state.get("errors", []), "Missing title or abstract for categorization"],
@@ -1529,6 +1437,7 @@ def categorizer_node(state: dict) -> dict:
             f"(top class probability: {top_probability:.4f})."
         )
         
+        logger.info(f"Categorizer node complete in {time.perf_counter() - _t:.2f}s")
         return {
             **state,
             "category": category,
@@ -1538,6 +1447,7 @@ def categorizer_node(state: dict) -> dict:
         
     except Exception as exc:
         logger.error(f"Categorization failed: {exc}")
+        logger.info(f"Categorizer node complete in {time.perf_counter() - _t:.2f}s (error)")
         return {
             **state,
             "errors": [*state.get("errors", []), f"Categorization error: {exc}"],
@@ -2123,21 +2033,19 @@ def _run_guide_node(
     state: dict,
     label: str,
     guide_model_cls,
-    planner_model_cls,
-    planner_prompt_fn,
+    guide_prompt_fn,
 ) -> dict:
     """
-    Generic helper for two-agent guide generation.
+    Generic helper for single-agent guide generation.
 
     Parameters
     ----------
     state         : current workflow state
     label         : human-readable label for logging (e.g. "APPLIED")
     guide_model_cls : Pydantic model class for final guide output
-    planner_model_cls : Agent 1 planner skeleton model class
-    planner_prompt_fn : Agent 1 planner prompt function
+    guide_prompt_fn : Agent 1 guide prompt function
     """
-    logger.info("📖 Guide node [%s]: Agent 1 planner + Agent 2 question generation…", label)
+    logger.info("📖 Guide node [%s]: Agent 1 guide generation…", label)
 
     title = state.get("title", "")
     abstract = state.get("abstract", "")
@@ -2156,9 +2064,9 @@ def _run_guide_node(
         num_tables = sum(s.get("stats", {}).get("tables", 0) for s in sections)
         visual_context = _extract_visual_context(document_id=document_id, sections=sections)
 
-        # Agent 1 planner: structured skeleton generation.
+        # Agent 1 guide: structured full guide generation (includes questions).
         planner_llm = ChatGroq(model="llama-3.3-70b-versatile", temperature=0.1)
-        structured_planner_llm = planner_llm.with_structured_output(planner_model_cls)
+        structured_planner_llm = planner_llm.with_structured_output(guide_model_cls)
 
         planner_prompt_kwargs = {
             "title": title,
@@ -2166,15 +2074,9 @@ def _run_guide_node(
             "sections": sections,
             "num_figures": num_figures,
             "num_tables": num_tables,
-            "available_figure_ids": visual_context["available_figure_ids"],
-            "available_table_ids": visual_context["available_table_ids"],
-            "section_visual_index_json": json.dumps(
-                visual_context["section_visual_map"],
-                ensure_ascii=False,
-            ),
         }
 
-        prompt_parameters = inspect.signature(planner_prompt_fn).parameters
+        prompt_parameters = inspect.signature(guide_prompt_fn).parameters
         if "introduction" in prompt_parameters or "conclusion" in prompt_parameters:
             introduction, conclusion = _extract_intro_conclusion_context(
                 full_text=full_text,
@@ -2185,7 +2087,7 @@ def _run_guide_node(
             if "conclusion" in prompt_parameters:
                 planner_prompt_kwargs["conclusion"] = conclusion
 
-        planner_prompt = planner_prompt_fn(**planner_prompt_kwargs)
+        planner_prompt = guide_prompt_fn(**planner_prompt_kwargs)
 
         planner_json: dict[str, Any] | None = None
         validation_report: dict[str, Any] | None = None
@@ -2194,7 +2096,7 @@ def _run_guide_node(
         for attempt in range(1, _GUIDE_VALIDATION_ATTEMPTS + 1):
             planner_model = structured_planner_llm.invoke(attempt_prompt)
             planner_json = planner_model.model_dump()
-            planner_json = _enforce_planner_skeleton(
+            planner_json = _normalize_guide_steps(
                 guide_json=planner_json,
                 section_visual_map=visual_context["section_visual_map"],
             )
@@ -2220,7 +2122,7 @@ def _run_guide_node(
                     "VALIDATION FEEDBACK FROM PREVIOUS DRAFT:\n"
                     f"- Duplicate sections within same pass: {json.dumps(validation_report['duplicate_within_pass_sections'], ensure_ascii=False)}\n"
                     f"- Duplicate sections across passes (without explicit revisit intent): {json.dumps(validation_report['duplicate_global_sections'], ensure_ascii=False)}\n"
-                    "Return a corrected planner skeleton JSON that follows the three-pass method, avoids unnecessary repetition, and keeps questions_to_answer empty."
+                    "Return a corrected guide JSON that follows the three-pass method, avoids unnecessary repetition, and keeps questions_to_answer short and simple."
                 )
 
         if planner_json is None:
@@ -2232,45 +2134,10 @@ def _run_guide_node(
                 label,
             )
             planner_json = _prune_nonessential_section_repetition(planner_json)
-            planner_json = _enforce_planner_skeleton(
+            planner_json = _normalize_guide_steps(
                 guide_json=planner_json,
                 section_visual_map=visual_context["section_visual_map"],
             )
-
-        # Agent 2: generate per-step questions in parallel using Groq.
-        step_refs: list[tuple[str, int, str]] = []
-        for pass_key, pass_payload in _iter_guide_passes(planner_json):
-            pass_goal = str(pass_payload.get("goal") or "").strip()
-            steps = pass_payload.get("steps") or []
-            if not isinstance(steps, list):
-                continue
-            for step_idx, _ in enumerate(steps):
-                step_refs.append((pass_key, step_idx, pass_goal))
-
-        if step_refs:
-            workers = max(1, min(len(step_refs), MAX_PARALLEL_QUESTIONS))
-            logger.info("Agent 2 question generation [%s]: %d step(s), %d worker(s)", label, len(step_refs), workers)
-
-            def _generate_for_step(ref: tuple[str, int, str]) -> tuple[str, int, list[str]]:
-                pass_key, step_idx, pass_goal = ref
-                step = planner_json.get(pass_key, {}).get("steps", [])[step_idx]
-                questions = _generate_step_questions_with_groq(
-                    category=label,
-                    title=title,
-                    abstract=abstract,
-                    pass_key=pass_key,
-                    pass_goal=pass_goal,
-                    step=step,
-                    figure_summaries=visual_context["figure_summaries"],
-                    table_summaries=visual_context["table_summaries"],
-                )
-                return pass_key, step_idx, questions
-
-            with ThreadPoolExecutor(max_workers=workers) as pool:
-                futures = {pool.submit(_generate_for_step, ref): ref for ref in step_refs}
-                for future in as_completed(futures):
-                    pass_key, step_idx, questions = future.result()
-                    planner_json[pass_key]["steps"][step_idx]["questions_to_answer"] = questions
 
         output_dir = Path("output")
         output_dir.mkdir(exist_ok=True)
@@ -2281,12 +2148,6 @@ def _run_guide_node(
 
         guide_json = planner_json
 
-        # Final shape validation against full reading guide schema.
-        try:
-            guide_json = guide_model_cls(**guide_json).model_dump()
-        except Exception as exc:  # noqa: BLE001
-            logger.warning("Final guide schema coercion [%s] skipped due to validation issue: %s", label, exc)
-
         # Extract per-question (question, step_sections) pairs from the guide
         question_section_pairs = _extract_guide_retrieval_info(guide_json)
         # Flat lists kept for display / backward compat
@@ -2296,6 +2157,7 @@ def _run_guide_node(
             "Guide [%s]: extracted %d questions across %d unique sections for retrieval",
             label, len(questions), len(all_sections),
         )
+
 
         # Persist guide to disk
         guide_path = output_dir / f"{document_id}_guide.json"
@@ -2363,8 +2225,7 @@ def applied_guide_node(state: dict) -> dict:
         state,
         label="APPLIED",
         guide_model_cls=AppliedReadingGuide,
-        planner_model_cls=AppliedReadingGuidePlan,
-        planner_prompt_fn=applied_guide_planner_prompt,
+        guide_prompt_fn=applied_guide_prompt,
     )
 
 
@@ -2374,8 +2235,7 @@ def theoretical_guide_node(state: dict) -> dict:
         state,
         label="THEORETICAL",
         guide_model_cls=TheoreticalReadingGuide,
-        planner_model_cls=TheoreticalReadingGuidePlan,
-        planner_prompt_fn=theoretical_guide_planner_prompt,
+        guide_prompt_fn=theoretical_guide_prompt,
     )
 
 
@@ -2385,10 +2245,396 @@ def survey_guide_node(state: dict) -> dict:
         state,
         label="SURVEY",
         guide_model_cls=SurveyReadingGuide,
-        planner_model_cls=SurveyReadingGuidePlan,
-        planner_prompt_fn=survey_guide_planner_prompt,
+        guide_prompt_fn=survey_guide_prompt,
     )
 
+
+
+# ---------------------------------------------------------------------------
+# Data Processing Pipeline Nodes
+# ---------------------------------------------------------------------------
+# These nodes wrap the extraction and indexing pipelines into LangGraph nodes
+# for unified workflow visibility and control.
+
+def ingest_node(state: dict) -> dict:
+    """
+    Ingest and validate PDF; run OCR if needed.
+    
+    Inputs:
+        pdf_path (str): path to PDF file
+        force_ocr (bool): whether to force OCR reprocessing
+    
+    Outputs:
+        document_id (str): assigned document ID
+        validated_document (ValidatedDocument): validated PDF structure
+        ingest_status (dict): metadata about ingestion (page_count, ocr_applied)
+    """
+    logger.info("📥 Ingest node: validating PDF...")
+    
+    pdf_path = state.get("pdf_path")
+    if not pdf_path:
+        return {
+            **state,
+            "ingest_status": {"error": "No pdf_path provided"},
+        }
+    
+    try:
+        from extraction.pipelines.ingest_pipeline import IngestPipeline
+        
+        pipeline = IngestPipeline()
+        result = pipeline.process(
+            pdf_path=Path(pdf_path),
+            force_ocr=state.get("force_ocr", False),
+        )
+        
+        logger.info("✅ Ingest node completed: %d pages, document_id=%s", result.page_count, result.document_id)
+        
+        return {
+            **state,
+            "document_id": result.document_id,
+            "validated_document": result,
+            "ingest_status": {
+                "page_count": result.page_count,
+                "ocr_applied": result.was_reprocessed,
+            },
+        }
+    except Exception as exc:
+        logger.error("Ingest node failed: %s", exc, exc_info=True)
+        return {
+            **state,
+            "ingest_status": {"error": str(exc)},
+            "errors": [*state.get("errors", []), f"Ingest error: {exc}"],
+        }
+
+
+def metadata_extraction_node(state: dict) -> dict:
+    """
+    Extract metadata (title, abstract, sections) using Groq LLM.
+    
+    Inputs:
+        validated_document (ValidatedDocument): from ingest_node
+        document_id (str): from ingest_node
+    
+    Outputs:
+        metadata (dict): extracted title, abstract, keywords, sections
+        metadata_status (dict): processing stats (processing_time, fields_found)
+    """
+    logger.info("🏷️ Metadata extraction node: extracting title/abstract/sections...")
+    
+    validated_doc = state.get("validated_document")
+    document_id = state.get("document_id")
+    
+    if not validated_doc or not document_id:
+        return {
+            **state,
+            "metadata_status": {"error": "Missing validated_document or document_id"},
+        }
+    
+    try:
+        from extraction.pipelines.metadata_pipeline import MetadataExtractionPipeline
+        import time
+        
+        pipeline = MetadataExtractionPipeline()
+        start_time = time.time()
+        result = pipeline.process(validated_document=validated_doc)
+        elapsed = time.time() - start_time
+        
+        fields_extracted = []
+        if result.title:
+            fields_extracted.append("title")
+        if result.abstract:
+            fields_extracted.append("abstract")
+        if result.keywords:
+            fields_extracted.append("keywords")
+        if result.sections:
+            fields_extracted.append("sections")
+        
+        logger.info("✅ Metadata extraction completed in %.2fs: %s", elapsed, ", ".join(fields_extracted))
+        
+        return {
+            **state,
+            "metadata": {
+                "title": result.title,
+                "abstract": result.abstract,
+                "keywords": result.keywords or [],
+                "sections": result.sections or [],
+            },
+            "metadata_status": {
+                "processing_time_sec": elapsed,
+                "fields_found": fields_extracted,
+            },
+        }
+    except Exception as exc:
+        logger.error("Metadata extraction failed: %s", exc, exc_info=True)
+        return {
+            **state,
+            "metadata_status": {"error": str(exc)},
+            "errors": [*state.get("errors", []), f"Metadata extraction error: {exc}"],
+        }
+
+
+def section_hierarchy_node(state: dict) -> dict:
+    """
+    Build hierarchical section tree from extracted metadata.
+    
+    Inputs:
+        validated_document (ValidatedDocument)
+        metadata (dict): from metadata_extraction_node
+        document_id (str)
+    
+    Outputs:
+        section_hierarchy (dict): nested section tree
+        hierarchy_status (dict): stats (depth, root_sections)
+    """
+    logger.info("🌳 Section hierarchy node: building section tree...")
+    
+    validated_doc = state.get("validated_document")
+    metadata = state.get("metadata", {})
+    document_id = state.get("document_id")
+    
+    if not all([validated_doc, document_id]):
+        return {
+            **state,
+            "hierarchy_status": {"error": "Missing validated_document or document_id"},
+        }
+    
+    try:
+        from extraction.pipelines.section_hierarchy_pipeline import SectionHierarchyPipeline
+        
+        pipeline = SectionHierarchyPipeline()
+        hierarchy = pipeline.process(validated_document=validated_doc)
+        
+        # Compute stats
+        depth = _compute_hierarchy_depth(hierarchy)
+        root_count = len(hierarchy.get("children", []))
+        
+        logger.info("✅ Section hierarchy built: depth=%d, root_sections=%d", depth, root_count)
+        
+        return {
+            **state,
+            "section_hierarchy": hierarchy,
+            "hierarchy_status": {
+                "depth": depth,
+                "root_sections": root_count,
+            },
+        }
+    except Exception as exc:
+        logger.error("Section hierarchy building failed: %s", exc, exc_info=True)
+        return {
+            **state,
+            "hierarchy_status": {"error": str(exc)},
+            "errors": [*state.get("errors", []), f"Hierarchy error: {exc}"],
+        }
+
+
+def db_ingestion_node(state: dict) -> dict:
+    """
+    Persist extracted data to PostgreSQL.
+    
+    Inputs:
+        document_id (str)
+        validated_document (ValidatedDocument)
+        metadata (dict)
+        section_hierarchy (dict)
+    
+    Outputs:
+        db_paper_id (int): assigned database paper ID
+        db_status (dict): ingestion metadata (stored flag, timestamps)
+    """
+    logger.info("💾 DB ingestion node: persisting to PostgreSQL...")
+    
+    pdf_path = state.get("pdf_path")
+    document_id = state.get("document_id")
+    validated_doc = state.get("validated_document")
+    metadata = state.get("metadata", {})
+    hierarchy = state.get("section_hierarchy", {})
+    
+    if not all([document_id, validated_doc]):
+        return {
+            **state,
+            "db_status": {"error": "Missing document_id or validated_document"},
+        }
+    
+    try:
+        from extraction.pipelines.db_ingestion_pipeline import DBIngestionPipeline
+        
+        pipeline = DBIngestionPipeline()
+        result = pipeline.ingest(
+            pdf_path=Path(pdf_path) if pdf_path else None,
+            document_id=document_id,
+            validated_document=validated_doc,
+        )
+        
+        logger.info("✅ DB ingestion completed: paper_id=%d", result.paper_id)
+        
+        return {
+            **state,
+            "db_paper_id": result.paper_id,
+            "db_status": {
+                "stored": True,
+                "paper_id": result.paper_id,
+            },
+        }
+    except Exception as exc:
+        logger.error("DB ingestion failed: %s", exc, exc_info=True)
+        return {
+            **state,
+            "db_status": {"error": str(exc), "stored": False},
+            "errors": [*state.get("errors", []), f"DB ingestion error: {exc}"],
+        }
+
+
+def chunking_node(state: dict) -> dict:
+    """
+    Chunk extracted sections into token-aware chunks with section context.
+    
+    Inputs:
+        metadata (dict): contains sections
+        document_id (str)
+    
+    Outputs:
+        chunks (list[Chunk]): section-aware chunks ready for embedding
+        chunking_status (dict): stats (num_chunks, avg_chunk_tokens)
+    """
+    logger.info("✂️ Chunking node: splitting sections into chunks...")
+    
+    metadata = state.get("metadata", {})
+    document_id = state.get("document_id")
+    
+    if not metadata or not document_id:
+        return {
+            **state,
+            "chunking_status": {"error": "Missing metadata or document_id"},
+        }
+    
+    try:
+        from rag.retrieval.chunking.section_chunker import chunk_paper
+        from rag.retrieval.config import COARSE_CHUNK_SIZE, COARSE_CHUNK_OVERLAP, DENSE_MODEL
+        
+        sections = metadata.get("sections", [])
+        if not sections:
+            logger.warning("No sections to chunk for document %s", document_id)
+            return {
+                **state,
+                "chunks": [],
+                "chunking_status": {"num_chunks": 0},
+            }
+        
+        chunks = chunk_paper(
+            sections=sections,
+            paper_id=document_id,
+            chunk_size=COARSE_CHUNK_SIZE,
+            overlap=COARSE_CHUNK_OVERLAP,
+            model_name=DENSE_MODEL,
+        )
+        
+        avg_tokens = (
+            sum(c.token_count for c in chunks) / len(chunks)
+            if chunks
+            else 0
+        )
+        
+        logger.info("✅ Chunking completed: %d chunks, avg %.1f tokens", len(chunks), avg_tokens)
+        
+        return {
+            **state,
+            "chunks": chunks,
+            "chunking_status": {
+                "num_chunks": len(chunks),
+                "avg_chunk_tokens": avg_tokens,
+            },
+        }
+    except Exception as exc:
+        logger.error("Chunking failed: %s", exc, exc_info=True)
+        return {
+            **state,
+            "chunking_status": {"error": str(exc)},
+            "errors": [*state.get("errors", []), f"Chunking error: {exc}"],
+        }
+
+
+def indexing_node(state: dict) -> dict:
+    """
+    Embed chunks (dense + sparse) and upsert to Qdrant vector store.
+    
+    Inputs:
+        chunks (list[Chunk]): from chunking_node
+        document_id (str)
+        pdf_path (str): for hierarchy resolution
+    
+    Outputs:
+        indexed_chunks_count (int): number of chunks successfully indexed
+        indexing_status (dict): stats (embedding_time, upsert_time)
+    """
+    import time
+    _t = time.perf_counter()
+    logger.info("🔍 Indexing node: embedding and upserting to Qdrant...")
+    
+    chunks = state.get("chunks", [])
+    document_id = state.get("document_id") or state.get("metadata", {}).get("document_id")
+    pdf_path = state.get("pdf_path")
+    
+    # Check if we have chunks and document_id before proceeding
+    if not chunks or not document_id:
+        logger.warning(
+            f"Indexing node: no chunks ({len(chunks)}) or document_id ({document_id}) "
+            f"in state — skipping to avoid re-chunking from disk"
+        )
+        logger.info(f"Indexing node complete in {time.perf_counter() - _t:.2f}s (skipped)")
+        return {**state, "indexing_skipped": True, "indexing_reason": "empty_chunks_or_id"}
+    
+    logger.info(f"Indexing node: received {len(chunks)} chunks for document {document_id}")
+    
+    try:
+        from pathlib import Path
+        import time
+        
+        pipeline = _get_retrieval_pipeline()
+        
+        # Build hierarchy path for indexing
+        hierarchy_path = Path("output") / f"{document_id}_hierarchy.json"
+        if not hierarchy_path.exists():
+            logger.warning("Hierarchy file not found at %s; attempting indexing anyway", hierarchy_path)
+        
+        pdf_path_obj = None
+        if pdf_path and Path(pdf_path).exists():
+            pdf_path_obj = Path(pdf_path)
+        
+        start_time = time.time()
+        result = pipeline.index(
+            hierarchy_json_path=hierarchy_path,
+            output_dir=Path("output"),
+            pdf_path=pdf_path_obj,
+        )
+        elapsed = time.time() - start_time
+        
+        logger.info("✅ Indexing completed in %.2fs: %d total chunks indexed", elapsed, result.total_chunks)
+        logger.info(f"Indexing node complete in {time.perf_counter() - _t:.2f}s")
+        
+        return {
+            **state,
+            "indexed_chunks_count": result.total_chunks,
+            "indexing_status": {
+                "embedding_time_sec": elapsed,
+                "chunks_indexed": result.total_chunks,
+            },
+        }
+    except Exception as exc:
+        logger.error("Indexing failed: %s", exc, exc_info=True)
+        logger.info(f"Indexing node complete in {time.perf_counter() - _t:.2f}s (error)")
+        return {
+            **state,
+            "indexing_status": {"error": str(exc)},
+            "errors": [*state.get("errors", []), f"Indexing error: {exc}"],
+        }
+
+
+def _compute_hierarchy_depth(node: dict, current_depth: int = 0) -> int:
+    """Recursively compute max depth of hierarchy tree."""
+    children = node.get("children", [])
+    if not children:
+        return current_depth
+    return max(_compute_hierarchy_depth(child, current_depth + 1) for child in children)
 
 
 # ---------------------------------------------------------------------------
@@ -2434,10 +2680,17 @@ def route_after_categorizer(state: dict) -> str:
 
 
 def route_after_guide(state: dict) -> str:
-    """Route guide path either to retrieval/qa or directly to end."""
-    if bool(state.get("skip_retrieve_and_qa", False)):
-        logger.info("→ Skipping retrieve_and_qa (guide-only mode)")
+    """Route guide path: to retrieval/qa, direct to chunking, or end."""
+    skip_qa = bool(state.get("skip_retrieve_and_qa", False))
+    skip_all = bool(state.get("guide_only_no_further_processing", False))
+    
+    if skip_all:
+        logger.info("→ Guide-only mode (terminal): skipping all downstream processing")
         return "end"
+    elif skip_qa:
+        logger.info("→ Guide-only mode: skipping retrieve_and_qa → going to chunking")
+        return "chunking"
+    
     return "retrieve_and_qa"
 
 
@@ -2447,31 +2700,37 @@ def route_after_guide(state: dict) -> str:
 
 def build_graph():
     """
-    Build and compile the LangGraph pipeline.
+    Build and compile the LangGraph pipeline with all processing stages.
 
-    Workflow paths
-    --------------
-    Guide path (no user query — default):
-        START → extraction → categorizer → <category_guide> → retrieve_and_qa → END
+    Complete Workflow:
+    ------------------
+    Ingestion & Extraction Phase:
+        START → ingest → metadata_extraction → section_hierarchy → db_ingestion
+    
+    Classification & Analysis Phase:
+        → extraction_mapping → categorizer → <category_guide> → retrieve_and_qa
+    
+    Indexing Phase:
+        → chunking → indexing → END
 
-    Direct query path (user provides a query, guide skipped):
-        START → extraction → categorizer → retrieve_and_qa → END
-
-    Summarizer fallback (unknown category):
-        START → extraction → categorizer → summarizer → END
-
-    Guide nodes (one per category):
-        applied_guide     (APPLIED)
-        theoretical_guide (THEORETICAL)
-        survey_guide      (SURVEY)
+    Alternative paths:
+        - If query provided: skip guide, go directly to retrieve_and_qa
+        - If category unknown: route to summarizer instead of guide
+        - Chunking/indexing can run in parallel with QA or sequentially
 
     Returns:
         A compiled LangGraph CompiledGraph ready for invocation.
     """
     builder = StateGraph(dict)
 
-    # ── Nodes ──────────────────────────────────────────────────────────────
-    builder.add_node("extraction", extraction_node)
+    # ── Data Pipeline Nodes (Ingestion & Extraction) ─────────────────────────
+    builder.add_node("ingest", ingest_node)
+    builder.add_node("metadata_extraction", metadata_extraction_node)
+    builder.add_node("section_hierarchy", section_hierarchy_node)
+    builder.add_node("db_ingestion", db_ingestion_node)
+
+    # ── Analysis Pipeline Nodes ────────────────────────────────────────────────
+    builder.add_node("extraction_mapping", extraction_node)  # Maps extraction results to expected state keys
     builder.add_node("categorizer", categorizer_node)
 
     # Three category-specific guide nodes
@@ -2479,13 +2738,23 @@ def build_graph():
     builder.add_node("theoretical_guide", theoretical_guide_node)
     builder.add_node("survey_guide", survey_guide_node)
 
-    # Shared downstream nodes
+    # ── Retrieval & QA Nodes ───────────────────────────────────────────────────
     builder.add_node("retrieve_and_qa", retrieve_and_qa_node)
     builder.add_node("summarizer", summarizer_node)
 
-    # ── Edges ──────────────────────────────────────────────────────────────
-    builder.add_edge(START, "extraction")
-    builder.add_edge("extraction", "categorizer")
+    # ── Indexing & Vector Storage Nodes ────────────────────────────────────────
+    builder.add_node("chunking", chunking_node)
+    builder.add_node("indexing", indexing_node)
+
+    # ── Edges: Ingestion Pipeline Chain ────────────────────────────────────────
+    builder.add_edge(START, "ingest")
+    builder.add_edge("ingest", "metadata_extraction")
+    builder.add_edge("metadata_extraction", "section_hierarchy")
+    builder.add_edge("section_hierarchy", "db_ingestion")
+    builder.add_edge("db_ingestion", "extraction_mapping")
+
+    # ── Edges: Classification Pipeline ─────────────────────────────────────────
+    builder.add_edge("extraction_mapping", "categorizer")
 
     # Conditional routing: categorizer → one of the 3 guide nodes, retrieve_and_qa, or summarizer
     builder.add_conditional_edges(
@@ -2500,6 +2769,7 @@ def build_graph():
         },
     )
 
+    # ── Edges: Guide Nodes → Retrieval ─────────────────────────────────────────
     # Guide nodes can continue into retrieve-and-QA or terminate in guide-only mode.
     for guide_node in _CATEGORY_GUIDE_NODE.values():
         builder.add_conditional_edges(
@@ -2507,13 +2777,19 @@ def build_graph():
             route_after_guide,
             {
                 "retrieve_and_qa": "retrieve_and_qa",
+                "chunking": "chunking",  # Allow guide to skip QA and go straight to chunking
                 "end": END,
             },
         )
 
-    # Summarizer and retrieve-and-QA paths both terminate
-    builder.add_edge("summarizer", END)
-    builder.add_edge("retrieve_and_qa", END)
+    # ── Edges: Retrieval & Summarization ───────────────────────────────────────
+    # Both retrieve_and_qa and summarizer flow to chunking for index building
+    builder.add_edge("retrieve_and_qa", "chunking")
+    builder.add_edge("summarizer", "chunking")
+
+    # ── Edges: Indexing Pipeline Chain ─────────────────────────────────────────
+    builder.add_edge("chunking", "indexing")
+    builder.add_edge("indexing", END)
 
     return builder.compile()
 

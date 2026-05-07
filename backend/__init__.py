@@ -12,10 +12,17 @@ __version__ = "5.0.0"
 __author__ = "Research Paper Assistant Team"
 
 # Import extraction components (no circular dependency)
-from backend.extraction.extraction import PDFExtractor
-from backend.extraction.models.document import ValidatedDocument
-from backend.extraction.models.metadata import ProcessedDocument
-from backend.extraction.models.section_hierarchy import SectionHierarchy
+try:
+    from backend.extraction.extraction import PDFExtractor
+    from backend.extraction.models.document import ValidatedDocument
+    from backend.extraction.models.metadata import ProcessedDocument
+    from backend.extraction.models.section_hierarchy import SectionHierarchy
+except Exception as exc:
+    PDFExtractor = None
+    ValidatedDocument = None
+    ProcessedDocument = None
+    SectionHierarchy = None
+    _IMPORT_ERROR = exc
 
 # Lazy import for PaperAnalysisPipeline to avoid circular imports
 def get_pipeline():

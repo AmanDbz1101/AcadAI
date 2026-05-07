@@ -1,4 +1,4 @@
-import { ChevronDown, ChevronLeft, Home, LogOut, Upload } from 'lucide-react'
+import { ChevronDown, ChevronLeft, Home, LogOut, Upload, Trash2 } from 'lucide-react'
 import { useEffect, useRef, useState } from 'react'
 import {
   Collapsible,
@@ -6,6 +6,22 @@ import {
   CollapsibleTrigger,
 } from '@/components/ui/collapsible'
 import { ScrollArea } from '@/components/ui/scroll-area'
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog'
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu'
+import { deleteCmsPaper } from '@/lib/api'
 import type { GuideStatus, PaperSummary, ReadingGuide } from '@/types/api'
 
 interface Section {
@@ -31,6 +47,7 @@ interface PaperNavigationProps {
   onUploadPdf?: (file: File) => void
   isUploadingPdf?: boolean
   uploadErrorMessage?: string | null
+  onPaperDeleted?: () => void
   style?: React.CSSProperties
 }
 
@@ -227,6 +244,7 @@ const PaperNavigation = ({
   onUploadPdf,
   isUploadingPdf = false,
   uploadErrorMessage,
+  onPaperDeleted,
   style,
 }: PaperNavigationProps) => {
   // Extract phases from reading guide or use defaults
@@ -237,6 +255,10 @@ const PaperNavigation = ({
   })
   const [paperStructureOpen, setPaperStructureOpen] = useState(false)
   const fileInputRef = useRef<HTMLInputElement | null>(null)
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false)
+  const [paperToDelete, setPaperToDelete] = useState<PaperSummary | null>(null)
+  const [isDeleting, setIsDeleting] = useState(false)
+  const [deleteError, setDeleteError] = useState<string | null>(null)
 
   // Keep collapsible state aligned when phases change between papers/guide types.
   useEffect(() => {
@@ -286,6 +308,27 @@ const PaperNavigation = ({
     event.currentTarget.value = ''
   }
 
+  const handleDeletePaper = async () => {
+    if (!paperToDelete) return
+    
+    setIsDeleting(true)
+    setDeleteError(null)
+    
+    try {
+      await deleteCmsPaper(paperToDelete.id)
+      setDeleteDialogOpen(false)
+      setPaperToDelete(null)
+      
+      // Call the callback to refresh paper list
+      onPaperDeleted?.()
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'Failed to delete paper'
+      setDeleteError(message)
+    } finally {
+      setIsDeleting(false)
+    }
+  }
+
   return (
     <aside
       className="bg-panel/95 h-screen sticky top-0 flex flex-col border-r border-border/50 shadow-sm"
@@ -327,20 +370,51 @@ const PaperNavigation = ({
           <label className="font-ui text-[11px] font-semibold uppercase tracking-[0.18em] text-text-secondary block mb-2">
             Paper
           </label>
-          <select
-            value={selectedPaperId ?? ''}
-            onChange={(e) => onPaperSelect(Number(e.target.value))}
-            className="w-full font-ui text-[12px] bg-canvas border border-border/70 rounded-md px-2 py-1.5 text-foreground shadow-sm"
-          >
-            {papers.map((paper) => (
-              <option key={paper.id} value={paper.id}>
-                {paper.paper_name}
-              </option>
-            ))}
-          </select>
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <button className="w-full font-ui text-[12px] bg-canvas border border-border/70 rounded-md px-2 py-1.5 text-foreground shadow-sm hover:bg-canvas/80 transition-colors flex items-center justify-between">
+                <span className="truncate">
+                  {papers.find(p => p.id === selectedPaperId)?.paper_name || 'Select Paper'}
+                </span>
+                <ChevronDown size={14} className="ml-2 flex-shrink-0" />
+              </button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent className="w-56">
+              {papers.map((paper) => (
+                <DropdownMenuItem
+                  key={paper.id}
+                  onClick={() => onPaperSelect(paper.id)}
+                  className="flex items-center justify-between"
+                >
+                  <span className="truncate flex-1">{paper.paper_name}</span>
+                  {selectedPaperId === paper.id && (
+                    <span className="ml-2 text-accent">✓</span>
+                  )}
+                </DropdownMenuItem>
+              ))}
+              {papers.length > 0 && (
+                <div className="my-1 border-t border-border/50" />
+              )}
+              {selectedPaperId && papers.find(p => p.id === selectedPaperId) && (
+                <DropdownMenuItem
+                  onClick={() => {
+                    const paper = papers.find(p => p.id === selectedPaperId)
+                    if (paper) {
+                      setPaperToDelete(paper)
+                      setDeleteDialogOpen(true)
+                    }
+                  }}
+                  className="flex items-center gap-2 text-destructive hover:text-destructive"
+                >
+                  <Trash2 size={14} />
+                  <span>Delete Paper</span>
+                </DropdownMenuItem>
+              )}
+            </DropdownMenuContent>
+          </DropdownMenu>
         </div>
 
-        <div className="mx-4 mb-4 flex-1 min-h-0 rounded-xl border border-border/60 bg-gradient-to-b from-panel via-panel to-canvas/40 px-2 pt-3 pb-2">
+        <div className="mx-4 mb-4 flex flex-1 min-h-0 flex-col overflow-hidden rounded-xl border border-border/60 bg-gradient-to-b from-panel via-panel to-canvas/40 px-2 pt-3 pb-2">
           <div className="px-2 mb-3">
             <h2 className="font-ui text-[11px] font-semibold uppercase tracking-[0.18em] text-text-secondary">
               Reading Guide
@@ -366,7 +440,7 @@ const PaperNavigation = ({
             </div>
           ) : null}
 
-          <ScrollArea className="flex-1 px-2 py-1">
+          <ScrollArea className="flex-1 min-h-0 px-2 py-1">
             <div className="space-y-1 pb-4">
               {readingPhases.length === 0 ? (
                 <div className="px-3 py-2 rounded-md bg-canvas">
@@ -618,6 +692,34 @@ const PaperNavigation = ({
             </p>
           ) : null}
         </div>
+
+        <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle>Delete Paper</AlertDialogTitle>
+              <AlertDialogDescription>
+                Are you sure you want to delete "{paperToDelete?.paper_name}"? This will remove all data from both the vector database and PostgreSQL database. This action cannot be undone.
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            {deleteError && (
+              <div className="px-4 py-2 bg-destructive/10 border border-destructive/30 rounded-md">
+                <p className="text-sm text-destructive">{deleteError}</p>
+              </div>
+            )}
+            <div className="flex gap-2 justify-end">
+              <AlertDialogCancel disabled={isDeleting}>
+                Cancel
+              </AlertDialogCancel>
+              <AlertDialogAction
+                onClick={handleDeletePaper}
+                disabled={isDeleting}
+                className="bg-destructive hover:bg-destructive/90"
+              >
+                {isDeleting ? 'Deleting...' : 'Delete'}
+              </AlertDialogAction>
+            </div>
+          </AlertDialogContent>
+        </AlertDialog>
       </div>
     </aside>
   )

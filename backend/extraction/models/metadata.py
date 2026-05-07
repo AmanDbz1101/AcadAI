@@ -12,6 +12,14 @@ from uuid import UUID
 from pydantic import BaseModel, Field
 
 
+class Author(BaseModel):
+    """Author metadata for extracted papers."""
+    name: str = Field(..., description="Author full name")
+    affiliation: Optional[str] = Field(None, description="Author affiliation")
+    email: Optional[str] = Field(None, description="Author email")
+    orcid: Optional[str] = Field(None, description="ORCID identifier")
+
+
 class SectionStats(BaseModel):
     """Section-wise statistics for elements."""
     formulas: int = Field(0, description="Number of formulas in section")
@@ -63,6 +71,7 @@ class ExtractedMetadata(BaseModel):
     
     # Core metadata fields
     title: Optional[str] = Field(None, description="Paper title")
+    authors: List[Author] = Field(default_factory=list, description="Paper authors")
     abstract: Optional[str] = Field(None, description="Paper abstract")
     keywords: List[str] = Field(default_factory=list, description="Paper keywords")
     sections: List[SectionInfo] = Field(default_factory=list, description="Document sections")

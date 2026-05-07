@@ -47,6 +47,40 @@ from backend.extraction.models.section_hierarchy import SectionDetectionResult
 
 logger = logging.getLogger(__name__)
 
+import re
+from typing import Any
+
+try:
+    from langsmith.run_helpers import traceable
+except Exception:  # noqa: BLE001
+    def traceable(*_args, **_kwargs):
+        def _decorator(func):
+            return func
+
+        return _decorator
+
+_TRACE_RUNNER_CACHE: dict[str, Any] = {}
+
+
+def _safe_trace_stage_name(stage: str) -> str:
+    normalized = re.sub(r"[^a-zA-Z0-9_]+", "_", str(stage).strip())
+    normalized = re.sub(r"_+", "_", normalized).strip("_")
+    return normalized or "unknown"
+
+
+def _trace_db_stage(stage: str, payload: dict[str, Any]) -> dict[str, Any]:
+    safe_stage = _safe_trace_stage_name(stage)
+    runner = _TRACE_RUNNER_CACHE.get(safe_stage)
+    if runner is None:
+        @traceable(name=f"db_ingest:{safe_stage}", run_type="chain")
+        def _runner(event_payload: dict[str, Any]) -> dict[str, Any]:
+            return event_payload
+
+        runner = _runner
+        _TRACE_RUNNER_CACHE[safe_stage] = runner
+
+    return runner({"stage": stage, **payload})
+
 
 class DBIngestionPipeline:
     """
@@ -128,6 +162,8 @@ class DBIngestionPipeline:
         """
         pdf_path = Path(pdf_path)
 
+        _trace_db_stage("start", {"pdf_path": str(pdf_path), "document_id": document_id})
+
         if rich_result is None:
             rich_result = self._extractor.extract(pdf_path)
 
@@ -172,6 +208,12 @@ class DBIngestionPipeline:
             persist_result.reason,
             persist_result.paper_id,
         )
+
+        _trace_db_stage("completed", {
+            "document_id": document_id,
+            "stored": bool(persist_result.stored),
+            "paper_id": persist_result.paper_id,
+        })
 
         return str(persist_result.paper_id) if persist_result.paper_id is not None else document_id
 

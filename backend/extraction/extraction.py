@@ -13,14 +13,16 @@ import json
 import logging
 import os
 import sys
+import time
 from pathlib import Path
 from typing import Optional, Dict, Any
 from datetime import datetime
 
-from backend.extraction.pipelines.ingest_pipeline import IngestPipeline
+from backend.extraction.pipelines.ingest_pipeline import IngestPipeline, DeduplicationSkipped
 from backend.extraction.pipelines.metadata_pipeline import MetadataExtractionPipeline
 from backend.extraction.pipelines.section_hierarchy_pipeline import SectionHierarchyPipeline
 from backend.extraction.persistence import PostgresPaperStore
+from backend.extraction.app.pdf_loader import PDFLoader, LoaderConfig
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -53,6 +55,8 @@ def _generate_reading_guide(
     sections: list[Dict[str, Any]],
     full_text: str,
     defer_answer_generation: bool = True,
+    document_id: Optional[str] = None,
+    paper_id: Optional[int] = None,
 ) -> Optional[Dict[str, Any]]:
     """
     Generate a reading guide using the LangGraph workflow.
@@ -75,6 +79,8 @@ def _generate_reading_guide(
             sections=sections,
             full_text=full_text,
             defer_answer_generation=defer_answer_generation,
+            document_id=document_id,
+            paper_id=paper_id,
         )
         
         reading_guide = result_state.get("reading_guide")
@@ -97,6 +103,7 @@ def generate_reading_guide_state(
     full_text: str,
     defer_answer_generation: bool = True,
     skip_retrieve_and_qa: bool = False,
+    document_id: Optional[str] = None,
 ) -> Dict[str, Any]:
     """Run LangGraph reading-guide workflow and return the full state payload."""
     # Import here to avoid circular imports and allow optional usage
@@ -117,8 +124,14 @@ def generate_reading_guide_state(
         "errors": [],
         "defer_answer_generation": defer_answer_generation,
         "skip_retrieve_and_qa": skip_retrieve_and_qa,
+        "document_id": document_id,
+        "indexing_complete": False,
+        "chunks": [],
     }
-    return agent.invoke(state)
+    result_state = agent.invoke(state)
+    indexing_skipped = result_state.get("indexing_skipped", False)
+    logger.info(f"Graph completed. Indexing skipped: {indexing_skipped}")
+    return result_state
 
 
 class PDFExtractor:
@@ -135,7 +148,12 @@ class PDFExtractor:
         Args:
             groq_api_key: Groq API key for LLM-based extraction
         """
-        self.ingest_pipeline = IngestPipeline()
+        loader = PDFLoader(
+            LoaderConfig(
+                parallel_page_processing=True,
+            )
+        )
+        self.ingest_pipeline = IngestPipeline(loader=loader)
         self.metadata_pipeline = MetadataExtractionPipeline(groq_api_key=groq_api_key)
         self.hierarchy_pipeline = SectionHierarchyPipeline()
         
@@ -149,6 +167,9 @@ class PDFExtractor:
         save_metadata_file: bool = False,
         save_fulltext_file: bool = False,
         generate_reading_guide: bool = True,
+        skip_if_exists: bool = True,
+        enable_incremental: bool = True,
+        persist_to_db: bool = True,
     ) -> Dict[str, Any]:
         """
         Extract all information from a PDF file.
@@ -178,21 +199,68 @@ class PDFExtractor:
         
         # Step 1: Ingest PDF (validation + text extraction + OCR)
         logger.info("Step 1/3: Ingesting PDF...")
-        validated_doc = self.ingest_pipeline.process(
-            pdf_path=pdf_path,
-            force_ocr=force_ocr
-        )
+        _t = time.perf_counter()
+        postgres_dsn = _resolve_postgres_dsn() if persist_to_db else None
+        ingest_cache_dir = output_dir / "ingest_cache"
+        try:
+            validated_doc = self.ingest_pipeline.process(
+                pdf_path=pdf_path,
+                force_ocr=force_ocr,
+                skip_if_exists=skip_if_exists,
+                postgres_dsn=postgres_dsn,
+                cache_dir=ingest_cache_dir,
+                enable_incremental=enable_incremental,
+            )
+        except DeduplicationSkipped as exc:
+            logger.info(
+                "Skipping extraction for duplicate PDF (hash=%s, paper_id=%s)",
+                exc.pdf_hash,
+                exc.existing_paper_id,
+            )
+            return {
+                "skipped": True,
+                "reason": "duplicate_pdf_hash",
+                "existing_paper_id": exc.existing_paper_id,
+                "pdf_hash": exc.pdf_hash,
+            }
         
-        # Store full text for later use
+        logger.info(f"Step 1/3: Ingestion complete. DoclingDocument cached: {validated_doc.docling_document is not None}")
+        logger.info(
+            "Extraction: using document_id=%s for pdf=%s",
+            validated_doc.document_id,
+            pdf_path.name,
+        )
+        logger.info(
+            "Extraction: pdf_hash=%s, document_id=%s",
+            validated_doc.pdf_hash,
+            validated_doc.document_id,
+        )
+        logger.info(f"Step 1 complete in {time.perf_counter() - _t:.2f}s")
+        
+        # Extract full text from validated document
         full_text = validated_doc.full_text
         
         # Step 2: Extract metadata
         logger.info("Step 2/3: Extracting metadata...")
+        _t = time.perf_counter()
         processed_doc = self.metadata_pipeline.process(validated_doc)
+        logger.info(f"Step 2 complete in {time.perf_counter() - _t:.2f}s")
         
         # Step 3: Extract section hierarchy
         logger.info("Step 3/3: Extracting section hierarchy...")
+        _t = time.perf_counter()
         hierarchy = self.hierarchy_pipeline.process_from_processed_document(processed_doc)
+        logger.info(f"Step 3 complete in {time.perf_counter() - _t:.2f}s")
+        hierarchy_sections = getattr(getattr(hierarchy, "hierarchy", None), "sections", []) or []
+        section_count = len(hierarchy_sections)
+        if section_count == 0:
+            logger.error(
+                "Extraction: 0 sections detected for %s. Metadata coverage was likely too low. "
+                "Hierarchy saved but indexing will produce 0 chunks. QA will not work for this paper.",
+                pdf_path.name,
+            )
+        else:
+            logger.info("Extraction: %d sections detected", section_count)
         
         # Prepare result
         doc_id = str(processed_doc.document_id)
@@ -325,6 +393,8 @@ class PDFExtractor:
                 sections=[s.model_dump(mode='json', exclude_none=True) for s in processed_doc.metadata.sections],
                 full_text=full_text,
                 defer_answer_generation=True,
+                document_id=doc_id,
+                paper_id=None,
             )
             if reading_guide:
                 logger.info("✅ Reading guide generated and will be stored with paper")
@@ -403,8 +473,10 @@ class PDFExtractor:
                 "stored": db_result.stored if db_result else False,
                 "paper_id": db_result.paper_id if db_result else None,
                 "paper_name": db_result.paper_name if db_result else None,
-                "reason": db_result.reason if db_result else "postgres_not_configured",
-                "reading_guide_stored": bool(reading_guide),
+                "reason": db_result.reason if db_result else (
+                    "persistence_disabled" if not persist_to_db else "postgres_not_configured"
+                ),
+                "reading_guide_stored": bool(reading_guide) if persist_to_db else False,
             },
         }
         
@@ -420,6 +492,9 @@ def extract_pdf(
     save_metadata_file: bool = False,
     save_fulltext_file: bool = False,
     generate_reading_guide: bool = True,
+    skip_if_exists: bool = True,
+    enable_incremental: bool = True,
+    persist_to_db: bool = True,
 ) -> Dict[str, Any]:
     """
     Convenience function for extracting a single PDF.
@@ -443,6 +518,9 @@ def extract_pdf(
         save_metadata_file,
         save_fulltext_file,
         generate_reading_guide,
+        skip_if_exists,
+        enable_incremental,
+        persist_to_db,
     )
 
 

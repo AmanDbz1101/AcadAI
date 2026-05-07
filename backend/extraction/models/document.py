@@ -135,6 +135,9 @@ class ValidatedDocument(BaseModel):
     
     # Additional metadata (populated by downstream modules)
     metadata: Dict[str, Any] = Field(default_factory=dict, description="Extensible metadata")
+    
+    # Cached Docling document object (excluded from serialization)
+    docling_document: Optional[Any] = Field(default=None, exclude=True, description="Cached DoclingDocument from conversion")
 
     @field_validator('full_text', mode='before')
     @classmethod
@@ -198,3 +201,4 @@ class ValidatedDocument(BaseModel):
             datetime: lambda v: v.isoformat(),
         }
         use_enum_values = True
+        arbitrary_types_allowed = True

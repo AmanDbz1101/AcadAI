@@ -51,6 +51,10 @@ class SectionDetector:
         # Simple number with dot/paren (e.g., "1.", "2)")
         r'^(\d+)[\.)\]]\s+',
     ]
+
+    APPENDIX_PREFIXES = ("appendix", "appendices", "supplement", "supplementary")
+    SECTION_REF_REGEX = re.compile(r"\bsection\s+(\d+(?:\.\d+)*)\b", flags=re.I)
+    APPENDIX_REF_REGEX = re.compile(r"\bappendix\s+([a-zA-Z\d]+)\b", flags=re.I)
     
     def __init__(
         self,
@@ -100,6 +104,17 @@ class SectionDetector:
             sections_info,
             str(processed_doc.document_id)
         )
+
+        # Optimize reading order using extracted element order when available
+        reading_order_map = self._build_reading_order_map(processed_doc)
+        if reading_order_map:
+            for node in section_nodes:
+                key = self._normalize_title(node.title)
+                if key in reading_order_map:
+                    node.reading_order = reading_order_map[key]
+            section_nodes.sort(key=lambda s: (s.reading_order, s.level, s.page_start))
+
+        cross_references = self._detect_cross_references(processed_doc, section_nodes)
         
         # Calculate statistics
         total_sections = len(section_nodes)
@@ -115,7 +130,8 @@ class SectionDetector:
             total_sections=total_sections,
             max_depth=max_depth,
             detection_method="docling+heuristics",
-            confidence_score=self._calculate_confidence(section_nodes)
+            confidence_score=self._calculate_confidence(section_nodes),
+            cross_references=cross_references,
         )
         
         logger.info(
@@ -198,6 +214,7 @@ class SectionDetector:
             
             # Extract numbering if present
             numbering = self._extract_numbering(info.original_name)
+            section_type = self._classify_section_type(info.original_name)
             
             # Determine parent
             # Pop stack until we find a parent at lower level
@@ -216,7 +233,8 @@ class SectionDetector:
                 page_start=info.page_start,
                 reading_order=idx,
                 has_subsections=False,  # Will update later
-                child_section_ids=[]
+                child_section_ids=[],
+                section_type=section_type,
             )
             
             section_nodes.append(node)
@@ -236,6 +254,99 @@ class SectionDetector:
         self._calculate_page_ranges(section_nodes)
         
         return section_nodes
+
+    def _build_reading_order_map(self, processed_doc: ProcessedDocument) -> Dict[str, int]:
+        elements = processed_doc.metadata.extracted_elements if processed_doc.metadata else {}
+        text_blocks = elements.get("text_blocks") if isinstance(elements, dict) else None
+        if not text_blocks:
+            return {}
+
+        order_map: Dict[str, int] = {}
+        for idx, block in enumerate(text_blocks):
+            if not isinstance(block, dict):
+                continue
+            title = block.get("section_title") or block.get("section")
+            if not title:
+                continue
+            key = self._normalize_title(str(title))
+            if key and key not in order_map:
+                order_map[key] = idx
+        return order_map
+
+    def _detect_cross_references(
+        self,
+        processed_doc: ProcessedDocument,
+        section_nodes: List[SectionNode],
+    ) -> List[Dict[str, Any]]:
+        elements = processed_doc.metadata.extracted_elements if processed_doc.metadata else {}
+        text_blocks = elements.get("text_blocks") if isinstance(elements, dict) else None
+        if not text_blocks:
+            return []
+
+        numbering_to_id = {
+            node.numbering: node.section_id
+            for node in section_nodes
+            if node.numbering
+        }
+        appendix_to_id = {
+            self._extract_appendix_label(node.title): node.section_id
+            for node in section_nodes
+            if node.section_type == "appendix"
+        }
+        appendix_to_id = {k: v for k, v in appendix_to_id.items() if k}
+
+        title_to_id = {self._normalize_title(node.title): node.section_id for node in section_nodes}
+
+        cross_refs: List[Dict[str, Any]] = []
+        for block in text_blocks:
+            if not isinstance(block, dict):
+                continue
+            text = str(block.get("text") or "")
+            if not text:
+                continue
+            source_title = block.get("section_title") or block.get("section") or ""
+            source_id = title_to_id.get(self._normalize_title(str(source_title)))
+
+            for match in self.SECTION_REF_REGEX.findall(text):
+                target_id = numbering_to_id.get(match)
+                if target_id:
+                    cross_refs.append(
+                        {
+                            "source_section_id": source_id,
+                            "target_section_id": target_id,
+                            "mention": f"Section {match}",
+                        }
+                    )
+
+            for match in self.APPENDIX_REF_REGEX.findall(text):
+                key = str(match).strip().upper()
+                target_id = appendix_to_id.get(key)
+                if target_id:
+                    cross_refs.append(
+                        {
+                            "source_section_id": source_id,
+                            "target_section_id": target_id,
+                            "mention": f"Appendix {key}",
+                        }
+                    )
+
+        return cross_refs
+
+    @staticmethod
+    def _normalize_title(title: str) -> str:
+        return re.sub(r"\s+", " ", re.sub(r"[^a-z0-9 ]", " ", title.lower())).strip()
+
+    def _classify_section_type(self, title: str) -> Optional[str]:
+        title_norm = self._normalize_title(title)
+        if any(title_norm.startswith(prefix) for prefix in self.APPENDIX_PREFIXES):
+            return "appendix"
+        return None
+
+    def _extract_appendix_label(self, title: str) -> Optional[str]:
+        match = self.APPENDIX_REF_REGEX.search(title or "")
+        if match:
+            return str(match.group(1)).strip().upper()
+        return None
     
     def _extract_candidate_headers(
         self,

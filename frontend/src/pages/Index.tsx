@@ -503,6 +503,10 @@ const IndexContent = () => {
             onUploadPdf={handleFileUploaded}
             isUploadingPdf={uploadPaperMutation.isPending}
             uploadErrorMessage={uploadError}
+            onPaperDeleted={() => {
+              queryClient.invalidateQueries({ queryKey: ['papers'] })
+              setSelectedPaperId(null)
+            }}
             style={{ width: `${guideWidth}px` }}
           />
 

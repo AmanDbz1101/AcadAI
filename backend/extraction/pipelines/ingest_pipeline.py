@@ -9,10 +9,11 @@ Coordinates the complete PDF ingestion workflow:
 5. Deduplication
 """
 
+import json
 import time
 import logging
 from pathlib import Path
-from typing import Optional, Dict, Any
+from typing import Optional, Dict, Any, Callable
 from uuid import NAMESPACE_URL, UUID, uuid4, uuid5
 
 from backend.extraction.models.document import ValidatedDocument, DocumentStatus, OCRMetadata
@@ -22,6 +23,40 @@ from backend.extraction.app.ocr import OCRHandler, OCRConfig
 
 
 logger = logging.getLogger(__name__)
+
+import re
+from typing import Any
+
+try:
+    from langsmith.run_helpers import traceable
+except Exception:  # noqa: BLE001
+    def traceable(*_args, **_kwargs):
+        def _decorator(func):
+            return func
+
+        return _decorator
+
+_TRACE_RUNNER_CACHE: dict[str, Any] = {}
+
+
+def _safe_trace_stage_name(stage: str) -> str:
+    normalized = re.sub(r"[^a-zA-Z0-9_]+", "_", str(stage).strip())
+    normalized = re.sub(r"_+", "_", normalized).strip("_")
+    return normalized or "unknown"
+
+
+def _trace_ingest_stage(stage: str, payload: dict[str, Any]) -> dict[str, Any]:
+    safe_stage = _safe_trace_stage_name(stage)
+    runner = _TRACE_RUNNER_CACHE.get(safe_stage)
+    if runner is None:
+        @traceable(name=f"ingest_stage:{safe_stage}", run_type="chain")
+        def _runner(event_payload: dict[str, Any]) -> dict[str, Any]:
+            return event_payload
+
+        runner = _runner
+        _TRACE_RUNNER_CACHE[safe_stage] = runner
+
+    return runner({"stage": stage, **payload})
 
 
 class IngestionError(Exception):
@@ -37,6 +72,15 @@ class ValidationError(IngestionError):
 class ExtractionError(IngestionError):
     """Raised when PDF extraction fails."""
     pass
+
+
+class DeduplicationSkipped(IngestionError):
+    """Raised when a duplicate PDF is detected and skipped."""
+
+    def __init__(self, pdf_hash: str, existing_paper_id: Optional[int] = None):
+        self.pdf_hash = pdf_hash
+        self.existing_paper_id = existing_paper_id
+        super().__init__(f"Duplicate PDF detected (hash={pdf_hash})")
 
 
 class IngestPipeline:
@@ -57,6 +101,9 @@ class IngestPipeline:
         loader: Optional[PDFLoader] = None,
         ocr_handler: Optional[OCRHandler] = None,
         enable_ocr: bool = True,
+        enable_incremental: bool = False,
+        cache_dir: Optional[Path] = None,
+        dedup_checker: Optional[Callable[[str], Optional[int]]] = None,
     ):
         """
         Initialize ingestion pipeline.
@@ -71,6 +118,9 @@ class IngestPipeline:
         self.loader = loader or PDFLoader()
         self.ocr_handler = ocr_handler or OCRHandler()
         self.enable_ocr = enable_ocr
+        self.enable_incremental = enable_incremental
+        self.cache_dir = cache_dir
+        self.dedup_checker = dedup_checker
         
         logger.info("Ingestion pipeline initialized")
     
@@ -78,6 +128,10 @@ class IngestPipeline:
         self, 
         pdf_path: Path,
         force_ocr: bool = False,
+        skip_if_exists: bool = False,
+        postgres_dsn: Optional[str] = None,
+        cache_dir: Optional[Path] = None,
+        enable_incremental: Optional[bool] = None,
     ) -> ValidatedDocument:
         """
         Process a PDF file through the complete ingestion pipeline.
@@ -96,12 +150,51 @@ class IngestPipeline:
         start_time = time.time()
         
         logger.info(f"Starting ingestion for: {pdf_path}")
+        _trace_ingest_stage("start", {"pdf_path": str(pdf_path)})
         
         # Step 1: Validate PDF
         validation_result = self._validate(pdf_path)
+        _trace_ingest_stage("validated", {"pdf_path": str(pdf_path), "pdf_hash": validation_result.pdf_hash})
+
+        # Optional deduplication by PDF hash (Postgres-backed)
+        if skip_if_exists and validation_result.pdf_hash:
+            existing_id = self._check_dedup(validation_result.pdf_hash, postgres_dsn)
+            if existing_id is not None:
+                raise DeduplicationSkipped(validation_result.pdf_hash, existing_id)
+
+        # Optional incremental reuse of cached ingestion output
+        effective_cache_dir = cache_dir or self.cache_dir
+        incremental_enabled = self.enable_incremental if enable_incremental is None else enable_incremental
+        if incremental_enabled and validation_result.pdf_hash and effective_cache_dir:
+            cached = self._load_cached_document(validation_result.pdf_hash, effective_cache_dir)
+            if cached is not None:
+                cached_pdf_path = getattr(cached, "pdf_path", None)
+                if cached_pdf_path and Path(cached_pdf_path).exists():
+                    logger.info(
+                        "IngestPipeline: valid cache hit, pdf_path exists: %s",
+                        cached_pdf_path,
+                    )
+                    logger.info(
+                        "Using cached ingestion result for %s (hash=%s)",
+                        pdf_path.name,
+                        validation_result.pdf_hash,
+                    )
+                    return cached
+
+                logger.warning(
+                    "IngestPipeline: cache hit for %s but cached pdf_path does not exist: %s "
+                    "— invalidating cache and re-ingesting",
+                    pdf_path.name,
+                    cached_pdf_path,
+                )
+                try:
+                    self._cache_path(validation_result.pdf_hash, effective_cache_dir).unlink(missing_ok=True)
+                except Exception as exc:
+                    logger.warning("Failed to invalidate stale ingestion cache: %s", exc)
         
         # Step 2: Extract text and layout
         extraction_result = self._extract(pdf_path)
+        _trace_ingest_stage("extracted", {"pdf_path": str(pdf_path), "pages": len(extraction_result.get('pages', []))})
         
         # Step 3: Apply OCR if needed
         if self.enable_ocr or force_ocr:
@@ -110,6 +203,7 @@ class IngestPipeline:
                 extraction_result,
                 force=force_ocr
             )
+            _trace_ingest_stage("ocr_checked", {"pdf_path": str(pdf_path), "was_reprocessed": bool(extraction_result.get('ocr_metadata') and extraction_result.get('ocr_metadata').was_ocr_applied)})
         
         # Step 4: Build ValidatedDocument
         document = self._build_document(
@@ -117,6 +211,10 @@ class IngestPipeline:
             extraction_result,
             processing_time=time.time() - start_time
         )
+        _trace_ingest_stage("document_built", {"document_id": str(document.document_id), "page_count": document.page_count})
+
+        if incremental_enabled and validation_result.pdf_hash and effective_cache_dir:
+            self._save_cached_document(document, effective_cache_dir)
         
         logger.info(
             f"Ingestion completed for {pdf_path.name} "
@@ -125,6 +223,50 @@ class IngestPipeline:
         )
         
         return document
+
+    def _check_dedup(self, pdf_hash: str, postgres_dsn: Optional[str]) -> Optional[int]:
+        if self.dedup_checker:
+            return self.dedup_checker(pdf_hash)
+
+        if not postgres_dsn:
+            return None
+
+        try:
+            from backend.extraction.persistence import PostgresPaperStore
+
+            store = PostgresPaperStore(postgres_dsn)
+            return store.get_paper_id_by_hash(pdf_hash)
+        except Exception as exc:
+            logger.warning("Deduplication check failed: %s", exc)
+            return None
+
+    @staticmethod
+    def _cache_path(pdf_hash: str, cache_dir: Path) -> Path:
+        return cache_dir / f"{pdf_hash}_ingest.json"
+
+    def _load_cached_document(self, pdf_hash: str, cache_dir: Path) -> Optional[ValidatedDocument]:
+        cache_path = self._cache_path(pdf_hash, cache_dir)
+        if not cache_path.exists():
+            return None
+
+        try:
+            payload = json.loads(cache_path.read_text(encoding="utf-8"))
+            data = payload.get("validated_document", {})
+            return ValidatedDocument.model_validate(data)
+        except Exception as exc:
+            logger.warning("Failed to read ingestion cache %s: %s", cache_path, exc)
+            return None
+
+    def _save_cached_document(self, document: ValidatedDocument, cache_dir: Path) -> None:
+        try:
+            cache_dir.mkdir(parents=True, exist_ok=True)
+            payload = {
+                "validated_document": document.model_dump(mode="json"),
+            }
+            cache_path = self._cache_path(document.pdf_hash, cache_dir)
+            cache_path.write_text(json.dumps(payload, indent=2), encoding="utf-8")
+        except Exception as exc:
+            logger.warning("Failed to write ingestion cache: %s", exc)
     
     def _validate(self, pdf_path: Path) -> ValidationResult:
         """
@@ -282,6 +424,10 @@ class IngestPipeline:
             metadata=extraction_result.get('metadata', {}),
         )
         
+        # Cache the DoclingDocument for downstream use (e.g., metadata extraction)
+        if 'docling_document' in extraction_result:
+            document.docling_document = extraction_result['docling_document']
+        
         return document
 
     @staticmethod
@@ -321,6 +467,9 @@ class IngestPipeline:
             try:
                 document = self.process(pdf_path)
                 successful.append(document)
+            except DeduplicationSkipped as e:
+                logger.info("Skipped duplicate PDF %s (hash=%s)", pdf_path, e.pdf_hash)
+                failed.append((pdf_path, f"deduplicated:{e.pdf_hash}"))
             except Exception as e:
                 logger.error(f"Failed to process {pdf_path}: {str(e)}")
                 failed.append((pdf_path, str(e)))

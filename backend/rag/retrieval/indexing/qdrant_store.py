@@ -151,95 +151,129 @@ class QdrantStoreManager:
             TokenizerType,
         )
 
+        # Try to fetch collection info to see what indexes already exist
+        existing_indexes = set()
+        try:
+            collection_info = self.client.get_collection(self.collection_name)
+            if hasattr(collection_info, 'payload_schema') and collection_info.payload_schema:
+                existing_indexes = set(collection_info.payload_schema.keys())
+                logger.debug(f"QdrantStoreManager: found {len(existing_indexes)} existing payload indexes")
+        except Exception:  # noqa: BLE001
+            logger.debug("Could not fetch existing indexes; will attempt to create all")
+
         # document_id: keyword exact-match
         try:
-            self.client.create_payload_index(
-                collection_name=self.collection_name,
-                field_name="document_id",
-                field_schema=PayloadSchemaType.KEYWORD,
-            )
-            logger.info("QdrantStoreManager: ensured keyword index on 'document_id'")
+            if "document_id" in existing_indexes:
+                logger.debug("QdrantStoreManager: index on 'document_id' already exists, skipping")
+            else:
+                self.client.create_payload_index(
+                    collection_name=self.collection_name,
+                    field_name="document_id",
+                    field_schema=PayloadSchemaType.KEYWORD,
+                )
+                logger.info("QdrantStoreManager: created index on 'document_id'")
         except Exception as exc:  # noqa: BLE001
             logger.debug("document_id index already exists or failed: %s", exc)
 
         # section_title: full-text index (required for MatchText)
         try:
-            self.client.create_payload_index(
-                collection_name=self.collection_name,
-                field_name="section_title",
-                field_schema=TextIndexParams(
-                    type="text",
-                    tokenizer=TokenizerType.WORD,
-                    lowercase=True,
-                ),
-            )
-            logger.info("QdrantStoreManager: ensured text index on 'section_title'")
+            if "section_title" in existing_indexes:
+                logger.debug("QdrantStoreManager: index on 'section_title' already exists, skipping")
+            else:
+                self.client.create_payload_index(
+                    collection_name=self.collection_name,
+                    field_name="section_title",
+                    field_schema=TextIndexParams(
+                        type="text",
+                        tokenizer=TokenizerType.WORD,
+                        lowercase=True,
+                    ),
+                )
+                logger.info("QdrantStoreManager: created text index on 'section_title'")
         except Exception as exc:  # noqa: BLE001
             logger.debug("section_title text index already exists or failed: %s", exc)
 
         # section_path: keyword array index (for MatchAny section scoping)
         try:
-            self.client.create_payload_index(
-                collection_name=self.collection_name,
-                field_name="section_path",
-                field_schema=PayloadSchemaType.KEYWORD,
-            )
-            logger.info("QdrantStoreManager: ensured keyword index on 'section_path'")
+            if "section_path" in existing_indexes:
+                logger.debug("QdrantStoreManager: index on 'section_path' already exists, skipping")
+            else:
+                self.client.create_payload_index(
+                    collection_name=self.collection_name,
+                    field_name="section_path",
+                    field_schema=PayloadSchemaType.KEYWORD,
+                )
+                logger.info("QdrantStoreManager: created index on 'section_path'")
         except Exception as exc:  # noqa: BLE001
             logger.debug("section_path index already exists or failed: %s", exc)
 
         # chunk_level: exact match on fine/coarse.
         try:
-            self.client.create_payload_index(
-                collection_name=self.collection_name,
-                field_name="chunk_level",
-                field_schema=PayloadSchemaType.KEYWORD,
-            )
-            logger.info("QdrantStoreManager: ensured keyword index on 'chunk_level'")
+            if "chunk_level" in existing_indexes:
+                logger.debug("QdrantStoreManager: index on 'chunk_level' already exists, skipping")
+            else:
+                self.client.create_payload_index(
+                    collection_name=self.collection_name,
+                    field_name="chunk_level",
+                    field_schema=PayloadSchemaType.KEYWORD,
+                )
+                logger.info("QdrantStoreManager: created index on 'chunk_level'")
         except Exception as exc:  # noqa: BLE001
             logger.debug("chunk_level index already exists or failed: %s", exc)
 
         # content_type: exact match on chunk type (e.g., text/figure/table).
         try:
-            self.client.create_payload_index(
-                collection_name=self.collection_name,
-                field_name="content_type",
-                field_schema=PayloadSchemaType.KEYWORD,
-            )
-            logger.info("QdrantStoreManager: ensured keyword index on 'content_type'")
+            if "content_type" in existing_indexes:
+                logger.debug("QdrantStoreManager: index on 'content_type' already exists, skipping")
+            else:
+                self.client.create_payload_index(
+                    collection_name=self.collection_name,
+                    field_name="content_type",
+                    field_schema=PayloadSchemaType.KEYWORD,
+                )
+                logger.info("QdrantStoreManager: created index on 'content_type'")
         except Exception as exc:  # noqa: BLE001
             logger.debug("content_type index already exists or failed: %s", exc)
 
         # section_id: exact match on canonical section numbering IDs (e.g., "3.2.1")
         try:
-            self.client.create_payload_index(
-                collection_name=self.collection_name,
-                field_name="section_id",
-                field_schema=PayloadSchemaType.KEYWORD,
-            )
-            logger.info("QdrantStoreManager: ensured keyword index on 'section_id'")
+            if "section_id" in existing_indexes:
+                logger.debug("QdrantStoreManager: index on 'section_id' already exists, skipping")
+            else:
+                self.client.create_payload_index(
+                    collection_name=self.collection_name,
+                    field_name="section_id",
+                    field_schema=PayloadSchemaType.KEYWORD,
+                )
+                logger.info("QdrantStoreManager: created index on 'section_id'")
         except Exception as exc:  # noqa: BLE001
             logger.debug("section_id index already exists or failed: %s", exc)
 
         # parent_section_id: keyword for hierarchy filtering
         try:
-            self.client.create_payload_index(
-                collection_name=self.collection_name,
-                field_name="parent_section_id",
-                field_schema=PayloadSchemaType.KEYWORD,
-            )
-            logger.info("QdrantStoreManager: ensured keyword index on 'parent_section_id'")
+            if "parent_section_id" in existing_indexes:
+                logger.debug("QdrantStoreManager: index on 'parent_section_id' already exists, skipping")
+            else:
+                self.client.create_payload_index(
+                    collection_name=self.collection_name,
+                    field_name="parent_section_id",
+                    field_schema=PayloadSchemaType.KEYWORD,
+                )
+                logger.info("QdrantStoreManager: created index on 'parent_section_id'")
         except Exception as exc:  # noqa: BLE001
             logger.debug("parent_section_id index already exists or failed: %s", exc)
 
         # section_path_ids: keyword array index for canonical ID-based section scoping
         try:
-            self.client.create_payload_index(
-                collection_name=self.collection_name,
-                field_name="section_path_ids",
-                field_schema=PayloadSchemaType.KEYWORD,
-            )
-            logger.info("QdrantStoreManager: ensured keyword index on 'section_path_ids'")
+            if "section_path_ids" in existing_indexes:
+                logger.debug("QdrantStoreManager: index on 'section_path_ids' already exists, skipping")
+            else:
+                self.client.create_payload_index(
+                    collection_name=self.collection_name,
+                    field_name="section_path_ids",
+                    field_schema=PayloadSchemaType.KEYWORD,
+                )
+                logger.info("QdrantStoreManager: created index on 'section_path_ids'")
         except Exception as exc:  # noqa: BLE001
             logger.debug("section_path_ids index already exists or failed: %s", exc)
 

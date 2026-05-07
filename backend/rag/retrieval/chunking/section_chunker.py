@@ -41,6 +41,39 @@ ElementDict = dict[str, list[dict]]
 
 logger = logging.getLogger(__name__)
 
+from typing import Any
+
+try:
+    from langsmith.run_helpers import traceable
+except Exception:  # noqa: BLE001
+    def traceable(*_args, **_kwargs):
+        def _decorator(func):
+            return func
+
+        return _decorator
+
+_TRACE_RUNNER_CACHE: dict[str, Any] = {}
+
+
+def _safe_trace_stage_name(stage: str) -> str:
+    normalized = re.sub(r"[^a-zA-Z0-9_]+", "_", str(stage).strip())
+    normalized = re.sub(r"_+", "_", normalized).strip("_")
+    return normalized or "unknown"
+
+
+def _trace_chunk_stage(stage: str, payload: dict[str, Any]) -> dict[str, Any]:
+    safe_stage = _safe_trace_stage_name(stage)
+    runner = _TRACE_RUNNER_CACHE.get(safe_stage)
+    if runner is None:
+        @traceable(name=f"chunk_stage:{safe_stage}", run_type="chain")
+        def _runner(event_payload: dict[str, Any]) -> dict[str, Any]:
+            return event_payload
+
+        runner = _runner
+        _TRACE_RUNNER_CACHE[safe_stage] = runner
+
+    return runner({"stage": stage, **payload})
+
 _REFERENCE_SECTION_KEYWORDS = (
     "reference",
     "references",
@@ -666,7 +699,14 @@ def _strip_reference_text(text: str, reference_blocks: list[dict]) -> str:
 
 def summarize_table(markdown_content: str) -> str:
     """Summarize markdown table content using Groq for better embedding quality."""
+    import time
+    from rag.retrieval.config import CHUNKER_GENERATE_SUMMARIES
+    
     if not markdown_content.strip():
+        return markdown_content
+
+    if not CHUNKER_GENERATE_SUMMARIES:
+        logger.debug("Table summarization disabled (CHUNKER_GENERATE_SUMMARIES=false)")
         return markdown_content
 
     groq_api_key = os.getenv("GROQ_API_KEY")
@@ -683,6 +723,8 @@ def summarize_table(markdown_content: str) -> str:
     try:
         from groq import Groq
 
+        logger.info("SectionChunker: requesting table summary via Groq")
+        _t = time.perf_counter()
         client = Groq(api_key=groq_api_key)
         response = client.chat.completions.create(
             model="llama-3.1-8b-instant",
@@ -695,6 +737,8 @@ def summarize_table(markdown_content: str) -> str:
             temperature=0.1,
             max_tokens=1024,
         )
+        elapsed = time.perf_counter() - _t
+        logger.info(f"SectionChunker: table summary received in {elapsed:.2f}s")
         summary = (response.choices[0].message.content or "").strip()
         return summary if summary else markdown_content
     except Exception as exc:  # noqa: BLE001
@@ -704,9 +748,16 @@ def summarize_table(markdown_content: str) -> str:
 
 def summarize_figure(caption: str, image_path: str) -> str:
     """Summarize a figure using the image file and caption via Groq multimodal API."""
+    import time
+    from rag.retrieval.config import CHUNKER_GENERATE_SUMMARIES
+    
     caption = caption.strip()
 
     if not image_path:
+        return caption
+
+    if not CHUNKER_GENERATE_SUMMARIES:
+        logger.debug("Figure summarization disabled (CHUNKER_GENERATE_SUMMARIES=false)")
         return caption
 
     if not os.path.exists(image_path):
@@ -751,6 +802,8 @@ def summarize_figure(caption: str, image_path: str) -> str:
 
         from groq import Groq
 
+        logger.info("SectionChunker: requesting figure summary via Groq")
+        _t = time.perf_counter()
         client = Groq(api_key=groq_api_key)
         response = client.chat.completions.create(
             model="meta-llama/llama-4-scout-17b-16e-instruct",
@@ -774,6 +827,8 @@ def summarize_figure(caption: str, image_path: str) -> str:
             temperature=0.1,
             max_tokens=1024,
         )
+        elapsed = time.perf_counter() - _t
+        logger.info(f"SectionChunker: figure summary received in {elapsed:.2f}s")
         summary = (response.choices[0].message.content or "").strip()
         return summary if summary else caption
     except Exception as exc:  # noqa: BLE001
@@ -1427,6 +1482,8 @@ def chunk_paper(
     >>> chunks[0].paper_id
     'paper-uuid-123'
     """
+    _trace_chunk_stage("start", {"paper_id": paper_id, "num_sections": len(sections)})
+    
     splitter = TokenAwareSplitter(
         chunk_size=chunk_size,
         chunk_overlap=overlap,
@@ -1502,6 +1559,7 @@ def chunk_paper(
         len(sections),
         paper_id,
     )
+    _trace_chunk_stage("completed", {"paper_id": paper_id, "num_chunks": len(chunks)})
     return chunks
 
 

@@ -18,6 +18,40 @@ from backend.extraction.app.section_detector import SectionDetector
 
 logger = logging.getLogger(__name__)
 
+import re
+from typing import Any
+
+try:
+    from langsmith.run_helpers import traceable
+except Exception:  # noqa: BLE001
+    def traceable(*_args, **_kwargs):
+        def _decorator(func):
+            return func
+
+        return _decorator
+
+_TRACE_RUNNER_CACHE: dict[str, Any] = {}
+
+
+def _safe_trace_stage_name(stage: str) -> str:
+    normalized = re.sub(r"[^a-zA-Z0-9_]+", "_", str(stage).strip())
+    normalized = re.sub(r"_+", "_", normalized).strip("_")
+    return normalized or "unknown"
+
+
+def _trace_section_stage(stage: str, payload: dict[str, Any]) -> dict[str, Any]:
+    safe_stage = _safe_trace_stage_name(stage)
+    runner = _TRACE_RUNNER_CACHE.get(safe_stage)
+    if runner is None:
+        @traceable(name=f"section_stage:{safe_stage}", run_type="chain")
+        def _runner(event_payload: dict[str, Any]) -> dict[str, Any]:
+            return event_payload
+
+        runner = _runner
+        _TRACE_RUNNER_CACHE[safe_stage] = runner
+
+    return runner({"stage": stage, **payload})
+
 
 class SectionHierarchyPipeline:
     """
@@ -64,6 +98,7 @@ class SectionHierarchyPipeline:
             SectionDetectionResult with detected hierarchy
         """
         logger.info(f"Starting section hierarchy detection for document {processed_doc.document_id}")
+        _trace_section_stage("start", {"document_id": str(processed_doc.document_id)})
         
         start_time = time.time()
         warnings = []
@@ -90,6 +125,12 @@ class SectionHierarchyPipeline:
                 f"Section hierarchy detection completed in {processing_time:.2f}s. "
                 f"Detected {hierarchy.total_sections} sections with confidence {hierarchy.confidence_score:.2f}"
             )
+            _trace_section_stage("completed", {
+                "document_id": str(processed_doc.document_id),
+                "processing_time": processing_time,
+                "total_sections": hierarchy.total_sections,
+                "confidence": float(hierarchy.confidence_score),
+            })
             
             return SectionDetectionResult(
                 hierarchy=hierarchy,
@@ -117,6 +158,7 @@ class SectionHierarchyPipeline:
             SectionDetectionResult with detected hierarchy
         """
         logger.info(f"Starting section hierarchy detection from raw document {validated_doc.document_id}")
+        _trace_section_stage("start_from_validated", {"document_id": str(validated_doc.document_id)})
         
         start_time = time.time()
         warnings = []
@@ -140,6 +182,12 @@ class SectionHierarchyPipeline:
                 f"Section hierarchy detection completed in {processing_time:.2f}s. "
                 f"Detected {hierarchy.total_sections} sections"
             )
+            _trace_section_stage("completed_from_validated", {
+                "document_id": str(validated_doc.document_id),
+                "processing_time": processing_time,
+                "total_sections": hierarchy.total_sections,
+                "confidence": float(hierarchy.confidence_score),
+            })
             
             return SectionDetectionResult(
                 hierarchy=hierarchy,

@@ -31,6 +31,40 @@ from rag.retrieval.config import BM25_ENCODER_DIR, OUTPUT_DIR
 
 logger = logging.getLogger(__name__)
 
+import re
+from typing import Any
+
+try:
+    from langsmith.run_helpers import traceable
+except Exception:  # noqa: BLE001
+    def traceable(*_args, **_kwargs):
+        def _decorator(func):
+            return func
+
+        return _decorator
+
+_TRACE_RUNNER_CACHE: dict[str, Any] = {}
+
+
+def _safe_trace_stage_name(stage: str) -> str:
+    normalized = re.sub(r"[^a-zA-Z0-9_]+", "_", str(stage).strip())
+    normalized = re.sub(r"_+", "_", normalized).strip("_")
+    return normalized or "unknown"
+
+
+def _trace_index_stage(stage: str, payload: dict[str, Any]) -> dict[str, Any]:
+    safe_stage = _safe_trace_stage_name(stage)
+    runner = _TRACE_RUNNER_CACHE.get(safe_stage)
+    if runner is None:
+        @traceable(name=f"index_stage:{safe_stage}", run_type="chain")
+        def _runner(event_payload: dict[str, Any]) -> dict[str, Any]:
+            return event_payload
+
+        runner = _runner
+        _TRACE_RUNNER_CACHE[safe_stage] = runner
+
+    return runner({"stage": stage, **payload})
+
 # Qdrant batch upsert size
 _UPSERT_BATCH = 64
 
@@ -158,6 +192,7 @@ class Indexer:
             output_dir=doc_output_dir,
             pdf_path=pdf_path,
         )
+        _trace_index_stage("chunked", {"document_id": document_id, "num_chunks": len(chunks)})
 
         # Persist section-title lookup used by section-scoped retrieval.
         self._write_section_lookup(document_id=document_id, chunks=chunks)
@@ -186,11 +221,20 @@ class Indexer:
 
         # ── Embed ─────────────────────────────────────────────────────────────
         logger.info("Indexer: encoding %d chunks …", len(chunks))
+        _trace_index_stage("embedding_start", {"document_id": document_id, "num_chunks": len(chunks)})
+        
+        encode_start = time.time()
         dense_vecs = self.dense_encoder.encode_documents(corpus)
+        encode_dense_time = time.time() - encode_start
+        logger.info("Indexer: dense encoding %d chunks took %.2fs", len(chunks), encode_dense_time)
+        
         sparse_vecs = sparse_enc.embed_documents(corpus)
+        _trace_index_stage("embedding_completed", {"document_id": document_id})
 
         # ── Upsert to Qdrant ──────────────────────────────────────────────────
         self._upsert_batches(chunks, dense_vecs, sparse_vecs)
+
+        _trace_index_stage("upsert_completed", {"document_id": document_id, "total_chunks": len(chunks)})
 
         duration = time.time() - t0
         logger.info(
@@ -216,6 +260,7 @@ class Indexer:
         dense_vecs,   # np.ndarray (N, D)
         sparse_vecs,  # list[SparseVector]
     ) -> None:
+        import time
         from qdrant_client.models import PointStruct, SparseVector  # type: ignore
         from rag.retrieval.config import DENSE_VECTOR_NAME, SPARSE_VECTOR_NAME
 
@@ -223,8 +268,9 @@ class Indexer:
         collection = self.store_manager.collection_name
         total = len(chunks)
 
-        for batch_start in range(0, total, _UPSERT_BATCH):
+        for batch_idx, batch_start in enumerate(range(0, total, _UPSERT_BATCH), start=1):
             batch_end = min(batch_start + _UPSERT_BATCH, total)
+            batch_size = batch_end - batch_start
             points = []
             for i in range(batch_start, batch_end):
                 sv = sparse_vecs[i]
@@ -247,16 +293,20 @@ class Indexer:
                     )
                 )
 
+            upsert_start = time.time()
             client.upsert(
                 collection_name=collection,
                 points=points,
                 wait=True,
             )
-            logger.debug(
-                "Indexer: upserted batch %d–%d / %d",
-                batch_start,
-                batch_end - 1,
-                total,
+            upsert_time = time.time() - upsert_start
+            total_batches = (total + _UPSERT_BATCH - 1) // _UPSERT_BATCH
+            logger.info(
+                "Indexer: upsert batch %d/%d (%d pts) took %.2fs",
+                batch_idx,
+                total_batches,
+                batch_size,
+                upsert_time,
             )
 
     def _write_section_lookup(self, document_id: str, chunks: list[Chunk]) -> None:

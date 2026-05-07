@@ -25,13 +25,14 @@ from langchain_groq import ChatGroq
 from langchain_core.messages import AIMessage, HumanMessage
 
 from backend.extraction.extraction import extract_pdf, generate_reading_guide_state
+from backend.extraction.app.validation import PDFValidator
+from backend.extraction.pipelines.ingest_pipeline import IngestPipeline
 from backend.extraction.persistence import PostgresPaperStore
 from backend.extraction.technical_terms import (
     extract_technical_terms_for_bundle,
     get_term_context_text,
     set_llm_definition_override,
 )
-from backend.extraction.technical_terms.definition_lookup import DefinitionLookup
 from backend.rag.prompts import qa_prompt
 from config import ENABLE_TECHNICAL_TERMS, MIN_RELEVANCE_THRESHOLD
 
@@ -42,6 +43,26 @@ logger = logging.getLogger(__name__)
 
 QUESTIONS_LONG_POLL_SECONDS = float(os.getenv("QUESTIONS_LONG_POLL_SECONDS", "20"))
 QUESTIONS_LONG_POLL_INTERVAL_SECONDS = float(os.getenv("QUESTIONS_LONG_POLL_INTERVAL_SECONDS", "0.4"))
+
+# ── In-memory pipeline progress tracker ──────────────────────────────────────
+# Structure: {paper_id: {"phase": str, "phases_done": list, "started_at": float, "error": str|None}}
+_pipeline_progress: dict[int, dict] = {}
+
+def _update_progress(paper_id: int, phase: str, done: bool = False, error: str = None):
+    """Update progress for a paper through the pipeline."""
+    if paper_id not in _pipeline_progress:
+        _pipeline_progress[paper_id] = {
+            "phases_done": [], "current_phase": None, 
+            "started_at": time.time(), "error": None
+        }
+    if error:
+        _pipeline_progress[paper_id]["error"] = error
+    elif done:
+        _pipeline_progress[paper_id]["phases_done"].append(phase)
+        _pipeline_progress[paper_id]["current_phase"] = None
+    else:
+        _pipeline_progress[paper_id]["current_phase"] = phase
+    logger.info(f"Progress [{paper_id}]: phase={phase} done={done} error={error}")
 
 
 class RegisterRequest(BaseModel):
@@ -345,10 +366,12 @@ def _index_paper_in_qdrant(*, document_uuid: str, pdf_path: Path) -> Dict[str, A
             output_dir=hierarchy_path.parent,
             pdf_path=pdf_path,
         )
+        chunks_indexed = int(getattr(result, "total_chunks", 0) or 0)
         return {
             "indexed": True,
             "skipped": bool(getattr(result, "skipped", False)),
-            "chunks": int(getattr(result, "total_chunks", 0) or 0),
+            "chunks_indexed": chunks_indexed,
+            "chunks": chunks_indexed,
             "collection": str(getattr(result, "collection_name", "")),
             "document_id": str(getattr(result, "document_id", document_uuid)),
         }
@@ -443,6 +466,18 @@ def _generate_and_store_reading_guide(paper_id: int) -> None:
         if not paper:
             raise RuntimeError("Paper not found")
 
+        document_id = (
+            paper.get("document_uuid")
+            or paper.get("document_id")
+            or paper.get("uuid")
+        )
+        logger.info("Guide: paper_id=%s, document_id=%s", paper_id, document_id)
+        if not document_id:
+            logger.error(
+                "Guide: no document_id found for paper_id=%s — guide will save as None_guide.json",
+                paper_id,
+            )
+
         sections = _build_sections_for_guide(store, paper_id)
         full_text = _build_full_text_for_guide(store, paper_id)
         result_state = generate_reading_guide_state(
@@ -452,6 +487,7 @@ def _generate_and_store_reading_guide(paper_id: int) -> None:
             full_text=full_text,
             defer_answer_generation=True,
             skip_retrieve_and_qa=True,
+            document_id=document_id,
         )
 
         reading_guide = result_state.get("reading_guide") or {}
@@ -466,14 +502,14 @@ def _generate_and_store_reading_guide(paper_id: int) -> None:
         questions_to_store = _build_questions_for_persistence(result_state)
         store.upsert_paper_guide(
             paper_id=paper_id,
-            document_uuid=paper.get("document_uuid"),
+            document_uuid=document_id,
             guide_json=reading_guide,
             guide_plan_json=plan_payload,
             question_section_pairs=question_section_pairs,
         )
         store.replace_paper_questions(
             paper_id=paper_id,
-            document_uuid=paper.get("document_uuid"),
+            document_uuid=document_id,
             questions=questions_to_store,
         )
         logger.info("Reading guide generated for paper_id=%s", paper_id)
@@ -493,13 +529,118 @@ def _generate_and_store_reading_guide(paper_id: int) -> None:
             logger.exception("Failed to persist failed guide status for paper_id=%s", paper_id)
 
 
+def _extract_and_update_paper(
+    *,
+    paper_id: int,
+    pdf_path: Path,
+    pdf_hash: Optional[str],
+    document_uuid: Optional[str],
+) -> None:
+    """Run extraction in the background and overwrite the pending paper row."""
+    task_start = time.time()
+    extraction_time = 0.0
+    indexing_time = 0.0
+    guide_time = 0.0
+    
+    try:
+        if not os.getenv("POSTGRES_DSN"):
+            os.environ["POSTGRES_DSN"] = _resolve_postgres_dsn()
+
+        _update_progress(paper_id, "extraction")
+        extraction_result = extract_pdf(
+            pdf_path,
+            output_dir="input",
+            generate_reading_guide=False,
+            skip_if_exists=False,
+            enable_incremental=True,
+            persist_to_db=False,
+        )
+        extraction_time = time.time() - task_start
+        _update_progress(paper_id, "extraction", done=True)
+
+        metadata = extraction_result.get("metadata") or {}
+        extracted_elements = extraction_result.get("extracted_elements") or {}
+        paper_title = (metadata.get("paper_title") or "").strip()
+        abstract = (metadata.get("abstract") or "").strip() or None
+        paper_name = paper_title or pdf_path.stem
+
+        store = _make_store()
+        store.update_paper_from_extraction(
+            paper_id=paper_id,
+            paper_name=paper_name,
+            title=paper_title or None,
+            abstract=abstract,
+            pdf_hash=pdf_hash,
+            source_pdf_path=str(pdf_path),
+            document_uuid=document_uuid,
+            metadata_json=metadata,
+            sections=metadata.get("sections") or [],
+            extracted_elements=extracted_elements,
+            reading_guide=None,
+        )
+
+        # Phase 1c: Guide generation (generate guide before indexing so UI can show it)
+        _update_progress(paper_id, "guide")
+        guide_start = time.time()
+        _generate_and_store_reading_guide(paper_id)
+        guide_time = time.time() - guide_start
+        _update_progress(paper_id, "guide", done=True)
+        logger.info("Phase 1c: guide complete in %.1fs — UI can now show guide", guide_time)
+
+        # Phase 2: Indexing (run after guide generation)
+        _update_progress(paper_id, "indexing")
+        indexing_start = time.time()
+        indexing_result = _index_paper_in_qdrant(
+            document_uuid=str(document_uuid or extraction_result.get("document_id") or ""),
+            pdf_path=pdf_path,
+        )
+        indexing_time = time.time() - indexing_start
+        chunks_indexed = int(indexing_result.get("chunks_indexed", 0) if isinstance(indexing_result, dict) else 0)
+        if chunks_indexed == 0:
+            logger.error(
+                "Phase 2: indexing produced 0 chunks for paper_id=%s — QA will not work. Check hierarchy JSON has sections.",
+                paper_id,
+            )
+            _update_progress(paper_id, "indexing", done=True, error="0 chunks indexed — QA unavailable")
+        else:
+            logger.info(
+                "Phase 2: indexing complete — %d chunks indexed, QA bot now active",
+                chunks_indexed,
+            )
+            _update_progress(paper_id, "indexing", done=True)
+        
+        total = time.time() - task_start
+        logger.info(
+            f"✅ Pipeline complete for paper_id={paper_id} | "
+            f"extraction={extraction_time:.1f}s | "
+            f"indexing={indexing_time:.1f}s | "
+            f"guide={guide_time:.1f}s | "
+            f"total={total:.1f}s"
+        )
+    except Exception as exc:  # noqa: BLE001
+        logger.exception("Async extraction failed for paper_id=%s", paper_id)
+        _update_progress(paper_id, "", error=str(exc))
+        try:
+            store = _make_store()
+            paper = store.get_paper_by_id(paper_id) or {}
+            store.upsert_paper_guide(
+                paper_id=paper_id,
+                document_uuid=paper.get("document_uuid"),
+                guide_json={},
+                guide_plan_json={"status": "failed", "error": str(exc)},
+                question_section_pairs=[],
+            )
+        except Exception:  # noqa: BLE001
+            logger.exception("Failed to persist failed extraction status for paper_id=%s", paper_id)
+
+
 class GenerateAnswerRequest(BaseModel):
     force_regenerate: bool = False
 
 
 class GenerateTermDefinitionRequest(BaseModel):
     term: str
-    force_llm: bool = False
+    force_llm: bool = True
 
 
 def _pick_sections_by_keywords(
@@ -949,6 +1090,39 @@ def cms_delete_paper(
     }
 
 
+@app.get("/api/papers/{paper_id}/progress")
+async def paper_progress(
+    paper_id: int,
+    authorization: Optional[str] = Header(default=None, alias="Authorization"),
+):
+    """SSE endpoint for real-time pipeline progress updates."""
+    user_id = _require_auth_user_id(authorization)
+    store = _make_store()
+    
+    if not store.user_has_access_to_paper(user_id=user_id, paper_id=paper_id):
+        raise HTTPException(status_code=403, detail="You do not have access to this paper")
+    
+    from fastapi.responses import StreamingResponse
+    import asyncio
+    
+    async def event_stream():
+        last_sent = None
+        for _ in range(120):  # max 2 minutes (1s intervals)
+            progress = _pipeline_progress.get(paper_id, {})
+            payload = json.dumps(progress)
+            if payload != last_sent:
+                yield f"data: {payload}\n\n"
+                last_sent = payload
+            if "guide" in progress.get("phases_done", []):
+                yield "data: {\"status\": \"complete\"}\n\n"
+                break
+            if progress.get("error"):
+                break
+            await asyncio.sleep(1)
+    
+    return StreamingResponse(event_stream(), media_type="text/event-stream")
+
+
 @app.get("/api/papers/{paper_id}/bundle")
 def get_paper_bundle(
     paper_id: int,
@@ -973,9 +1147,14 @@ def get_paper_bundle(
 
     # Compose readable section content by linked text blocks (fallback to per-page aggregation).
     section_text_map: Dict[int, List[str]] = defaultdict(list)
+
+    # Build a lookup of text block content from the already-loaded text_blocks
+    tb_lookup: Dict[int, str] = {int(tb.get("id")): str(tb.get("text_content") or "") for tb in text_blocks}
     for row in section_text_links:
         section_id = row.get("section_id")
-        content = (row.get("text_content") or "").strip()
+        tb_id = row.get("text_block_db_id")
+        content = (tb_lookup.get(int(tb_id)) if tb_id is not None else "") or ""
+        content = content.strip()
         if section_id and content:
             section_text_map[int(section_id)].append(content)
 
@@ -1015,9 +1194,14 @@ def get_paper_bundle(
     
     guide_row = store.get_paper_guide_for_paper_id(paper_id)
     guide_status = _guide_status_from_row(guide_row)
+    # Technical term extraction is intentionally disabled in the synchronous
+    # bundle endpoint because it performs blocking external HTTP calls.
+    # Option B (proper fix) would move this to a separate cached endpoint.
     technical_terms: List[Dict[str, Any]] = []
     if ENABLE_TECHNICAL_TERMS:
-        technical_terms = extract_technical_terms_for_bundle(paper_with_url, normalized_sections)
+        logger.info(
+            "Technical terms: skipped in bundle (use /api/papers/{id}/terms endpoint)"
+        )
 
     # Legacy papers may still have reading_guide directly on papers table.
     reading_guide = paper_with_url.pop("reading_guide", None)
@@ -1040,6 +1224,9 @@ def get_paper_bundle(
         )
         guide_status = {"status": "ready", "error": None, "updated_at": None}
     
+    # Add current progress information if pipeline is running
+    progress = _pipeline_progress.get(paper_id, {})
+    
     return {
         "paper": paper_with_url,
         "sections": normalized_sections,
@@ -1050,6 +1237,7 @@ def get_paper_bundle(
         "text_blocks": text_blocks,
         "reading_guide": reading_guide,
         "guide_status": guide_status,
+        "pipeline_progress": progress,
     }
 
 
@@ -1150,7 +1338,12 @@ def get_paper_pdf(
                 # Extract text from various possible formats
                 text_content = ''
                 extracted_elements = doc_data.get('extracted_elements', [])
-                for elem in extracted_elements[:500]:  # Limit to first 500 elements
+                if isinstance(extracted_elements, dict):
+                    candidates = extracted_elements.get('text_blocks', [])
+                else:
+                    candidates = extracted_elements
+
+                for elem in (candidates or [])[:500]:  # Limit to first 500 elements
                     if isinstance(elem, dict) and 'text' in elem:
                         text_content += elem['text'].strip() + '\n\n'
                 
@@ -1281,67 +1474,91 @@ def upload_paper(
         if not os.getenv("POSTGRES_DSN"):
             os.environ["POSTGRES_DSN"] = _resolve_postgres_dsn()
 
-        extraction_result = extract_pdf(
-            temp_pdf_path,
-            output_dir="input",
-            generate_reading_guide=False,
-        )
-        db_result = extraction_result.get("database") or {}
-        paper_id = db_result.get("paper_id")
-        if paper_id is None:
-            raise HTTPException(
-                status_code=500,
-                detail=f"Upload processed but not stored in database: {db_result.get('reason', 'unknown')}",
-            )
+        validator = PDFValidator()
+        validation = validator.validate(temp_pdf_path)
+        if not validation.is_valid:
+            message = validation.errors[0].message if validation.errors else "Invalid PDF"
+            raise HTTPException(status_code=400, detail=message)
+
+        pdf_hash = validation.pdf_hash
+        document_uuid = str(IngestPipeline._resolve_document_id(pdf_hash)) if pdf_hash else None
 
         store = _make_store()
+        pending = store.create_pending_paper(
+            paper_name=Path(filename).stem,
+            pdf_hash=pdf_hash,
+            source_pdf_path=str(temp_pdf_path),
+            document_uuid=document_uuid,
+        )
+
+        paper_id = pending.get("paper_id")
+        if paper_id is None:
+            raise HTTPException(status_code=500, detail="Failed to register uploaded paper")
+
         store.link_user_to_paper(user_id=user_id, paper_id=int(paper_id))
         paper = store.get_paper_by_id(int(paper_id))
         if not paper:
-            raise HTTPException(status_code=500, detail="Paper persisted but could not be fetched")
+            raise HTTPException(status_code=500, detail="Paper could not be fetched after upload")
 
-        # Keep vector DB aligned with uploaded papers so retrieval reflects
-        # newly ingested documents immediately.
-        qdrant_index = _index_paper_in_qdrant(
-            document_uuid=str(paper.get("document_uuid") or ""),
-            pdf_path=pdf_storage_path,
-        )
+        # Always attach pdf_url for frontend viewer.
+        paper_with_url = {
+            **paper,
+            "pdf_url": f"/api/papers/{paper_id}/pdf",
+        }
 
-        queued = False
-        existing_guide_row = store.get_paper_guide_for_paper_id(int(paper_id))
-        current_status = _guide_status_from_row(existing_guide_row)
-        has_legacy_guide = isinstance(paper.get("reading_guide"), dict) and bool(paper.get("reading_guide"))
-
-        if current_status["status"] != "ready" and not has_legacy_guide:
+        if pending.get("stored"):
             store.upsert_paper_guide(
                 paper_id=int(paper_id),
-                document_uuid=paper.get("document_uuid"),
+                document_uuid=paper_with_url.get("document_uuid"),
                 guide_json={},
                 guide_plan_json={"status": "pending", "error": None},
                 question_section_pairs=[],
             )
-            background_tasks.add_task(_generate_and_store_reading_guide, int(paper_id))
-            queued = True
-
-        guide_status = (
-            {"status": "pending", "error": None, "updated_at": None}
-            if queued
-            else (
-                current_status
-                if current_status["status"] != "missing"
-                else {"status": "ready" if has_legacy_guide else "pending", "error": None, "updated_at": None}
+            background_tasks.add_task(
+                _extract_and_update_paper,
+                paper_id=int(paper_id),
+                pdf_path=temp_pdf_path,
+                pdf_hash=pdf_hash,
+                document_uuid=document_uuid,
             )
-        )
+
+            guide_status = {"status": "pending", "error": None, "updated_at": None}
+            db_result = {
+                "stored": True,
+                "paper_id": int(paper_id),
+                "paper_name": paper_with_url.get("paper_name"),
+                "reason": "pending_created",
+            }
+        else:
+            existing_guide_row = store.get_paper_guide_for_paper_id(int(paper_id))
+            guide_status = _guide_status_from_row(existing_guide_row)
+            db_result = {
+                "stored": False,
+                "paper_id": int(paper_id),
+                "paper_name": paper_with_url.get("paper_name"),
+                "reason": pending.get("reason"),
+            }
+
+            # Duplicate upload: ensure guide regeneration still runs if guide is missing.
+            try:
+                existing_id = int(paper_id)
+                if not existing_guide_row or not (existing_guide_row.get("guide_json") or {}):
+                    logger.info(
+                        "Duplicate PDF uploaded for paper_id=%s — scheduling guide-only generation",
+                        existing_id,
+                    )
+                    background_tasks.add_task(_generate_and_store_reading_guide, existing_id)
+            except Exception:
+                logger.exception("Failed to schedule guide-only generation for duplicate upload paper_id=%s", paper_id)
 
         return {
-            "paper": paper,
-            "database": {
-                "stored": bool(db_result.get("stored", False)),
-                "paper_id": int(paper_id),
-                "paper_name": db_result.get("paper_name"),
-                "reason": db_result.get("reason"),
-            },
-            "qdrant": qdrant_index,
+            "paper": paper_with_url,
+            "database": db_result,
+            "qdrant": (
+                {"indexed": False, "reason": "pending_extraction"}
+                if pending.get("stored")
+                else {"indexed": False, "reason": "duplicate_existing"}
+            ),
             "pdf_id": pdf_uuid,
             "guide_status": guide_status,
         }
@@ -1550,19 +1767,8 @@ def generate_technical_term_definition(
     if not term:
         raise HTTPException(status_code=400, detail="term is required")
 
-    # By default, try non-LLM sources first. LLM is used only when explicitly requested.
-    if not bool(payload.force_llm):
-        lookup = DefinitionLookup()
-        definition, source = lookup.lookup_api_definition(term)
-        return {
-            "paper": paper,
-            "technical_term": {
-                "term": term,
-                "definition": definition,
-                "definition_source": source,
-                "definition_status": "ready" if definition else "pending_llm",
-            },
-        }
+    # Keep request compatibility while enforcing a single generation path (LLM).
+    _ = payload.force_llm
 
     sections = store.get_sections_for_paper_id(paper_id)
     text_blocks = store.get_text_blocks_for_paper_id(paper_id)

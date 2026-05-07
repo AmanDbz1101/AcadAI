@@ -51,6 +51,10 @@ CHUNK_SIZE: int = int(os.getenv("CHUNK_SIZE", COARSE_CHUNK_SIZE))
 CHUNK_OVERLAP: int = int(os.getenv("CHUNK_OVERLAP", COARSE_CHUNK_OVERLAP))
 CHUNK_MIN_CHARS: int = int(os.getenv("CHUNK_MIN_CHARS", 80)) # discard tiny chunks
 
+# Optional LLM summarization for tables and figures during chunking
+# Set to False to disable Groq API calls during chunking and avoid 429 rate limits
+CHUNKER_GENERATE_SUMMARIES: bool = os.getenv("CHUNKER_GENERATE_SUMMARIES", "true").lower() == "true"
+
 # ── Retrieval ───────────────────────────────────────────────────────────────
 RETRIEVER_TOP_K: int = int(os.getenv("RETRIEVER_TOP_K", 20))  # candidates before rerank
 RRF_K: int = int(os.getenv("RRF_K", 60))

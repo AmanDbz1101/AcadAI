@@ -11,6 +11,7 @@ import logging
 import os
 import signal
 import subprocess
+from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
 from typing import Optional, List, Dict, Any
 from dataclasses import dataclass
@@ -278,6 +279,8 @@ class LoaderConfig:
     generate_page_images: bool = False
     generate_picture_images: bool = False
     timeout_seconds: int = 120
+    parallel_page_processing: bool = False
+    page_workers: int = 4
 
 
 class PDFLoader:
@@ -384,6 +387,7 @@ class PDFLoader:
             "metadata": self._extract_metadata(doc),
             "page_count": len(pages),
             "processing_time": processing_time,
+            "docling_document": doc,  # Cache the DoclingDocument for downstream use
         }
     
     def _extract_pages(self, doc: DoclingDocument) -> List[PageContent]:
@@ -429,13 +433,10 @@ class PDFLoader:
                         elif 'formula' in label or 'equation' in label:
                             pages_metadata[page_no]['has_formulas'] = True
         
-        # Build PageContent objects
-        pages = []
-        for page_no in sorted(pages_dict.keys()):
+        def _build_page(page_no: int) -> PageContent:
             text = "\n".join(pages_dict[page_no])
             metadata = pages_metadata[page_no]
-            
-            page_content = PageContent(
+            return PageContent(
                 page_number=page_no,
                 text=text,
                 word_count=len(text.split()),
@@ -444,8 +445,15 @@ class PDFLoader:
                 has_tables=metadata['has_tables'],
                 has_formulas=metadata['has_formulas'],
             )
-            pages.append(page_content)
-        
+
+        page_numbers = sorted(pages_dict.keys())
+        if self.config.parallel_page_processing and len(page_numbers) > 1:
+            workers = max(1, min(self.config.page_workers, len(page_numbers)))
+            with ThreadPoolExecutor(max_workers=workers) as executor:
+                pages = list(executor.map(_build_page, page_numbers))
+        else:
+            pages = [_build_page(page_no) for page_no in page_numbers]
+
         return pages
     
     def _get_item_text(self, item: DocItem, doc: DoclingDocument) -> str:

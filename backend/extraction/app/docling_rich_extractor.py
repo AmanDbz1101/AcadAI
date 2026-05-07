@@ -32,6 +32,40 @@ from backend.extraction.app.pdf_loader import _get_accelerator_options
 
 logger = logging.getLogger(__name__)
 
+import re
+from typing import Any
+
+try:
+    from langsmith.run_helpers import traceable
+except Exception:  # noqa: BLE001
+    def traceable(*_args, **_kwargs):
+        def _decorator(func):
+            return func
+
+        return _decorator
+
+_TRACE_RUNNER_CACHE: dict[str, Any] = {}
+
+
+def _safe_trace_stage_name(stage: str) -> str:
+    normalized = re.sub(r"[^a-zA-Z0-9_]+", "_", str(stage).strip())
+    normalized = re.sub(r"_+", "_", normalized).strip("_")
+    return normalized or "unknown"
+
+
+def _trace_docling_stage(stage: str, payload: dict[str, Any]) -> dict[str, Any]:
+    safe_stage = _safe_trace_stage_name(stage)
+    runner = _TRACE_RUNNER_CACHE.get(safe_stage)
+    if runner is None:
+        @traceable(name=f"docling_rich:{safe_stage}", run_type="chain")
+        def _runner(event_payload: dict[str, Any]) -> dict[str, Any]:
+            return event_payload
+
+        runner = _runner
+        _TRACE_RUNNER_CACHE[safe_stage] = runner
+
+    return runner({"stage": stage, **payload})
+
 
 # ---------------------------------------------------------------------------
 # Data-transfer objects (plain dataclasses – no ORM dependency here)
@@ -195,6 +229,7 @@ class DoclingRichExtractor:
 
         pdf_hash = self._hash_file(pdf_path)
         logger.info("DoclingRichExtractor: converting %s …", pdf_path.name)
+        _trace_docling_stage("start", {"pdf_path": str(pdf_path), "pdf_hash": pdf_hash})
 
         result = self._converter.convert(str(pdf_path))
         doc: DoclingDocument = result.document
@@ -203,11 +238,13 @@ class DoclingRichExtractor:
 
         # --- Build section hierarchy first so we can assign sections to blocks ---
         sections, section_map = self._extract_sections(doc)
+        _trace_docling_stage("sections_extracted", {"num_sections": len(sections)})
 
         # --- Text blocks ---
         text_blocks, reading_order_counter = self._extract_text_blocks(
             doc, section_map
         )
+        _trace_docling_stage("text_blocks_extracted", {"num_text_blocks": len(text_blocks)})
 
         # --- Tables ---
         tables = self._extract_tables(doc, section_map, reading_order_counter)
@@ -219,6 +256,7 @@ class DoclingRichExtractor:
 
         # --- Formulas (captured separately from text blocks) ---
         formulas = self._extract_formulas(doc, section_map, reading_order_counter)
+        _trace_docling_stage("formulas_extracted", {"num_formulas": len(formulas)})
 
         return DoclingRichResult(
             pdf_path=str(pdf_path),

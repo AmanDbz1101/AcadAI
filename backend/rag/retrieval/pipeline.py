@@ -718,3 +718,38 @@ class _DenseFallbackSparseEncoder:
         from qdrant_client.models import SparseVector  # type: ignore
 
         return SparseVector(indices=[], values=[])
+
+
+# ── Module-level singleton getter ─────────────────────────────────────────────
+
+_pipeline_singleton: Optional[RetrievalPipeline] = None
+
+
+def get_retrieval_pipeline() -> RetrievalPipeline:
+    """
+    Get or create the process-wide singleton RetrievalPipeline instance.
+
+    The dense encoder model is expensive to load; this function ensures it is
+    instantiated only once and reused across all calls.
+
+    Returns
+    -------
+    RetrievalPipeline
+        The shared pipeline singleton instance.
+
+    Example
+    -------
+    ::
+
+        from rag.retrieval.pipeline import get_retrieval_pipeline
+
+        pipeline = get_retrieval_pipeline()
+        result = pipeline.query("How does attention work?", document_id="paper-123")
+    """
+    global _pipeline_singleton
+    if _pipeline_singleton is None:
+        logger.info("RetrievalPipeline: creating NEW singleton instance")
+        _pipeline_singleton = RetrievalPipeline()
+    else:
+        logger.info("RetrievalPipeline: returning CACHED singleton instance")
+    return _pipeline_singleton

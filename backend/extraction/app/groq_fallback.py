@@ -255,7 +255,7 @@ class GroqFallbackExtractor:
                         # Length validation
                         if field == 'title' and 10 <= len(str_value) <= 500:
                             cleaned[field] = str_value
-                        elif field == 'abstract' and 100 <= len(str_value) <= 5000:
+                        elif field == 'abstract' and 50 <= len(str_value) <= 5000:
                             cleaned[field] = str_value
                         elif field == 'doi' and 7 <= len(str_value) <= 100:
                             cleaned[field] = str_value
@@ -311,8 +311,6 @@ class GroqFallbackExtractor:
             missing.append('abstract')
         if not existing_metadata.keywords:
             missing.append('keywords')
-        if not existing_metadata.doi:
-            missing.append('doi')
         
         existing_metadata.missing_fields = missing
         existing_metadata.confidence_score = existing_metadata.get_field_coverage()

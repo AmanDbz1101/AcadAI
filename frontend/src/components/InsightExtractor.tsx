@@ -1,14 +1,9 @@
 import { useEffect, useMemo, useRef, useState, useCallback } from 'react'
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import {
-  generateQuestionAnswer,
-  generateTechnicalTermDefinition,
-  getPaperQuestions,
-} from '@/lib/api'
+import { useQueryClient } from '@tanstack/react-query'
+import { generateTechnicalTermDefinition } from '@/lib/api'
 import { Maximize2, Minimize2 } from 'lucide-react'
 import type {
   PaperImage,
-  PaperQuestion,
   PaperSection,
   TechnicalTerm,
 } from '@/types/api'
@@ -35,29 +30,12 @@ const InsightExtractor = ({
 
   const queryClient = useQueryClient()
 
-  const questionsQuery = useQuery({
-    queryKey: ['paper-questions', paperId],
-    queryFn: () => getPaperQuestions(paperId as number),
-    enabled: paperId !== null,
-  })
-
-  const generateMutation = useMutation({
-    mutationFn: ({ questionId }: { questionId: number }) =>
-      generateQuestionAnswer(paperId as number, questionId),
-    onSuccess: async () => {
-      await queryClient.invalidateQueries({
-        queryKey: ['paper-questions', paperId],
-      })
-    },
-  })
-
   const [termDefinitions, setTermDefinitions] = useState<
     Record<
       string,
       { status: 'idle' | 'loading' | 'ready' | 'error'; definition?: string }
     >
   >({})
-  const [activePanel, setActivePanel] = useState<'terms' | 'answers'>('terms')
   const inFlightTermsRef = useRef<Set<string>>(new Set())
 
   const backendTermMap = useMemo(() => {
@@ -69,7 +47,7 @@ const InsightExtractor = ({
   }, [technicalTerms])
 
   const generateTermDefinition = useCallback(
-    async (rawTerm: string, force = false) => {
+    async (rawTerm: string) => {
       if (paperId === null) return
 
       const term = rawTerm.trim()
@@ -78,23 +56,9 @@ const InsightExtractor = ({
 
       if (inFlightTermsRef.current.has(key)) return
 
-      if (!force) {
-        const existingBackend = backendTermMap.get(key)
-        if (existingBackend?.definition) {
-          setTermDefinitions((prev) => ({
-            ...prev,
-            [key]: {
-              status: 'ready',
-              definition: existingBackend.definition ?? '',
-            },
-          }))
-          return
-        }
-
-        const current = termDefinitions[key]
-        if (current && (current.status === 'loading' || current.status === 'ready')) {
-          return
-        }
+      const current = termDefinitions[key]
+      if (current && (current.status === 'loading' || current.status === 'ready')) {
+        return
       }
 
       inFlightTermsRef.current.add(key)
@@ -105,22 +69,19 @@ const InsightExtractor = ({
 
       try {
         const response = await generateTechnicalTermDefinition(paperId, term, {
-          forceLlm: force,
+          forceLlm: true,
         })
         const definition =
           typeof response.technical_term?.definition === 'string'
             ? response.technical_term.definition.trim()
             : ''
-        const definitionStatus = response.technical_term?.definition_status
 
         setTermDefinitions((prev) => ({
           ...prev,
           [key]: {
-            status:
-              definitionStatus === 'pending_llm' || !definition ? 'error' : 'ready',
+            status: definition ? 'ready' : 'error',
             definition:
-              definition ||
-              'No meaning found via dictionary/Wikipedia. Click Generate meaning to use LLM.',
+              definition || 'No LLM meaning generated. Click Generate with LLM to retry.',
           },
         }))
 
@@ -132,7 +93,7 @@ const InsightExtractor = ({
           ...prev,
           [key]: {
             status: 'error',
-            definition: 'Failed to generate definition. Click regenerate to retry.',
+            definition: 'Failed to generate LLM meaning. Click Generate with LLM to retry.',
           },
         }))
       } finally {
@@ -171,7 +132,7 @@ const InsightExtractor = ({
       ordered.push(trimmed)
     })
 
-    return ordered.slice(0, 60)
+    return ordered
   }, [selectedPdfTerms, technicalTerms])
 
   const termCards = useMemo(() => {
@@ -179,29 +140,21 @@ const InsightExtractor = ({
       const key = term.toLowerCase()
       const backendTerm = backendTermMap.get(key)
       const localDefinition = termDefinitions[key]
+      const backendLlmDefinition =
+        backendTerm?.definition_source === 'llm' ? backendTerm.definition : null
 
-      const hasDefinition = Boolean(backendTerm?.definition || localDefinition?.definition)
+      const hasDefinition = Boolean(backendLlmDefinition || localDefinition?.definition)
       const fallbackMessage =
         localDefinition?.status === 'loading'
-          ? 'Generating definition...'
-          : 'No definition yet. Click Generate meaning to fetch one.'
+          ? 'Generating meaning with LLM...'
+          : 'No meaning yet. Click Generate with LLM.'
 
       const definition =
-        backendTerm?.definition ||
+        backendLlmDefinition ||
         localDefinition?.definition ||
         fallbackMessage
 
-      const source = backendTerm?.definition_source || null
-      const sourceLabel =
-        source === 'dbpedia'
-          ? 'DBpedia'
-          : source === 'dictionary'
-            ? 'Dictionary'
-          : source === 'wikipedia'
-            ? 'Wikipedia'
-            : source === 'llm'
-              ? 'LLM'
-              : ''
+      const sourceLabel = hasDefinition ? 'LLM' : ''
 
       return {
         key,
@@ -236,54 +189,6 @@ const InsightExtractor = ({
       window.removeEventListener('keydown', handleEsc)
     }
   }, [isFullscreen])
-
-  const renderAnswerCard = (question: PaperQuestion, index: number) => {
-    const isGenerating =
-      generateMutation.isPending &&
-      generateMutation.variables?.questionId === question.id
-    const canGenerate = !isGenerating && question.status !== 'running'
-
-    return (
-      <div
-        key={question.id}
-        className="p-3 rounded-sm bg-canvas animate-fade-in"
-        style={{ animationDelay: `${index * 80}ms` }}
-      >
-        <div className="flex items-start justify-between gap-2 mb-1.5">
-          <h4 className="font-ui text-[13px] font-medium text-foreground leading-snug">
-            {question.question_text}
-          </h4>
-          <span className="font-ui text-[10px] px-1.5 py-0.5 rounded bg-accent/15 text-text-active uppercase tracking-wide">
-            {question.status}
-          </span>
-        </div>
-
-        {question.answer_text ? (
-          <p className="font-ui text-[12px] text-text-secondary leading-relaxed whitespace-pre-wrap">
-            {question.answer_text}
-          </p>
-        ) : (
-          <p className="font-ui text-[12px] text-text-secondary leading-relaxed">
-            {question.status === 'failed'
-              ? question.error_message || 'Answer generation failed. Try again.'
-              : 'No generated answer yet. Use the button below to generate this answer.'}
-          </p>
-        )}
-
-        <button
-          onClick={() => generateMutation.mutate({ questionId: question.id })}
-          disabled={!canGenerate}
-          className="mt-2 font-ui text-[11px] px-2.5 py-1.5 rounded-md border border-border/60 text-foreground hover:border-primary/40 hover:text-text-active transition-all disabled:opacity-50 disabled:cursor-not-allowed"
-        >
-          {isGenerating
-            ? 'Generating...'
-            : question.answer_text
-              ? 'Regenerate answer'
-              : 'Generate answer'}
-        </button>
-      </div>
-    )
-  }
 
   return (
     <>
@@ -321,115 +226,71 @@ const InsightExtractor = ({
         </div>
 
         <div className="flex-1 min-h-0 p-3 bg-gradient-to-b from-canvas to-panel/30 flex flex-col">
-          <div className="mb-3 flex-shrink-0 rounded-md border border-border/50 bg-panel/80 p-2">
-            <div className="flex w-full gap-2">
-              <button
-                type="button"
-                onClick={() => setActivePanel('terms')}
-                className={`flex-1 inline-flex items-center justify-center font-ui text-[11px] px-2.5 py-1.5 rounded-md border transition-colors ${
-                  activePanel === 'terms'
-                    ? 'bg-primary text-primary-foreground border-primary/70'
-                    : 'bg-canvas text-text-secondary border-border/60 hover:text-foreground'
-                }`}
-              >
-                Technical Terms
-              </button>
-              <button
-                type="button"
-                onClick={() => setActivePanel('answers')}
-                className={`flex-1 inline-flex items-center justify-center font-ui text-[11px] px-2.5 py-1.5 rounded-md border transition-colors ${
-                  activePanel === 'answers'
-                    ? 'bg-primary text-primary-foreground border-primary/70'
-                    : 'bg-canvas text-text-secondary border-border/60 hover:text-foreground'
-                }`}
-              >
-                Answers
-              </button>
-            </div>
-          </div>
-
-          {activePanel === 'terms' ? (
-            <div className="flex-1 min-h-0 space-y-2 overflow-auto pr-1">
-              <p className="font-ui text-[11px] text-text-secondary">
-                Ctrl+click selected PDF word to add it here.
-              </p>
-              {termCards.length === 0 ? (
-                <div className="rounded-sm border border-border/60 bg-canvas p-2">
-                  <p className="font-ui text-[12px] text-text-secondary">
-                    No terms available yet. Select a word in the PDF and Ctrl+click,
-                    or wait for extracted terms from the backend.
-                  </p>
-                </div>
-              ) : (
-                termCards.map((item) => (
-                  <div
-                    key={item.key}
-                    className="rounded-sm border border-border/60 bg-canvas p-2"
-                  >
-                    <div className="flex items-start justify-between gap-2 mb-1">
-                      <p className="font-ui text-[12px] font-semibold text-foreground">
-                        {item.term}
-                      </p>
-                      {item.sourceLabel ? (
-                        <span className="font-ui text-[10px] px-1.5 py-0.5 rounded bg-accent/15 text-text-active uppercase tracking-wide">
-                          {item.sourceLabel}
-                        </span>
-                      ) : null}
-                    </div>
-                    <p className="font-ui text-[12px] text-text-secondary leading-relaxed whitespace-pre-wrap">
-                      {item.definition}
-                    </p>
-                    <button
-                      type="button"
-                      onClick={() => {
-                        void generateTermDefinition(item.term, true)
-                      }}
-                      className="mt-2 font-ui text-[11px] px-2 py-1 rounded-md border border-border/60 text-foreground hover:border-primary/40 hover:text-text-active transition-all"
-                      disabled={item.status === 'loading'}
+          <div className="flex-1 min-h-0 space-y-2 overflow-auto pr-1">
+            <p className="font-ui text-[11px] text-text-secondary">
+              Ctrl+click selected PDF word to add it here and generate meaning with LLM.
+            </p>
+            {visibleTerms.length > 0 ? (
+              <div className="rounded-sm border border-border/60 bg-canvas p-2">
+                <p className="font-ui text-[11px] text-text-secondary mb-1">
+                  Keywords found ({visibleTerms.length})
+                </p>
+                <div className="flex flex-wrap gap-1">
+                  {visibleTerms.map((term) => (
+                    <span
+                      key={`keyword-${term.toLowerCase()}`}
+                      className="font-ui text-[10px] px-1.5 py-0.5 rounded bg-accent/10 text-foreground"
                     >
-                      {item.status === 'loading'
-                        ? 'Generating...'
-                        : item.status === 'ready'
-                          ? 'Regenerate with LLM'
-                          : 'Generate meaning'}
-                    </button>
+                      {term}
+                    </span>
+                  ))}
+                </div>
+              </div>
+            ) : null}
+            {termCards.length === 0 ? (
+              <div className="rounded-sm border border-border/60 bg-canvas p-2">
+                <p className="font-ui text-[12px] text-text-secondary">
+                  No terms available yet. Select a word in the PDF and Ctrl+click,
+                  or wait for extracted terms from the backend.
+                </p>
+              </div>
+            ) : (
+              termCards.map((item) => (
+                <div
+                  key={item.key}
+                  className="rounded-sm border border-border/60 bg-canvas p-2"
+                >
+                  <div className="flex items-start justify-between gap-2 mb-1">
+                    <p className="font-ui text-[12px] font-semibold text-foreground">
+                      {item.term}
+                    </p>
+                    {item.sourceLabel ? (
+                      <span className="font-ui text-[10px] px-1.5 py-0.5 rounded bg-accent/15 text-text-active uppercase tracking-wide">
+                        {item.sourceLabel}
+                      </span>
+                    ) : null}
                   </div>
-                ))
-              )}
-            </div>
-          ) : (
-            <div className="flex-1 min-h-0 space-y-2 overflow-auto pr-1">
-              {paperId === null ? (
-              <div className="p-3 rounded-sm bg-canvas">
-                <p className="font-ui text-[12px] text-text-secondary">
-                  Select a paper to view guide questions.
-                </p>
-              </div>
-              ) : questionsQuery.isLoading ? (
-              <div className="p-3 rounded-sm bg-canvas animate-fade-in">
-                <p className="font-ui text-[12px] text-text-secondary">
-                  Loading guide questions...
-                </p>
-              </div>
-              ) : questionsQuery.error ? (
-              <div className="p-3 rounded-sm bg-canvas animate-fade-in">
-                <p className="font-ui text-[12px] text-destructive">
-                  Failed to load questions.
-                </p>
-              </div>
-              ) : (questionsQuery.data?.questions || []).length === 0 ? (
-              <div className="p-3 rounded-sm bg-canvas animate-fade-in">
-                <p className="font-ui text-[12px] text-text-secondary">
-                  Questions will appear here once the guide is generated.
-                </p>
-              </div>
-              ) : (
-              (questionsQuery.data?.questions || []).map((question, i) =>
-                renderAnswerCard(question, i),
-              )
-              )}
-            </div>
-          )}
+                  <p className="font-ui text-[12px] text-text-secondary leading-relaxed whitespace-pre-wrap">
+                    {item.definition}
+                  </p>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      void generateTermDefinition(item.term)
+                    }}
+                    className="mt-2 font-ui text-[11px] px-2 py-1 rounded-md border border-border/60 text-foreground hover:border-primary/40 hover:text-text-active transition-all"
+                    disabled={item.status === 'loading'}
+                  >
+                    {item.status === 'loading'
+                      ? 'Generating with LLM...'
+                      : item.status === 'ready'
+                        ? 'Regenerate with LLM'
+                        : 'Generate with LLM'}
+                  </button>
+                </div>
+              ))
+            )}
+          </div>
         </div>
       </div>
     </>

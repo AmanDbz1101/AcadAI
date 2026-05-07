@@ -297,18 +297,18 @@ THREE PASS METHOD FOR APPLIED PAPERS:
 PASS 1 – Quick Scan (5-10 min):
 Reading order: Abstract → Conclusion → Figures/Tables → Introduction.
 Goal: Understand the problem and whether the proposed solution works BEFORE reading how it works.
-For each step, specify which sections to read, the objective, 2-3 questions to answer, and expected output.
+For each step, specify which sections to read, the objective, 1-2 questions to answer, and expected output.
 If the paper has {num_figures} figures or {num_tables} tables, reference the most informative ones.
 
 PASS 2 – Method Understanding (20-40 min):
 Reading order: Methodology sections → Key figures → Evaluation/Results setup.
 Goal: Understand what was built and how it was evaluated.
-For each step, specify which sections to read (use actual section names from the list above), the objective, 2-3 questions to answer, and expected output.
+For each step, specify which sections to read (use actual section names from the list above), the objective, 1-2 questions to answer, and expected output.
 
 PASS 3 – Deep Analysis (1-2 hrs):
 Reading order: Equations/Algorithms → Ablation studies → Limitations section.
 Goal: Critical analysis of whether the method is sound and generalizable.
-For each step, specify which sections to read, the objective, 2-3 questions to answer, and expected output.
+For each step, specify which sections to read, the objective, 1-2 questions to answer, and expected output.
 
 INSTRUCTIONS:
 1. For each pass, create 3-5 sequential steps.
@@ -324,11 +324,12 @@ INSTRUCTIONS:
       needs_tables: true if this step requires understanding a table or data from that section
       These flags will be used to fetch the summarized figure and table content automatically.
    - Objective of this step.
-    - 2-3 questions the reader should be able to answer after this step — CRITICAL: questions
-      must be specific to THIS paper, referencing actual methods, metrics, datasets, model
-      names, or numbers from the abstract, introduction, or conclusion. Generic questions
-      like "What did the authors propose?" are not acceptable.
+        - 1-2 questions the reader should be able to answer after this step. Keep questions
+            short, concrete, and easy to answer from the section. Avoid heavy jargon or keyword
+            stuffing. Questions should still be specific to THIS paper when possible.
    - Expected output or insight.
+         - Include relevant_figure_ids and relevant_table_ids when available (use [] when none).
+             Use string IDs (e.g., ["1", "2"]) rather than numbers.
 4. Use needs_figures / needs_tables to indicate figure/table dependency for each step.
 5. Keep instructions clear and actionable.
 6. Before returning output, run a final self-check:
@@ -395,17 +396,17 @@ THREE PASS METHOD FOR THEORETICAL PAPERS:
 PASS 1 – Quick Scan (5-10 min):
 Reading order: Abstract → Introduction → Conclusion → Theorem/Lemma statements only (skip all proofs).
 Goal: Understand WHAT was proven and WHY it matters, without getting lost in the proofs.
-For each step, specify which sections to read (use actual section names from the list above), the objective, 2-3 questions to answer, and expected output.
+For each step, specify which sections to read (use actual section names from the list above), the objective, 1-2 questions to answer, and expected output.
 
 PASS 2 – Proof Strategy (20-40 min):
 Reading order: Definitions and Assumptions section → Theorem statements with their implications → Applications or Examples section.
 Goal: Understand the CONDITIONS under which the results hold — not yet the full proof details.
-For each step, specify which sections to read, the objective, 2-3 questions to answer, and expected output.
+For each step, specify which sections to read, the objective, 1-2 questions to answer, and expected output.
 
 PASS 3 – Deep Mathematical Analysis (1-2 hrs):
 Reading order: Proof details → Complexity analysis → Connection to related theoretical work.
 Goal: Verify the reasoning and understand where assumptions could be relaxed.
-For each step, specify which sections to read, the objective, 2-3 questions to answer, and expected output.
+For each step, specify which sections to read, the objective, 1-2 questions to answer, and expected output.
 
 INSTRUCTIONS:
 1. For each pass, create 3-5 sequential steps.
@@ -421,11 +422,12 @@ INSTRUCTIONS:
       needs_tables: true if this step requires understanding a table or data from that section
       These flags will be used to fetch the summarized figure and table content automatically.
    - Objective of this step.
-    - 2-3 questions the reader should be able to answer after this step — CRITICAL: questions must be
-      specific to THIS paper, referencing actual theorem, lemma, corollary names, assumptions,
-      notation, bounds, complexity results, or claims from the abstract, introduction, or conclusion.
-      Generic questions like "What is proved?" are not acceptable.
+        - 1-2 questions the reader should be able to answer after this step. Keep questions
+            short, concrete, and easy to answer from the section. Avoid heavy jargon or keyword
+            stuffing. Questions should still be specific to THIS paper when possible.
    - Expected output or insight.
+         - Include relevant_figure_ids and relevant_table_ids when available (use [] when none).
+             Use string IDs (e.g., ["1", "2"]) rather than numbers.
 4. Flag specific theorem, lemma, and corollary names when they appear in the section headings.
 5. Use needs_figures / needs_tables to indicate figure/table dependency for each step.
 6. Keep instructions clear and actionable.
@@ -487,18 +489,18 @@ THREE PASS METHOD FOR SURVEY PAPERS:
 PASS 1 – Field Overview (5-10 min):
 Reading order: Abstract → Introduction → Conclusion → Taxonomy or categorization section headings → Research gaps / future directions.
 Goal: Understand the SHAPE of the field, not the detail.
-For each step, specify which sections to read (use actual section names from the list above), the objective, 2-3 questions to answer, and expected output.
+For each step, specify which sections to read (use actual section names from the list above), the objective, 1-2 questions to answer, and expected output.
 
 PASS 2 – Taxonomy Understanding (20-40 min):
 Reading order: Taxonomy section in full → Key findings per category → Comparison tables if present.
 Goal: Build a mental map of how the field is organized.
-For each step, specify which sections to read, the objective, 2-3 questions to answer, and expected output.
+For each step, specify which sections to read, the objective, 1-2 questions to answer, and expected output.
 If the paper has {num_tables} tables, reference comparison tables where relevant.
 
 PASS 3 – Research Landscape Analysis (1-2 hrs):
 Reading order: Individual paper summaries for topics relevant to the reader → Trend/gap synthesis sections.
 Goal: Use this paper as a NAVIGATION TOOL, not a linear read.
-For each step, specify which sections to read, the objective, 2-3 questions to answer, and expected output.
+For each step, specify which sections to read, the objective, 1-2 questions to answer, and expected output.
 
 INSTRUCTIONS:
 1. For each pass, create 3-5 sequential steps.
@@ -514,11 +516,12 @@ INSTRUCTIONS:
       needs_tables: true if this step requires understanding a table or data from that section
       These flags will be used to fetch the summarized figure and table content automatically.
    - Objective of this step.
-    - 2-3 questions the reader should be able to answer after this step — CRITICAL: questions must be
-      specific to THIS survey, referencing actual taxonomy/category names, method families, trends,
-      benchmark names, date ranges, or claims from the abstract, introduction, or conclusion.
-      Generic questions like "What are the categories?" are not acceptable.
+        - 1-2 questions the reader should be able to answer after this step. Keep questions
+            short, concrete, and easy to answer from the section. Avoid heavy jargon or keyword
+            stuffing. Questions should still be specific to THIS paper when possible.
    - Expected output or insight.
+         - Include relevant_figure_ids and relevant_table_ids when available (use [] when none).
+             Use string IDs (e.g., ["1", "2"]) rather than numbers.
 4. Use needs_figures / needs_tables to indicate figure/table dependency for each step.
 5. Keep instructions clear and actionable.
 6. Before returning output, run a final self-check:
@@ -591,8 +594,10 @@ RULES:
 6. Repeat a section only when truly necessary after prerequisite reading, and make that revisit intent explicit in the objective.
 7. Exclude References/Bibliography/Works Cited unless a specific step explicitly requires them.
 8. For every step, include:
-   - relevant_figure_ids: figure IDs relevant to that step (empty list [] when none)
-   - relevant_table_ids: table IDs relevant to that step (empty list [] when none)
+     - relevant_figure_ids: figure IDs relevant to that step (empty list [] when none)
+         Use string IDs (e.g., ["1", "2"]).
+     - relevant_table_ids: table IDs relevant to that step (empty list [] when none)
+         Use string IDs (e.g., ["1", "2"]).
    - needs_figures / needs_tables booleans aligned to the selected IDs
 9. questions_to_answer must be an empty list [] for every step.
 

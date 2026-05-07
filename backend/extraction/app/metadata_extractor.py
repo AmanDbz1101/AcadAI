@@ -163,12 +163,13 @@ Respond in JSON format:
             }
         )
     
-    def extract(self, document: ValidatedDocument) -> ExtractedMetadata:
+    def extract(self, document: ValidatedDocument, preconverted_doc=None) -> ExtractedMetadata:
         """
         Extract metadata from a validated document.
         
         Args:
             document: ValidatedDocument from ingestion pipeline
+            preconverted_doc: Optional pre-converted DoclingDocument to reuse
             
         Returns:
             ExtractedMetadata with extracted fields
@@ -177,7 +178,7 @@ Respond in JSON format:
         
         # Extract structured data using Docling
         image_output_dir = Path(os.getenv("EXTRACTED_IMAGE_DIR", "output/images")) / document.pdf_path.stem
-        structured_data = self._extract_structured_data(document.pdf_path, image_output_dir=image_output_dir)
+        structured_data = self._extract_structured_data(document.pdf_path, image_output_dir=image_output_dir, preconverted_doc=preconverted_doc)
         
         markdown = structured_data["markdown"]
         headings = structured_data["headings"]
@@ -262,15 +263,26 @@ Respond in JSON format:
         self,
         pdf_path: Path,
         image_output_dir: Optional[Path] = None,
+        preconverted_doc=None,
     ) -> Dict[str, Any]:
         """
         Extract structured document data using Docling.
         
+        Args:
+            pdf_path: Path to PDF file
+            image_output_dir: Directory for extracted images
+            preconverted_doc: Optional pre-converted DoclingDocument to reuse
+        
         Returns:
             Dict with markdown, headings, element counts, and detailed elements
         """
-        result = self.converter.convert(str(pdf_path))
-        doc = result.document
+        if preconverted_doc is not None:
+            doc = preconverted_doc
+            logger.info("MetadataExtractor: reusing pre-converted DoclingDocument, skipping conversion")
+        else:
+            logger.info("MetadataExtractor: no pre-converted doc provided, running Docling conversion")
+            result = self.converter.convert(str(pdf_path))
+            doc = result.document
         
         # Extract markdown
         markdown = doc.export_to_markdown()
@@ -1028,9 +1040,15 @@ Respond in JSON format:
 
         normalized = re.sub(r"\r\n?", "\n", text)
         normalized = re.sub(r"\n{3,}", "\n\n", normalized)
+        # OCR sometimes produces letter-spaced headers like "A B S T R A C T".
+        normalized = re.sub(
+            r"(?im)(^|\n)\s*A\s*B\s*S\s*T\s*R\s*A\s*C\s*T\s*[:\-]?\s*(\n|$)",
+            r"\1## Abstract\n",
+            normalized,
+        )
 
         # 1) Standard markdown heading form: "## Abstract" + body
-        heading_pattern = r"(?is)(?:^|\n)#{1,6}\s*abstract\s*\n(.{60,6000}?)(?=\n#{1,6}\s|\Z)"
+        heading_pattern = r"(?is)(?:^|\n)#{1,6}\s*abstract\s*\n(.{40,6000}?)(?=\n#{1,6}\s|\Z)"
         match = re.search(heading_pattern, normalized)
         if match:
             candidate = self._clean_abstract_text(match.group(1))
@@ -1040,7 +1058,7 @@ Respond in JSON format:
         # 2) Plain-text / OCR form where Abstract is not a markdown heading.
         # Stop at common boundaries: keywords/index terms/introduction/section 1.
         plain_pattern = (
-            r"(?is)\babstract\b\s*[:\-]?\s*(.{60,8000}?)"
+            r"(?is)\babstract\b\s*[:\-]?\s*(.{40,8000}?)"
             r"(?=\bkeywords?\b|\bindex\s+terms\b|\bintroduction\b|\n\s*1\.?\s+[A-Za-z]|\n\s*#{1,6}\s|\Z)"
         )
         match = re.search(plain_pattern, normalized)

@@ -10,11 +10,11 @@ class ReadingStep(BaseModel):
     """A single step in the reading process."""
     step_number: int = Field(description="Sequential step number")
     section_to_read: List[str] = Field(description="List of sections to read in this step")
-    relevant_figure_ids: List[str] = Field(
+    relevant_figure_ids: List[str | int] = Field(
         default_factory=list,
         description="Figure IDs relevant to this step (from extracted_elements.figures)",
     )
-    relevant_table_ids: List[str] = Field(
+    relevant_table_ids: List[str | int] = Field(
         default_factory=list,
         description="Table IDs relevant to this step (from extracted_elements.tables)",
     )
@@ -42,11 +42,11 @@ class PlannerReadingStep(BaseModel):
     """Agent 1 planner-only step schema (questions intentionally empty)."""
     step_number: int = Field(description="Sequential step number")
     section_to_read: List[str] = Field(description="List of sections to read in this step")
-    relevant_figure_ids: List[str] = Field(
+    relevant_figure_ids: List[str | int] = Field(
         default_factory=list,
         description="Figure IDs relevant to this step (from extracted_elements.figures)",
     )
-    relevant_table_ids: List[str] = Field(
+    relevant_table_ids: List[str | int] = Field(
         default_factory=list,
         description="Table IDs relevant to this step (from extracted_elements.tables)",
     )
