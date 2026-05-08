@@ -660,6 +660,20 @@ def _prune_nonessential_section_repetition(guide_json: dict[str, Any]) -> dict[s
                 step["section_to_read"] = []
                 continue
 
+            valid_raw_sections: list[str] = []
+            valid_raw_norms: list[str] = []
+            for section in raw_sections:
+                if not isinstance(section, str):
+                    continue
+                cleaned = section.strip()
+                if not cleaned or _is_reference_heading(cleaned):
+                    continue
+                norm = _normalize_section_name(cleaned)
+                if not norm:
+                    continue
+                valid_raw_sections.append(cleaned)
+                valid_raw_norms.append(norm)
+
             allow_revisit = _is_intentional_revisit_step(step)
             filtered: list[str] = []
             step_seen: set[str] = set()
@@ -682,6 +696,14 @@ def _prune_nonessential_section_repetition(guide_json: dict[str, Any]) -> dict[s
                 step_seen.add(norm)
                 pass_seen.add(norm)
                 global_seen.add(norm)
+
+            # Keep at least one valid section per step to avoid blank guide chips.
+            if not filtered and valid_raw_sections:
+                fallback_section = valid_raw_sections[0]
+                fallback_norm = valid_raw_norms[0]
+                filtered = [fallback_section]
+                pass_seen.add(fallback_norm)
+                global_seen.add(fallback_norm)
 
             step["section_to_read"] = filtered
 

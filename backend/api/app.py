@@ -1679,7 +1679,64 @@ def chat_with_paper(
         raise HTTPException(status_code=500, detail="Chat graph returned no response")
 
     assistant_message = str(result_messages[-1].content or "").strip()
-    return {"paper": paper, "assistant_message": assistant_message}
+
+    retrieved = result.get("retrieved_chunks") or []
+    sources: list[dict[str, Any]] = []
+    seen: set[str] = set()
+
+    for chunk in retrieved:
+        if not isinstance(chunk, dict):
+            continue
+
+        metadata = chunk.get("metadata") or {}
+        if not isinstance(metadata, dict):
+            metadata = {}
+
+        section_title = str(
+            chunk.get("section_title")
+            or metadata.get("section_title")
+            or metadata.get("section")
+            or ""
+        ).strip()
+        if not section_title:
+            continue
+
+        section_id = str(
+            chunk.get("section_id")
+            or metadata.get("section_id")
+            or ""
+        ).strip()
+        page_start = chunk.get("page_start")
+        if page_start is None:
+            page_start = metadata.get("page_start") or metadata.get("page_number")
+
+        dedupe_key = section_id.lower() if section_id else section_title.lower()
+        if dedupe_key in seen:
+            continue
+        seen.add(dedupe_key)
+
+        source: dict[str, Any] = {"section_title": section_title}
+        if section_id:
+            source["section_id"] = section_id
+        if page_start is not None:
+            try:
+                source["page_start"] = int(page_start)
+            except (TypeError, ValueError):
+                pass
+
+        sources.append(source)
+
+    logger.info(
+        "Chat response: %d unique source sections: %s",
+        len(sources),
+        [source["section_title"] for source in sources],
+    )
+
+    return {
+        "paper": paper,
+        "message": assistant_message,
+        "sources": sources,
+    }
 
 
 @app.post("/api/papers/{paper_id}/questions/{question_id}/generate")

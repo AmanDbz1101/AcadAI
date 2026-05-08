@@ -2,10 +2,19 @@ import { useState, useRef, useEffect, useMemo } from 'react'
 import { Maximize2, Minimize2, Send } from 'lucide-react'
 import type { PaperSection } from '@/types/api'
 import { chatWithPaper } from '@/lib/api'
+import { MarkdownMessage } from './MarkdownMessage'
+import { SourceSections } from './SourceSections'
+
+interface ChatSource {
+  section_title: string
+  section_id?: string
+  page_start?: number
+}
 
 interface Message {
   role: 'user' | 'assistant'
   content: string
+  sources?: ChatSource[]
 }
 
 const initialMessages: Message[] = []
@@ -13,9 +22,10 @@ const initialMessages: Message[] = []
 interface ChatAssistantProps {
   paperId: number | null
   sections: PaperSection[]
+  onSourceClick?: (source: ChatSource) => void
 }
 
-const ChatAssistant = ({ paperId, sections }: ChatAssistantProps) => {
+const ChatAssistant = ({ paperId, sections, onSourceClick }: ChatAssistantProps) => {
   const [messages, setMessages] = useState<Message[]>(initialMessages)
   const [input, setInput] = useState('')
   const [isTyping, setIsTyping] = useState(false)
@@ -91,7 +101,8 @@ const ChatAssistant = ({ paperId, sections }: ChatAssistantProps) => {
 
       const assistantMessage: Message = {
         role: 'assistant',
-        content: response.assistant_message || 'No response received.',
+        content: response.message || response.assistant_message || 'No response received.',
+        sources: response.sources?.filter((source) => source.section_title) || [],
       }
       setMessages((prev) => [...prev, assistantMessage])
     } catch (error) {
@@ -173,7 +184,10 @@ const ChatAssistant = ({ paperId, sections }: ChatAssistantProps) => {
                 }
               `}
                 >
-                  {msg.content}
+                  <MarkdownMessage content={msg.content} role={msg.role} />
+                  {msg.role === 'assistant' && msg.sources?.length ? (
+                    <SourceSections sections={msg.sources} onSectionClick={onSourceClick} />
+                  ) : null}
                 </div>
               </div>
             ))}

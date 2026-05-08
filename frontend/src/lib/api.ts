@@ -70,7 +70,13 @@ export interface PaperChatPayload {
 
 export interface PaperChatResponse {
   paper: PaperSummary
-  assistant_message: string
+  message: string
+  assistant_message?: string
+  sources?: Array<{
+    section_title: string
+    section_id?: string
+    page_start?: number
+  }>
 }
 
 export interface GenerateTechnicalTermDefinitionPayload {

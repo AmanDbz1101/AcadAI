@@ -255,6 +255,42 @@ const IndexContent = () => {
     }, 1500)
   }, [])
 
+  const handleChatSourceClick = useCallback(
+    (source: { section_title: string; section_id?: string; page_start?: number }) => {
+      if (source.section_id && viewerRef.current?.scrollToSection) {
+        setActiveSection(source.section_id)
+        setFocusedSection(source.section_id)
+        viewerRef.current.scrollToSection(source.section_id)
+        console.log(`Chat source click: scrolling to section ${source.section_id}`)
+        return
+      }
+
+      if (source.section_title && sections.length > 0) {
+        const matchedSection = sections.find(
+          (section) =>
+            (section.title || '').trim().toLowerCase() ===
+            source.section_title.trim().toLowerCase(),
+        )
+        if (matchedSection && viewerRef.current?.scrollToSection) {
+          setActiveSection(matchedSection.id)
+          setFocusedSection(matchedSection.id)
+          viewerRef.current.scrollToSection(matchedSection.id)
+          console.log(`Chat source click: matched section title ${matchedSection.title}`)
+          return
+        }
+      }
+
+      if (source.page_start && viewerRef.current?.jumpToPage) {
+        viewerRef.current.jumpToPage(source.page_start)
+        console.log(`Chat source click: jumping to page ${source.page_start}`)
+        return
+      }
+
+      console.warn('Chat source click: no navigation target found for', source)
+    },
+    [sections],
+  )
+
   const handleVisibleSectionChange = useCallback((sectionId: string) => {
     setActiveSection(sectionId)
   }, [])
@@ -579,7 +615,11 @@ const IndexContent = () => {
         </div>
         <div className="border-t border-accent/15 bg-gradient-to-b from-panel via-panel to-canvas/40 px-5 pt-4 pb-0">
           <div className="h-[32vh] min-h-[210px] max-h-[320px] flex flex-col">
-            <ChatAssistant paperId={effectivePaperId} sections={sections} />
+            <ChatAssistant
+              paperId={effectivePaperId}
+              sections={sections}
+              onSourceClick={handleChatSourceClick}
+            />
           </div>
         </div>
       </div>
