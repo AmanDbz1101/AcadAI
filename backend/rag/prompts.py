@@ -238,8 +238,20 @@ def _flatten_sections(sections: list, level: int = 0) -> list:
     """Recursively flatten nested section structure."""
     result = []
     for section in sections:
-        name = section.get('original_name', section.get('title', 'Untitled'))
-        result.append(name)
+        if not isinstance(section, dict):
+            continue
+
+        name = str(section.get("title") or section.get("original_name") or section.get("name") or "Untitled").strip()
+        page_start = section.get("page_start")
+        snippet = str(section.get("content_snippet") or "").strip()
+
+        line = name
+        if page_start is not None and str(page_start).strip():
+            line = f"{line} (p.{page_start})"
+        if snippet:
+            line = f"{line}: {snippet}"
+
+        result.append(line)
         # Recursively process nested sections
         if 'sections' in section and section['sections']:
             result.extend(_flatten_sections(section['sections'], level + 1))
@@ -281,6 +293,16 @@ def applied_guide_prompt(
 
 Generate a step-by-step reading guide for this APPLIED paper using the Three-Pass Method.
 This paper proposes, builds, implements, or experimentally validates something (original research, system design, benchmark, dataset, or experimental study).
+
+CRITICAL INSTRUCTION FOR QUESTION QUALITY:
+Every question you generate MUST be specific to THIS paper.
+A good question cannot be answered without reading this specific paper.
+
+BAD (generic): "What methodology does the paper use?"
+GOOD (specific): "Why do the authors use cross-entropy loss instead of MSE for the classification task, and how does their regularization approach differ from standard dropout?"
+
+Use the section content snippets provided to anchor questions to actual claims, methods, numbers, and findings in this paper.
+If a section snippet mentions a specific technique, dataset, metric, or result - your questions should reference it directly.
 
 PAPER INFORMATION:
 - Title: {title}
@@ -338,6 +360,12 @@ INSTRUCTIONS:
     - no pass has duplicate section assignments
     - steps remain sequential and actionable
 
+SELF-CHECK BEFORE RESPONDING:
+1. Does each question reference something specific from the paper (a method name, a result, a dataset, a theorem)?
+2. Could any question be asked about a different paper in the same field? If yes, make it more specific.
+3. Does each pass cover a meaningfully different aspect of the paper?
+4. Are all major sections represented across the 3 passes?
+
 Always reference ACTUAL section names from the list above in your guide."""
 
 
@@ -375,11 +403,29 @@ def theoretical_guide_prompt(
     """
     section_names = _flatten_sections(sections)
     section_list = "\n".join([f"- {name}" for name in section_names])
+    critical_instruction = """
+CRITICAL INSTRUCTION FOR QUESTION QUALITY:
+Every question you generate MUST reference specific theorems, definitions, or proof steps from THIS paper.
+
+BAD (generic): "What assumptions does the paper make?"
+GOOD (specific): "Theorem 2 assumes bounded gradient norms - under what conditions does this assumption hold, and what breaks if it is violated in practice?"
+
+Use the section content snippets to identify specific formal claims and proof strategies to ask about.
+"""
+    self_check_block = """
+SELF-CHECK BEFORE RESPONDING:
+1. Does each question reference something specific from the paper (a method name, a result, a dataset, a theorem)?
+2. Could any question be asked about a different paper in the same field? If yes, make it more specific.
+3. Does each pass cover a meaningfully different aspect of the paper?
+4. Are all major sections represented across the 3 passes?
+"""
 
     return f"""You are an expert research assistant helping users read theoretical and mathematical papers efficiently.
 
 Generate a step-by-step reading guide for this THEORETICAL paper using the Three-Pass Method.
 This paper formally proves or derives something (proofs, theorems, lemmas, complexity analysis, convergence analysis, formal methods, mathematical derivations).
+
+{critical_instruction}
 
 PAPER INFORMATION:
 - Title: {title}
@@ -437,6 +483,8 @@ INSTRUCTIONS:
     - no pass has duplicate section assignments
     - steps remain sequential and actionable
 
+{self_check_block}
+
 Always reference ACTUAL section names from the list above in your guide."""
 
 
@@ -468,11 +516,29 @@ def survey_guide_prompt(
     """
     section_names = _flatten_sections(sections)
     section_list = "\n".join([f"- {name}" for name in section_names])
+    critical_instruction = """
+CRITICAL INSTRUCTION FOR QUESTION QUALITY:
+Every question MUST reference specific methods, papers, or categories discussed in this survey.
+
+BAD (generic): "How do the methods compare?"
+GOOD (specific): "The survey groups attention mechanisms into global and local categories - what is the computational complexity tradeoff between them and which works does the survey cite as representative of each?"
+
+Use the section content snippets to identify the specific taxonomy, categories, and representative works being surveyed.
+"""
+    self_check_block = """
+SELF-CHECK BEFORE RESPONDING:
+1. Does each question reference something specific from the paper (a method name, a result, a dataset, a theorem)?
+2. Could any question be asked about a different paper in the same field? If yes, make it more specific.
+3. Does each pass cover a meaningfully different aspect of the paper?
+4. Are all major sections represented across the 3 passes?
+"""
 
     return f"""You are an expert research assistant helping users read survey and review papers efficiently.
 
 Generate a step-by-step reading guide for this SURVEY paper using the Three-Pass Method.
 This paper surveys, reviews, or organizes existing research (survey, review, literature review, meta-analysis, overview).
+
+{critical_instruction}
 
 PAPER INFORMATION:
 - Title: {title}
@@ -529,6 +595,8 @@ INSTRUCTIONS:
     - all non-reference listed sections are assigned somewhere in the guide
     - no pass has duplicate section assignments
     - steps remain sequential and actionable
+
+{self_check_block}
 
 Always reference ACTUAL section names from the list above in your guide."""
 

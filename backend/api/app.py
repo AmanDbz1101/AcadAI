@@ -212,16 +212,39 @@ def _build_qa_context_from_chunks(chunks: List[Dict[str, Any]], max_chunks: int 
 
 
 def _build_sections_for_guide(store: PostgresPaperStore, paper_id: int) -> List[Dict[str, Any]]:
-    rows = store.get_sections_for_paper_id(paper_id)
+    sections = store.get_sections_for_paper_id(paper_id)
+    text_blocks = store.get_text_blocks_for_paper_id(paper_id)
+    section_text_links = store.get_section_text_blocks_for_paper_id(paper_id)
+
+    text_block_lookup = {
+        str(text_block.get("id") or ""): str(text_block.get("text_content") or "").strip()
+        for text_block in text_blocks
+        if text_block.get("id") is not None
+    }
+    section_content: dict[str, List[str]] = defaultdict(list)
+    for link in section_text_links:
+        section_id = str(link.get("section_id") or "")
+        text_block_id = str(link.get("text_block_db_id") or "")
+        content = text_block_lookup.get(text_block_id, "")
+        if section_id and content:
+            section_content[section_id].append(content)
+
     normalized: List[Dict[str, Any]] = []
-    for idx, row in enumerate(sorted(rows, key=lambda r: r.get("section_key") or ""), 1):
+    for idx, row in enumerate(sorted(sections, key=lambda r: r.get("section_key") or ""), 1):
+        section_id = str(row.get("id") or idx)
+        full_content = " ".join(section_content.get(section_id, []))
+        snippet = full_content[:400].strip()
+        if len(full_content) > 400:
+            snippet = f"{snippet}..." if snippet else "..."
+
         normalized.append(
             {
-                "id": str(row.get("id") or idx),
+                "id": section_id,
                 "title": row.get("original_name") or f"Section {idx}",
                 "level": int(row.get("level") or 1),
                 "page_start": int(row.get("page_start") or 1),
                 "stats": row.get("stats_json") or {},
+                "content_snippet": snippet,
             }
         )
     return normalized
@@ -229,12 +252,22 @@ def _build_sections_for_guide(store: PostgresPaperStore, paper_id: int) -> List[
 
 def _build_full_text_for_guide(store: PostgresPaperStore, paper_id: int) -> str:
     blocks = store.get_text_blocks_for_paper_id(paper_id)
+    sections = store.get_sections_for_paper_id(paper_id)
+    
     parts: List[str] = []
     for block in blocks:
         text = str(block.get("text_content") or "").strip()
         if text:
             parts.append(text)
-    return "\n\n".join(parts)
+    
+    full_text = "\n\n".join(parts)
+    
+    # Prepend section headings to the full text to aid intro/conclusion extraction
+    if sections:
+        heading_list = "\n\n".join([s.get("original_name") or f"Section {s.get('level')}" for s in sections])
+        full_text = heading_list + "\n\n" + full_text
+    
+    return full_text
 
 
 def _build_questions_for_persistence(state: Dict[str, Any]) -> List[Dict[str, Any]]:
