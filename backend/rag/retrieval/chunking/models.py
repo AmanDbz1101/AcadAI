@@ -92,6 +92,12 @@ class Chunk(BaseModel):
         Qdrant payloads must be JSON-serialisable; nested lists of strings
         are fine, but Pydantic models are not.
         """
+        section_path = list(
+            dict.fromkeys(
+                (self.section_path or [])
+                + ([self.section_title] if self.section_title else [])
+            )
+        )
         return {
             "chunk_id": self.chunk_id,
             "document_id": self.document_id,
@@ -106,7 +112,7 @@ class Chunk(BaseModel):
             "section_title": self.section_title,
             "section_level": self.section_level,
             "section_numbering": self.section_numbering,
-            "section_path": self.section_path,
+            "section_path": section_path,
             "section_path_ids": self.section_path_ids,
             "parent_section_id": self.parent_section_id,
             "page_start": self.page_start,

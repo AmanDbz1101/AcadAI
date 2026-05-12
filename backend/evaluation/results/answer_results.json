@@ -2,7 +2,7 @@
   "metrics": {
     "faithfulness": 0.8348837209302326,
     "answer_relevancy": 0.886046511627907,
-    "context_precision": 0.44761904761904764
+    "context_precision": 0.5713953488372093
   },
   "pass_fail": {
     "faithfulness": true,
