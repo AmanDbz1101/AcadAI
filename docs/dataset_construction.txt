@@ -1,0 +1,58 @@
+flowchart TD
+    subgraph S1["Stage 1 — Build Evidence Package"]
+        direction TB
+        A[" Paper Input\npaper_id · type · doc_id"]
+        B[" Reading Guide\nsteps & objectives"]
+        C[" Section Resolver\nfinds exact section in paper"]
+        D[" Scoped Retrieval\nfetch chunks from that section only"]
+        E[(" export_for_annotation.json\n21 section-scoped chunk rows")]
+        A --> C
+        B --> C
+        C --> D
+        D --> E
+    end
+
+    subgraph S2["Stage 2 — Author QA Pairs"]
+        direction TB
+        F[" LLM Input\nstep objective + seed questions\n+ retrieved chunk text & IDs"]
+        G[" Claude Authoring\nwrites questions grounded\nin chunks only"]
+        H[" QA Fields\nquestion · reference answer\nchunk IDs · question type"]
+        I[(" qa_pairs.json\n32 finalised pairs")]
+        F --> G
+        G --> H
+        H --> I
+    end
+
+    subgraph S3["Stage 3 — Human Verification"]
+        direction TB
+        Q[" Human Reviewer\nreads question + reference answer"]
+        R[" Qdrant Lookup\nfetch chunk text by chunk_id"]
+        S{" Does the answer\ncome from this chunk?"}
+        T[" Approve pair"]
+        U[" Fix chunk IDs\nor rewrite question"]
+        Q --> R
+        R --> S
+        S -->|Yes| T
+        S -->|No| U
+        U --> Q
+    end
+
+    subgraph S4["Stage 4 — Evaluation"]
+        direction TB
+        J[" Retrieval Metrics\nPrecision@5 · Recall@5 · MRR\nn = 32"]
+        K[" Answer Quality — RAGAS\nFaithfulness · Relevancy\nn = 44"]
+    end
+
+    E --> F
+    I --> S3
+    T --> S4
+
+    style S1 fill:#E1F5EE,stroke:#0F6E56,color:#085041
+    style S2 fill:#EEEDFE,stroke:#534AB7,color:#3C3489
+    style S3 fill:#FFF8E1,stroke:#F9A825,color:#5D4037
+    style S4 fill:#E3F2FD,stroke:#1565C0,color:#0D47A1
+    style E  fill:#D3D1C7,stroke:#5F5E5A,color:#2C2C2A
+    style I  fill:#D3D1C7,stroke:#5F5E5A,color:#2C2C2A
+    style T  fill:#C8E6C9,stroke:#2E7D32,color:#1B5E20
+    style U  fill:#FFCCBC,stroke:#BF360C,color:#7F2100
+    style S  fill:#FFF9C4,stroke:#F57F17,color:#4E342E

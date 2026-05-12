@@ -15,6 +15,7 @@ interface Message {
   role: 'user' | 'assistant'
   content: string
   sources?: ChatSource[]
+  source_sections?: string[]
 }
 
 const initialMessages: Message[] = []
@@ -103,6 +104,7 @@ const ChatAssistant = ({ paperId, sections, onSourceClick }: ChatAssistantProps)
         role: 'assistant',
         content: response.message || response.assistant_message || 'No response received.',
         sources: response.sources?.filter((source) => source.section_title) || [],
+        source_sections: response.source_sections || [],
       }
       setMessages((prev) => [...prev, assistantMessage])
     } catch (error) {
@@ -184,6 +186,24 @@ const ChatAssistant = ({ paperId, sections, onSourceClick }: ChatAssistantProps)
                 }
               `}
                 >
+                  {msg.role === 'assistant' && msg.source_sections && msg.source_sections.length > 0 ? (
+                    <div className="mb-2 flex flex-wrap gap-1.5">
+                      {msg.source_sections.slice(0, 2).map((section, idx) => (
+                        <span
+                          key={idx}
+                          className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-800 text-green-100 border border-green-600"
+                        >
+                          {section}
+                        </span>
+                      ))}
+                    </div>
+                  ) : msg.role === 'assistant' ? (
+                    <div className="mb-2 flex flex-wrap gap-1.5">
+                      <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-700 text-gray-200 border border-gray-600">
+                        Section unknown
+                      </span>
+                    </div>
+                  ) : null}
                   <MarkdownMessage content={msg.content} role={msg.role} />
                   {msg.role === 'assistant' && msg.sources?.length ? (
                     <SourceSections sections={msg.sources} onSectionClick={onSourceClick} />

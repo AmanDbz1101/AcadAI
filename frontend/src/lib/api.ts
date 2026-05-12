@@ -77,6 +77,7 @@ export interface PaperChatResponse {
     section_id?: string
     page_start?: number
   }>
+  source_sections?: string[]
 }
 
 export interface GenerateTechnicalTermDefinitionPayload {

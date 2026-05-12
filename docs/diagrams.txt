@@ -1,0 +1,576 @@
+Here are all the diagrams from your system design, rendered as clean Mermaid code blocks you can drop directly into documentation:
+
+
+
+```mermaid
+flowchart TD
+    subgraph S1["Stage 1 — evidence package construction"]
+        direction TB
+        A["Paper config\npaper_id · type · doc_id"]
+        B["Guide file\nsteps · objectives · flags"]
+        C["Section resolver\nfull · title · numbering · fuzzy"]
+        D["Scoped retrieval\nquery = step title\nfilter = section_id"]
+        E[("export_for_annotation.json\n21 section-scoped rows")]
+
+        A --> C
+        B --> C
+        C --> D
+        D --> E
+    end
+
+    subgraph S2["Stage 2 — LLM-assisted QA authoring"]
+        direction TB
+        F["LLM input bundle\nstep objective · seed questions\nchunk text + IDs"]
+        G["Claude authoring\ngrounded in chunks only\nno external knowledge"]
+        H["QA pair fields\nquestion · reference_answer\nrelevant_chunk_ids · question_type"]
+        I[("qa_pairs.json\n32 finalised pairs")]
+
+        F --> G
+        G --> H
+        H --> I
+    end
+
+    E --> F
+
+    I --> J["Retrieval metrics\nP@5 · R@5 · MRR\nn = 32"]
+    I --> K["Answer quality — RAGAS\nFaithfulness · Relevancy\nn = 44"]
+
+    style S1 fill:#E1F5EE,stroke:#0F6E56,color:#085041
+    style S2 fill:#EEEDFE,stroke:#534AB7,color:#3C3489
+    style E  fill:#D3D1C7,stroke:#5F5E5A,color:#2C2C2A
+    style I  fill:#D3D1C7,stroke:#5F5E5A,color:#2C2C2A
+    style J  fill:#E1F5EE,stroke:#0F6E56,color:#085041
+    style K  fill:#EEEDFE,stroke:#534AB7,color:#3C3489
+```
+
+
+
+
+
+
+
+
+
+
+
+
+
+---
+
+**4.1 Overall Architecture**
+
+```mermaid
+flowchart TB
+  subgraph PL["Presentation Layer — React Frontend"]
+    A1[PDF Upload] --> A2[PDF Viewer]
+    A2 --> A3[Paper Navigation]
+    A3 --> A4[Reading Guide Panel]
+    A4 --> A5[QA Chat Bot]
+  end
+
+  subgraph AL["API Layer — FastAPI Backend"]
+    B1["POST /api/papers/upload"]
+    B2["GET /api/papers/{id}/bundle"]
+    B3["POST /api/papers/{id}/chat"]
+    B4["GET /api/papers/{id}/pdf"]
+    B5["GET /api/papers/{id}/progress (SSE)"]
+  end
+
+  subgraph PROC["Processing Layer"]
+    subgraph EX["Extraction Pipeline"]
+      C1[Docling PDF Converter]
+      C2[Metadata Extractor]
+      C3[Section Hierarchy Detector]
+    end
+
+    subgraph GG["Guide Generation — LangGraph"]
+      D1[TF-IDF Categorizer]
+      D2["Guide Generator\nAPPLIED / THEORETICAL / SURVEY"]
+    end
+
+    subgraph QA["QA Pipeline — LangGraph"]
+      E1["Hybrid Retriever\nDense + BM25 + RRF"]
+      E2[FlashRank Reranker]
+      E3[Llama 3.3 70B via Groq]
+    end
+
+    subgraph IX["Indexing Pipeline"]
+      F1[Section Chunker]
+      F2[BM25 Sparse Encoder]
+      F3[BGE Dense Encoder]
+    end
+  end
+
+  subgraph SL["Storage Layer"]
+    G1["PostgreSQL\npapers, sections, text_blocks, guides"]
+    G2["Qdrant Vector DB\nresearch_papers collection"]
+    G3["Local File System\nPDF files + JSON artifacts"]
+  end
+
+  PL <--> AL
+  AL --> EX
+  AL --> GG
+  AL --> QA
+  AL --> IX
+  EX --> G1
+  GG --> G1
+  IX --> G2
+  AL --> G3
+```
+
+---
+
+**4.2 Module Design**
+
+```mermaid
+flowchart LR
+  subgraph FE["Frontend Modules"]
+    FE1["PaperUpload\ndrag and drop"]
+    FE2["Index.tsx\nstate orchestration\nviewerRef wiring"]
+    FE3["PaperViewer\nreact-pdf\njumpToPage, scrollToSection"]
+    FE4["PaperNavigation\n3-pass guide display\nsection sidebar"]
+    FE5["ChatPanel\nMarkdownMessage\nSourceSections clickable"]
+  end
+
+  subgraph RAG["Retrieval and QA — LangGraph"]
+    R1["HybridRetriever\nBGE dense + BM25 sparse"]
+    R2["RRF Fusion\nserver-side Qdrant"]
+    R3["FlashRank Reranker\nms-marco-MiniLM-L-12-v2"]
+    R4["Llama 3.3 70B\nGroq API"]
+    R5["Structured Answer\nwith section citations"]
+    R1 --> R2 --> R3 --> R4 --> R5
+  end
+
+  subgraph GG["Guide Generation — LangGraph"]
+    G1["TF-IDF Categorizer\ntitle + abstract"]
+    G2[CategoryApplied]
+    G3[AppliedGuideNode]
+    G4[TheoreticalGuideNode]
+    G5[SurveyGuideNode]
+    G6["Pydantic structured output\n3-pass reading guide"]
+    G1 --> G2 --> G3 & G4 & G5 --> G6
+  end
+
+  subgraph DB["Database Persistence"]
+    DB1["PostgresPaperStore\nupsert paper record"]
+    DB2["store sections,\ntext_blocks, images,\ntables, references"]
+  end
+
+  subgraph SH["Section Hierarchy Pipeline"]
+    SH1["SectionHierarchyDetector\nparses heading levels"]
+    SH2["Hierarchy JSON\nsaved to disk"]
+    SH1 --> SH2
+  end
+
+  subgraph ME["Metadata Extraction Pipeline"]
+    ME1["MetadataExtractor\nreuses cached DoclingDocument"]
+    ME2["Groq LLM\ntitle, abstract, sections"]
+    ME3["ProcessedDocument\ntitle, abstract, sections,\nfigure/table counts"]
+    ME1 --> ME2 --> ME3
+  end
+
+  subgraph PI["PDF Ingestion Pipeline"]
+    PI1["PDFValidator\nvalidate file integrity"]
+    PI2["IngestPipeline\nDocling StandardPdfPipeline\nGPU accelerated"]
+    PI3["ValidatedDocument\n+ DoclingDocument cached"]
+    PI1 --> PI2 --> PI3
+  end
+```
+
+---
+
+**4.3 Data Flow Design**
+
+```mermaid
+flowchart TD
+  A["📄 PDF File\nuploaded by user"]
+  B["Docling Conversion\nStandardPdfPipeline GPU\n~19s for 31 pages"]
+  C["DoclingDocument\ntext items with prov\npage_no per item"]
+  D["Metadata Extraction\nreuses DoclingDocument\ntitle, abstract, sections\nfigure/table counts"]
+  E["ProcessedDocument\n+ ValidatedDocument\ndocument_uuid assigned"]
+  F["Section Hierarchy Detection\nheading level parsing\n~0.01s"]
+  G["hierarchy.json\nsaved to disk\nN sections detected"]
+  H["PostgreSQL Persistence\npapers, sections\ntext_blocks, images\ntables, references"]
+  I["TF-IDF Categorizer\ntitle + abstract\nAPPLIED / THEORETICAL / SURVEY"]
+  J["LLM Guide Generation\nllama-3.3-70b via Groq\ntitle + abstract + section names\n+ intro/conclusion snippets"]
+  K["guide_json\n3-pass reading guide\nstored in paper_guides table"]
+  L["🖥️ UI shows guide\n~25s from upload"]
+  M["SectionChunker\nsection-aware windowing\n150 token fine / 400 token coarse"]
+  N["BM25 Encoder\nfitted on document corpus\nsaved as .pkl"]
+  O["BGE Dense Encoder\nBAAI/bge-small-en-v1.5\n384 dimensions"]
+  P["Qdrant Upsert\nresearch_papers collection\nhybrid points with payload\npage_start, section_title"]
+  Q["✅ QA Bot active\n~74s from upload"]
+  R[User question]
+  S["Hybrid Retrieval\nBGE query encoding\n+ BM25 query encoding"]
+  T["RRF Fusion\nserver-side Qdrant\ntop 20 results"]
+  U["FlashRank Reranker\ntop 5 results\nwith section_title + page_start"]
+  V["Llama 3.3 70B\nGroq API\nstructured markdown answer"]
+  W["Answer + Sources\nsection_title + page_start\nclickable → PDF jump"]
+
+  A --> B --> C --> D --> E --> F --> G
+  E --> H
+  E --> I --> J --> K --> L
+  E --> M --> N
+  M --> O
+  N --> P
+  O --> P --> Q
+  Q --> R --> S --> T --> U --> V --> W
+```
+
+---
+
+**4.4 Database Design**
+
+```mermaid
+erDiagram
+  users {
+    int id PK
+    string email
+    string password_hash
+    timestamp created_at
+  }
+  papers {
+    int id PK
+    string paper_name
+    string title
+    text abstract
+    string pdf_hash
+    string source_pdf_path
+    string document_uuid
+    jsonb metadata_json
+    string guide_status
+    timestamp created_at
+  }
+  user_papers {
+    int id PK
+    int user_id FK
+    int paper_id FK
+  }
+  sections {
+    int id PK
+    int paper_id FK
+    string original_name
+    string section_key
+    int level
+    int page_start
+    jsonb stats_json
+  }
+  text_blocks {
+    int id PK
+    int paper_id FK
+    int page_number
+    text text_content
+    string label
+    jsonb metadata_json
+  }
+  section_text_blocks {
+    int section_id FK
+    int text_block_id FK
+  }
+  images {
+    int id PK
+    int paper_id FK
+    int page_number
+    string caption
+    string file_path
+    jsonb metadata_json
+  }
+  tables_data {
+    int id PK
+    int paper_id FK
+    int page_number
+    text text_content
+    text markdown_content
+    jsonb metadata_json
+  }
+  references_data {
+    int id PK
+    int paper_id FK
+    string reference_text
+    jsonb metadata_json
+  }
+  paper_guides {
+    int id PK
+    int paper_id FK
+    string document_uuid
+    jsonb guide_json
+    jsonb guide_plan_json
+    jsonb question_section_pairs_json
+    timestamp updated_at
+  }
+  paper_questions {
+    int id PK
+    int paper_id FK
+    string section_title
+    string question_text
+    text answer_text
+    jsonb retrieval_payload_json
+    string status
+  }
+
+  users ||--o{ user_papers : "has access to"
+  papers ||--o{ user_papers : "accessed by"
+  papers ||--o{ sections : has
+  papers ||--o{ text_blocks : has
+  papers ||--o{ images : has
+  papers ||--o{ tables_data : has
+  papers ||--o{ references_data : has
+  papers ||--o{ paper_guides : has
+  papers ||--o{ paper_questions : has
+  sections ||--o{ section_text_blocks : links
+  text_blocks ||--o{ section_text_blocks : "linked by"
+```
+
+---
+
+**4.5 Sequence Diagram — PDF Upload to Guide**
+
+```mermaid
+sequenceDiagram
+  actor user as Researcher
+  participant fe as React Frontend
+  participant api as FastAPI Backend
+  participant ext as Extraction Pipeline
+  participant graph as LangGraph Guide
+  participant db as PostgreSQL
+  participant qdrant as Qdrant
+  participant groq as Groq API
+
+  user->>fe: Upload PDF
+  fe->>api: POST /api/papers/upload
+  api->>db: create_pending_paper()
+  api->>db: link_user_to_paper()
+  api-->>fe: 200 OK {paper_id, status: pending}
+  Note right of api: Background task starts
+
+  fe->>api: GET /api/papers/{id}/progress (SSE)
+  api-->>fe: data: {current_phase: extracting}
+
+  api->>ext: extract_pdf()
+  Note right of ext: Phase 1a
+  ext->>ext: Docling converts PDF (~19s)
+  ext->>ext: Metadata extraction (~1.6s)
+  ext->>ext: Section hierarchy (~0.01s)
+  ext->>db: update_paper_from_extraction()
+
+  api->>graph: _generate_and_store_reading_guide()
+  Note right of graph: Phase 1b
+  graph->>graph: TF-IDF categorize (title + abstract)
+  graph->>groq: Guide generation prompt
+  groq-->>graph: Structured guide JSON
+  graph->>db: upsert_paper_guide()
+
+  api-->>fe: data: {phases_done: [guide]}
+  fe->>api: GET /api/papers/{id}/bundle
+  api->>db: get_paper_guide()
+  api-->>fe: {guide_status: ready, reading_guide: {...}}
+  fe-->>user: Display reading guide (~25s)
+
+  api->>qdrant: _index_paper_in_qdrant()
+  Note right of qdrant: Phase 2 background
+  qdrant-->>api: 142+ chunks indexed
+  api-->>fe: data: {qa_ready: true}
+  fe-->>user: QA bot activates (~99s)
+```
+
+---
+
+**4.5 Sequence Diagram — QA Question**
+
+```mermaid
+sequenceDiagram
+  actor user as Researcher
+  participant fe as React Frontend
+  participant api as FastAPI Backend
+  participant qabot as QA Bot LangGraph
+  participant qdrant as Qdrant
+  participant reranker as FlashRank Reranker
+  participant groq as Groq API
+
+  user->>fe: Type question in chat
+  fe->>api: POST /api/papers/{id}/chat
+
+  api->>qabot: invoke graph state
+  qabot->>qdrant: Hybrid search — BGE dense (384-dim) + BM25 sparse
+  qdrant-->>qabot: Top 20 results, RRF fused scores
+  qabot->>reranker: Rerank top 20 (ms-marco-MiniLM-L-12-v2)
+  reranker-->>qabot: Top 5 chunks with section_title, page_start
+  qabot->>groq: System prompt + context + conversation history (last 10)
+  groq-->>qabot: Structured markdown answer
+  qabot-->>api: {message, retrieved_chunks}
+
+  api->>api: Extract sources from retrieved_chunks
+  api-->>fe: {message, sources: [{section_title, page_start}]}
+  fe-->>user: Render markdown answer + clickable source boxes
+
+  user->>fe: Click source box
+  fe->>fe: handleChatSourceClick() — scrollToSection() or jumpToPage()
+  fe-->>user: PDF viewer jumps to source location
+```
+
+---
+
+**4.5 Activity Diagram — Full Pipeline**
+
+```mermaid
+flowchart TD
+  START([Start]) --> UP[User uploads PDF]
+  UP --> VAL{Valid PDF?}
+  VAL -- no --> ERR[Return 400 error] --> STOP1([Stop])
+  VAL -- yes --> DB1[Create pending paper in DB]
+  DB1 --> DB2[Link user to paper]
+  DB2 --> RESP[Return response to frontend]
+  RESP --> FORK1{ }
+
+  FORK1 --> PEND[Frontend displays pending state]
+  FORK1 --> EX1
+
+  EX1["Phase 1a — Extraction"]
+  EX1 --> EX2["Docling converts PDF ~19s"]
+  EX2 --> EX3["Metadata extraction ~1.6s"]
+  EX3 --> EX4["Section hierarchy ~0.01s"]
+  EX4 --> EX5["Persist to PostgreSQL"]
+
+  EX5 --> CAT["Phase 1b — TF-IDF categorize paper"]
+  CAT --> SW{Category?}
+  SW -- APPLIED --> AG["Applied guide prompt\nfocus: problem, method, eval"]
+  SW -- THEORETICAL --> TG["Theoretical guide prompt\nfocus: theorems, proofs"]
+  SW -- SURVEY --> SG["Survey guide prompt\nfocus: taxonomy, gaps"]
+  AG & TG & SG --> LLM1["Llama 3.3 70B generates 3-pass guide"]
+  LLM1 --> POST["Post-process guide\nnormalize, validate, ensure questions"]
+  POST --> SAVE1["Save guide_json to paper_guides"]
+  SAVE1 --> PROG1["progress: guide_ready = true"]
+  PROG1 --> NOTE1["UI shows guide ~25s"]
+
+  NOTE1 --> IX1["Phase 2 — Indexing"]
+  IX1 --> CK["Section-aware chunking\n150 fine / 400 coarse tokens"]
+  CK --> BM["Fit BM25 encoder on chunks"]
+  BM --> BGE["BGE dense encoding 384-dim"]
+  BGE --> QD["Upsert to Qdrant hybrid points"]
+  QD --> PROG2["progress: qa_ready = true"]
+  PROG2 --> NOTE2["QA bot activates ~99s"]
+
+  PEND --> JOIN1{ }
+  NOTE2 --> JOIN1
+  JOIN1 --> READ[User reads guide and paper]
+  READ --> ASK[User asks question in QA bot]
+
+  ASK --> HYB["Hybrid retrieval BGE + BM25"]
+  HYB --> RRF["RRF fusion top 20 results"]
+  RRF --> RERANK["FlashRank reranking top 5"]
+  RERANK --> CTX["Build context with section labels"]
+  CTX --> LLM2["Llama 3.3 70B generates answer\nlast 10 messages history"]
+  LLM2 --> ANS["Return answer + source sections"]
+  ANS --> RENDER["Render markdown answer"]
+  RENDER --> SRC["Show clickable source boxes"]
+  SRC --> CLICK{User clicks source?}
+  CLICK -- yes --> JUMP["scrollToSection() or jumpToPage()"]
+  JUMP --> VIEW["PDF viewer jumps to source"]
+  CLICK -- no --> STOP2([Stop])
+  VIEW --> STOP2
+```
+
+---
+
+**4.5 LangGraph Workflow Diagram**
+
+```mermaid
+stateDiagram-v2
+  state "Guide Generation Graph" as GG {
+    [*] --> categorizer_node
+    categorizer_node : TF-IDF classifier — title + abstract
+
+    categorizer_node --> applied_guide : APPLIED
+    categorizer_node --> theoretical_guide : THEORETICAL
+    categorizer_node --> survey_guide : SURVEY
+
+    applied_guide : Llama 3.3 70B — problem→method→eval
+    theoretical_guide : Llama 3.3 70B — theorems→proofs
+    survey_guide : Llama 3.3 70B — taxonomy→gaps
+
+    applied_guide --> post_processing
+    theoretical_guide --> post_processing
+    survey_guide --> post_processing
+
+    post_processing : normalize, validate coverage, ensure questions
+    post_processing --> [*]
+  }
+
+  state "QA Chat Graph" as QA {
+    [*] --> retrieve_and_qa
+
+    state retrieve_and_qa {
+      [*] --> hybrid_retrieval
+      hybrid_retrieval : BGE dense + BM25 + RRF
+      hybrid_retrieval --> flashrank_reranker
+      flashrank_reranker : ms-marco-MiniLM-L-12-v2 — top 5
+      flashrank_reranker --> build_context
+      build_context : section labels + page_start
+      build_context --> llm_generation
+      llm_generation : Llama 3.3 70B + conversation history
+      llm_generation --> return_answer
+      return_answer : answer + source metadata
+      return_answer --> [*]
+    }
+
+    retrieve_and_qa --> [*]
+  }
+```
+
+---
+
+**4.5 Use Case Diagram — Table Matrix Style**
+
+Since PlantUML isn't rendered here, here's a clean Mermaid alternative using a structured flowchart that conveys the same use case relationships without PlantUML:
+
+```mermaid
+flowchart LR
+  U(["👤 Researcher"])
+  G(["⚙️ Groq API"])
+  Q(["🗄️ Qdrant Cloud"])
+
+  subgraph AUTH["Account"]
+    UC7[Register / Login]
+  end
+
+  subgraph BROWSE["Paper Management"]
+    UC6[Browse papers]
+    UC1[Upload PDF]
+    UC2[View paper]
+    UC5[Jump to section in PDF]
+  end
+
+  subgraph GUIDE["Reading Assistance"]
+    UC3[Read guide]
+    UC8[Extract metadata and sections]
+    UC9[Categorize paper]
+    UC10[Generate 3-pass reading guide]
+  end
+
+  subgraph CHAT["QA Chat"]
+    UC4[Ask question]
+    UC11[Hybrid retrieval — Dense + BM25 + RRF]
+    UC12[Rerank results — FlashRank]
+    UC13[Generate answer — Llama 3.3 70B]
+  end
+
+  U --> UC7 & UC6 & UC1 & UC2 & UC3 & UC4 & UC5
+
+  UC1 -- include --> UC8
+  UC8 -- include --> UC9
+  UC9 -- include --> UC10
+  UC10 -- uses --> G
+
+  UC1 -- include --> IXFLOW["Chunk and index into vector DB"]
+  IXFLOW -- stores --> Q
+
+  UC4 -- include --> UC11
+  UC11 -- queries --> Q
+  UC11 -- include --> UC12
+  UC12 -- include --> UC13
+  UC13 -- uses --> G
+
+  UC5 -- extends --> UC2
+```
+
+All diagrams are copy-paste ready for any Markdown renderer that supports Mermaid (GitHub, Notion, Obsidian, GitBook, VitePress, etc.). The use case diagram uses a Mermaid flowchart instead of PlantUML since Mermaid doesn't have a native use case diagram type — this conveys the same actor/system/include/extend relationships cleanly.

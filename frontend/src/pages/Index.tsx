@@ -619,6 +619,7 @@ const IndexContent = () => {
               paperId={effectivePaperId}
               sections={sections}
               onSourceClick={handleChatSourceClick}
+              activeSection={activeSection}
             />
           </div>
         </div>

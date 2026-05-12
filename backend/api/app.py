@@ -1726,16 +1726,20 @@ def chat_with_paper(
 
         sources.append(source)
 
+    # Extract just the section titles for easy badge rendering
+    source_sections = [source["section_title"] for source in sources]
+    
     logger.info(
         "Chat response: %d unique source sections: %s",
         len(sources),
-        [source["section_title"] for source in sources],
+        source_sections,
     )
 
     return {
         "paper": paper,
         "message": assistant_message,
         "sources": sources,
+        "source_sections": source_sections,  # List of section titles for badge rendering
     }
 
 

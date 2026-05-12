@@ -122,7 +122,11 @@ def _format_chunks_as_context(chunks: list) -> str:
 def chat_node(state: ChatState) -> dict:
     """
     Single node: retrieve → build prompt → call LLM → return response.
+    With fallback: if section filter yields 0 chunks, fall back to unfiltered retrieval.
     """
+    import logging
+    logger = logging.getLogger(__name__)
+    
     # 1. Get the latest user message
     last_message = state["messages"][-1]
     query = last_message.content
@@ -140,19 +144,32 @@ def chat_node(state: ChatState) -> dict:
         allowed_sections=allowed_sections or None,
     )
 
-    # Enforce strict section scoping for chat focus mode.
+    # Enforce soft section scoping for chat focus mode: filter if possible, but fall back if needed.
     if allowed_sections:
-        chunks = _filter_chunks_by_allowed_sections(chunks, allowed_sections)
-        if not chunks:
-            if len(allowed_sections) == 1:
-                message = f"The required information is not in {allowed_sections[0]} section."
-            else:
-                section_list = ", ".join(allowed_sections)
-                message = f"The required information is not in the selected sections: {section_list}."
-            return {
-                "messages": [AIMessage(content=message)],
-                "retrieved_chunks": [],
-            }
+        filtered_chunks = _filter_chunks_by_allowed_sections(chunks, allowed_sections)
+        
+        # Log diagnostics for debugging section matching
+        if chunks:
+            section_values = set()
+            for chunk in chunks[:3]:
+                metadata = chunk.get("metadata") or {}
+                section_values.add(str(metadata.get("section_title", "")).strip())
+            logger.info(
+                f"Section filter: requested={allowed_sections}, "
+                f"filtered={len(filtered_chunks)}/{len(chunks)} chunks, "
+                f"sample chunk sections={section_values}"
+            )
+        
+        if filtered_chunks:
+            # Section filter succeeded, use filtered results
+            chunks = filtered_chunks
+        else:
+            # Section filter returned 0 chunks: use unfiltered retrieval as fallback
+            logger.warning(
+                f"Section filter returned 0 chunks for sections={allowed_sections}, "
+                f"falling back to unfiltered retrieval (have {len(chunks)} chunks)"
+            )
+            # Continue with unfiltered chunks instead of returning "not found"
 
     context = _format_chunks_as_context(chunks)
 
