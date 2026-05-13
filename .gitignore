@@ -17,7 +17,6 @@ plans/
 input/
 output/
 pdfs/
-backend/evaluation/results/
 # Python
 __pycache__/
 *.pyc
