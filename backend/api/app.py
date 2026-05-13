@@ -612,15 +612,7 @@ def _extract_and_update_paper(
             reading_guide=None,
         )
 
-        # Phase 1c: Guide generation (generate guide before indexing so UI can show it)
-        _update_progress(paper_id, "guide")
-        guide_start = time.time()
-        _generate_and_store_reading_guide(paper_id)
-        guide_time = time.time() - guide_start
-        _update_progress(paper_id, "guide", done=True)
-        logger.info("Phase 1c: guide complete in %.1fs — UI can now show guide", guide_time)
-
-        # Phase 2: Indexing (run after guide generation)
+        # Phase 2: Indexing
         _update_progress(paper_id, "indexing")
         indexing_start = time.time()
         indexing_result = _index_paper_in_qdrant(
@@ -647,7 +639,6 @@ def _extract_and_update_paper(
             f"✅ Pipeline complete for paper_id={paper_id} | "
             f"extraction={extraction_time:.1f}s | "
             f"indexing={indexing_time:.1f}s | "
-            f"guide={guide_time:.1f}s | "
             f"total={total:.1f}s"
         )
     except Exception as exc:  # noqa: BLE001
@@ -1572,18 +1563,6 @@ def upload_paper(
                 "reason": pending.get("reason"),
             }
 
-            # Duplicate upload: ensure guide regeneration still runs if guide is missing.
-            try:
-                existing_id = int(paper_id)
-                if not existing_guide_row or not (existing_guide_row.get("guide_json") or {}):
-                    logger.info(
-                        "Duplicate PDF uploaded for paper_id=%s — scheduling guide-only generation",
-                        existing_id,
-                    )
-                    background_tasks.add_task(_generate_and_store_reading_guide, existing_id)
-            except Exception:
-                logger.exception("Failed to schedule guide-only generation for duplicate upload paper_id=%s", paper_id)
-
         return {
             "paper": paper_with_url,
             "database": db_result,
@@ -1726,20 +1705,16 @@ def chat_with_paper(
 
         sources.append(source)
 
-    # Extract just the section titles for easy badge rendering
-    source_sections = [source["section_title"] for source in sources]
-    
     logger.info(
         "Chat response: %d unique source sections: %s",
         len(sources),
-        source_sections,
+        [source["section_title"] for source in sources],
     )
 
     return {
         "paper": paper,
         "message": assistant_message,
         "sources": sources,
-        "source_sections": source_sections,  # List of section titles for badge rendering
     }
 
 

@@ -2801,30 +2801,21 @@ def route_after_categorizer(state: dict) -> str:
     """
     Route after categorization.
 
-    Routing logic (no query path — generate reading guide based on category):
-    - APPLIED      → applied_guide
-    - THEORETICAL  → theoretical_guide
-    - SURVEY       → survey_guide
+    Routing logic:
+    - If a user query is provided directly → retrieve_and_qa
+    - Otherwise → chunking/indexing path
 
-    If a user query is provided directly → retrieve_and_qa (skip guide generation).
+    The guide-question workflow is disabled so the system stays focused on
+    direct retrieval and chat responses.
     """
     query = (state.get("query") or "").strip()
-    category = state.get("category", "")
 
-    # If user provided a direct query, go straight to retrieve_and_qa (skip guide)
     if query:
-        logger.info("→ Routing to retrieve_and_qa (direct query path — skip guide)")
+        logger.info("→ Routing to retrieve_and_qa (direct query path)")
         return "retrieve_and_qa"
 
-    # Route to the appropriate category-specific guide node
-    guide_node = _CATEGORY_GUIDE_NODE.get(category)
-    if guide_node:
-        logger.info("→ Routing to %s (category=%s)", guide_node, category)
-        return guide_node
-
-    # Fallback: summarize if category unknown
-    logger.info("→ Routing to summarizer (fallback: unknown category %s)", category)
-    return "summarizer"
+    logger.info("→ Routing to chunking (no query provided; guide mode disabled)")
+    return "chunking"
 
 
 def route_after_guide(state: dict) -> str:
@@ -2904,36 +2895,16 @@ def build_graph():
     # ── Edges: Classification Pipeline ─────────────────────────────────────────
     builder.add_edge("extraction_mapping", "categorizer")
 
-    # Conditional routing: categorizer → one of the 3 guide nodes, retrieve_and_qa, or summarizer
+    # Conditional routing: categorizer → retrieve_and_qa or chunking/indexing
     builder.add_conditional_edges(
         "categorizer",
         route_after_categorizer,
-        {
-            "applied_guide": "applied_guide",
-            "theoretical_guide": "theoretical_guide",
-            "survey_guide": "survey_guide",
-            "retrieve_and_qa": "retrieve_and_qa",
-            "summarizer": "summarizer",
-        },
+        {"retrieve_and_qa": "retrieve_and_qa", "chunking": "chunking"},
     )
-
-    # ── Edges: Guide Nodes → Retrieval ─────────────────────────────────────────
-    # Guide nodes can continue into retrieve-and-QA or terminate in guide-only mode.
-    for guide_node in _CATEGORY_GUIDE_NODE.values():
-        builder.add_conditional_edges(
-            guide_node,
-            route_after_guide,
-            {
-                "retrieve_and_qa": "retrieve_and_qa",
-                "chunking": "chunking",  # Allow guide to skip QA and go straight to chunking
-                "end": END,
-            },
-        )
 
     # ── Edges: Retrieval & Summarization ───────────────────────────────────────
     # Both retrieve_and_qa and summarizer flow to chunking for index building
     builder.add_edge("retrieve_and_qa", "chunking")
-    builder.add_edge("summarizer", "chunking")
 
     # ── Edges: Indexing Pipeline Chain ─────────────────────────────────────────
     builder.add_edge("chunking", "indexing")
