@@ -32,6 +32,7 @@ const ChatAssistant = ({ paperId, sections, onSourceClick }: ChatAssistantProps)
   const [isTyping, setIsTyping] = useState(false)
   const [isFullscreen, setIsFullscreen] = useState(false)
   const [selectedSections, setSelectedSections] = useState<string[]>([])
+  const [autoSelectedSection, setAutoSelectedSection] = useState<string | null>(null)
   const scrollRef = useRef<HTMLDivElement>(null)
 
   const sectionNames = useMemo(
@@ -75,6 +76,17 @@ const ChatAssistant = ({ paperId, sections, onSourceClick }: ChatAssistantProps)
   useEffect(() => {
     setSelectedSections([])
   }, [paperId])
+
+  useEffect(() => {
+    if (!activeSection) return
+
+    const matchedSection = sections.find((section) => section.id === activeSection)
+    const sectionTitle = (matchedSection?.title || '').trim()
+    if (!sectionTitle) return
+
+    setAutoSelectedSection(sectionTitle)
+    setSelectedSections([sectionTitle])
+  }, [activeSection, sections])
 
   const toggleSection = (sectionName: string) => {
     setSelectedSections((prev) =>
@@ -245,6 +257,7 @@ const ChatAssistant = ({ paperId, sections, onSourceClick }: ChatAssistantProps)
           <div className="flex flex-wrap gap-2">
             {sectionNames.map((sectionName) => {
               const isSelected = selectedSections.includes(sectionName)
+              const isAutoSelected = autoSelectedSection === sectionName && isSelected
               return (
                 <button
                   key={sectionName}
@@ -256,6 +269,9 @@ const ChatAssistant = ({ paperId, sections, onSourceClick }: ChatAssistantProps)
                       : 'border-border/70 bg-panel/70 text-text-secondary hover:text-foreground hover:border-accent/40'
                   }`}
                 >
+                    {isAutoSelected ? (
+                      <span className="w-1.5 h-1.5 rounded-full bg-blue-400" />
+                    ) : null}
                   {sectionName}
                 </button>
               )

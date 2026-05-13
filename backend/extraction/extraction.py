@@ -23,6 +23,7 @@ from backend.extraction.pipelines.metadata_pipeline import MetadataExtractionPip
 from backend.extraction.pipelines.section_hierarchy_pipeline import SectionHierarchyPipeline
 from backend.extraction.persistence import PostgresPaperStore
 from backend.extraction.app.pdf_loader import PDFLoader, LoaderConfig
+from backend.observability import traceable
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -49,6 +50,7 @@ def _resolve_postgres_dsn() -> Optional[str]:
     return f"postgresql://{user}@{host}:{port}/{dbname}"
 
 
+@traceable(run_type="chain", name="extract.reading_guide")
 def _generate_reading_guide(
     title: str,
     abstract: str,
@@ -484,6 +486,7 @@ class PDFExtractor:
         return result
 
 
+@traceable(run_type="chain", name="extract.pdf")
 def extract_pdf(
     pdf_path: str | Path,
     output_dir: str | Path = "output",

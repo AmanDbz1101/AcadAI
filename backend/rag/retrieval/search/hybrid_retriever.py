@@ -153,7 +153,12 @@ class HybridRetriever:
         results = []
         for doc, score in hits:
             meta = dict(doc.metadata) if doc.metadata else {}
-            # Enrich with payload fields surfaced by LangChain as metadata
+            # Enrich with full Qdrant payload fields that LangChain may not surface
+            qdrant_payload = self._get_full_qdrant_payload(doc)
+            if qdrant_payload:
+                # Merge: LangChain metadata first, then Qdrant payload
+                # Qdrant payload fields take precedence if already set
+                meta = {**meta, **qdrant_payload}
             results.append(
                 RetrievalResult(
                     content=doc.page_content,
@@ -357,6 +362,54 @@ class HybridRetriever:
         if not heading:
             return False
         return bool(_REFERENCE_SECTION_HEADING_RE.match(heading))
+
+    def _get_full_qdrant_payload(self, doc) -> dict | None:
+        """
+        Extract full Qdrant payload for a document.
+
+        LangChain's QdrantVectorStore may not surface all payload fields;
+        this method queries Qdrant directly to get the complete payload.
+        """
+        try:
+            metadata = doc.metadata if isinstance(getattr(doc, "metadata", None), dict) else {}
+            chunk_id = metadata.get("chunk_id")
+            document_id = metadata.get("document_id")
+            if not chunk_id:
+                return None
+
+            vs = self._get_vector_store()
+            client = vs.client
+            collection_name = vs.collection_name
+
+            from qdrant_client.models import Filter, FieldCondition, MatchValue  # type: ignore
+
+            scroll_filter = Filter(
+                must=[
+                    FieldCondition(key="chunk_id", match=MatchValue(value=chunk_id)),
+                ]
+                + (
+                    [FieldCondition(key="document_id", match=MatchValue(value=document_id))]
+                    if document_id
+                    else []
+                )
+            )
+
+            # Retrieve the stored point by payload chunk_id rather than vector ID.
+            points, _ = client.scroll(
+                collection_name=collection_name,
+                scroll_filter=scroll_filter,
+                limit=1,
+                with_payload=True,
+                with_vectors=False,
+            )
+            if not points:
+                return None
+
+            payload = points[0].payload if hasattr(points[0], "payload") else None
+            return dict(payload) if payload else None
+        except Exception as exc:  # noqa: BLE001
+            logger.debug("HybridRetriever: failed to fetch full payload: %s", exc)
+            return None
 
     @classmethod
     def _metadata_is_reference_section(cls, metadata: dict | None) -> bool:

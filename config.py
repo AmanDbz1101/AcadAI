@@ -90,10 +90,10 @@ CHUNK_MIN_CHARS = int(os.getenv("CHUNK_MIN_CHARS", 80))  # discard chunks shorte
 
 # Retrieval
 RETRIEVER_TOP_K = int(os.getenv("RETRIEVER_TOP_K", 20))  # candidates before reranking
-SCOPED_TOP_K = int(os.getenv("SCOPED_TOP_K", 8))
-FALLBACK_TOP_K = int(os.getenv("FALLBACK_TOP_K", 4))
+SCOPED_TOP_K = int(os.getenv("SCOPED_TOP_K", 15))
+FALLBACK_TOP_K = int(os.getenv("FALLBACK_TOP_K", 8))
 RERANKER_TOP_N = int(os.getenv("RERANKER_TOP_N", 12))    # final results after reranking
-QA_TOP_K = int(os.getenv("QA_TOP_K", 4))
+QA_TOP_K = int(os.getenv("QA_TOP_K", 6))
 MIN_RELEVANCE_THRESHOLD = float(os.getenv("MIN_RELEVANCE_THRESHOLD", "0.35"))
 MAX_GUIDE_QUESTIONS = int(os.getenv("MAX_GUIDE_QUESTIONS", 6))
 MAX_REWRITE_QUERIES = int(os.getenv("MAX_REWRITE_QUERIES", 3))

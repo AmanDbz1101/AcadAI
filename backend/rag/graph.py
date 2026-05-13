@@ -877,12 +877,34 @@ def _resolve_section_paths(step_sections: list[str], document_id: str) -> list[s
     if not step_sections:
         return []
 
+    def _section_variants(section: str) -> list[str]:
+        cleaned = str(section or "").strip()
+        if not cleaned:
+            return []
+
+        variants = [cleaned]
+        lowered = cleaned.lower()
+
+        if lowered.endswith("ies") and len(cleaned) > 4:
+            variants.append(cleaned[:-3] + "y")
+        elif lowered.endswith("s") and len(cleaned) > 4:
+            variants.append(cleaned[:-1])
+        elif len(cleaned) > 4:
+            variants.append(cleaned + "s")
+
+        return list(dict.fromkeys([item for item in variants if item]))
+
+    expanded_sections: list[str] = []
+    for section in step_sections:
+        expanded_sections.extend(_section_variants(section))
+    expanded_sections = list(dict.fromkeys(expanded_sections))
+
     lookup = _load_section_lookup(document_id)
     if not lookup:
-        return list(dict.fromkeys(step_sections))
+        return expanded_sections
 
     resolved: list[str] = []
-    for section in step_sections:
+    for section in expanded_sections:
         norm = _normalize_section_name(section)
         if not norm:
             continue
@@ -896,7 +918,7 @@ def _resolve_section_paths(step_sections: list[str], document_id: str) -> list[s
                 resolved.extend(values)
 
     if not resolved:
-        return list(dict.fromkeys(step_sections))
+        return expanded_sections
 
     return list(dict.fromkeys(resolved))
 
@@ -920,6 +942,15 @@ def _result_score(result: Any) -> float:
         return float(score)
     except Exception:  # noqa: BLE001
         return 0.0
+
+
+def _adaptive_threshold(scores: list[float], base: float = 0.35) -> float:
+    if not scores:
+        return base
+    max_score = max(scores)
+    if max_score < 0.30:
+        return max_score * 0.8
+    return base
 
 
 def _result_optional_float(value: Any) -> float | None:
@@ -985,6 +1016,7 @@ def _trace_chat_chunk_preview(
         "retrieval_score": retrieval_score,
         "rerank_score": rerank_score,
         "section_id": metadata.get("section_id"),
+        "section_name": metadata.get("section_name") or metadata.get("section_title"),
         "section_title": metadata.get("section_title"),
         "content_type": metadata.get("content_type"),
         "chunk_level": metadata.get("chunk_level"),
@@ -1122,6 +1154,24 @@ def _dedupe_near_identical_chunks(
             deduped_token_sets.append(chunk_tokens)
 
     return deduped_chunks
+
+
+def _filter_unlabeled_sections(chunks: list[Any]) -> list[Any]:
+    if not chunks:
+        return chunks
+
+    unlabeled_hits = [
+        chunk
+        for chunk in chunks
+        if _result_metadata(chunk).get("section_title") == "Unlabeled Section"
+    ]
+    if unlabeled_hits and len(unlabeled_hits) <= len(chunks) / 2:
+        return [
+            chunk
+            for chunk in chunks
+            if _result_metadata(chunk).get("section_title") != "Unlabeled Section"
+        ]
+    return chunks
 
 
 def _build_qa_context(chunks: list[Any]) -> str:
@@ -1587,6 +1637,7 @@ def _retrieve_for_question(
     question: str,
     step_sections: list[str],
     document_id: str,
+    pinned_sections: list[str] | None = None,
 ) -> tuple[list[Any], dict[str, Any]]:
     """
     Run section-aware retrieval for one question and return reranked hits.
@@ -1657,7 +1708,7 @@ def _retrieve_for_question(
     )
 
     # If scoped pass under-recovers, add a smaller unrestricted pass.
-    if len(merged_hits) < 3:
+    if len(merged_hits) < 3 and not pinned_sections:
         fallback_hits: list[Any] = []
         for expanded_query in expanded_queries:
             fallback_hits.extend(
@@ -1711,7 +1762,7 @@ def _retrieve_for_question(
                 )
             )
 
-        if len(compatibility_hits) < 3:
+        if len(compatibility_hits) < 3 and not pinned_sections:
             for expanded_query in expanded_queries:
                 compatibility_hits.extend(
                     pipeline.query(
@@ -1897,6 +1948,7 @@ def retrieve_and_qa_node(state: dict) -> dict:
                 question=question,
                 step_sections=step_sections,
                 document_id=document_id,
+                pinned_sections=state.get("pinned_sections"),
             )
 
             # Optionally include figure/table chunks scoped to the same step sections.
@@ -1922,13 +1974,20 @@ def retrieve_and_qa_node(state: dict) -> dict:
 
             hits = _dedupe_results(hits)
             hits = [chunk for chunk in hits if not _is_reference_result(chunk)]
+            rerank_scores = [_result_score(chunk) for chunk in hits]
+            threshold = (
+                0.0
+                if state.get("pinned_sections")
+                else _adaptive_threshold(rerank_scores, base=MIN_RELEVANCE_THRESHOLD)
+            )
             filtered_hits = [
-                chunk for chunk in hits if _result_score(chunk) >= MIN_RELEVANCE_THRESHOLD
+                chunk for chunk in hits if _result_score(chunk) >= threshold
             ]
             if len(filtered_hits) < 2:
                 filtered_hits = hits[:2]
 
             deduped_hits = _dedupe_near_identical_chunks(filtered_hits)
+            deduped_hits = _filter_unlabeled_sections(deduped_hits)
             top_hits = deduped_hits[:QA_TOP_K]
 
             _trace_chat_retrieval_stage(
@@ -1939,7 +1998,7 @@ def retrieve_and_qa_node(state: dict) -> dict:
                     "resolved_sections": retrieval_meta.get("resolved_sections", []),
                     "chunk_level": retrieval_meta.get("chunk_level"),
                     "raw_hits_count": len(hits),
-                    "threshold": MIN_RELEVANCE_THRESHOLD,
+                    "threshold": threshold,
                     "threshold_pass_count": len(filtered_hits),
                     "deduped_count": len(deduped_hits),
                     "qa_top_k": QA_TOP_K,

@@ -88,6 +88,7 @@ class ChatMessageRequest(BaseModel):
 class PaperChatRequest(BaseModel):
     messages: List[ChatMessageRequest]
     allowed_sections: Optional[List[str]] = None
+    pinned_sections: Optional[List[str]] = None  # set only when user explicitly selects in UI
 
 
 def _b64url_encode(raw: bytes) -> str:
@@ -1671,6 +1672,7 @@ def chat_with_paper(
     state = {
         "messages": history,
         "allowed_sections": payload.allowed_sections or [],
+        "pinned_sections": payload.pinned_sections or None,
         "document_id": str(paper.get("document_uuid") or ""),
     }
     result = qa_graph.invoke(state)

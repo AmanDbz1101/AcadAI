@@ -2,10 +2,10 @@ from langchain_core.messages import AIMessage, SystemMessage, trim_messages
 from langchain_groq import ChatGroq
 try:
     from .state import ChatState
-    from .retriever import retrieve
+    from .retriever import retrieve_with_metadata
 except ImportError:
     from state import ChatState
-    from retriever import retrieve
+    from retriever import retrieve_with_metadata
 
 # --- LLM ------------------------------------------------------------
 llm = ChatGroq(
@@ -119,6 +119,15 @@ def _format_chunks_as_context(chunks: list) -> str:
     return "\n\n".join(formatted)
 
 
+def _normalize_section_label(value: str) -> str:
+    normalized = " ".join(str(value or "").strip().lower().split())
+    if normalized.endswith("ies") and len(normalized) > 4:
+        return normalized[:-3] + "y"
+    if normalized.endswith("s") and len(normalized) > 4:
+        return normalized[:-1]
+    return normalized
+
+
 def chat_node(state: ChatState) -> dict:
     """
     Single node: retrieve → build prompt → call LLM → return response.
@@ -130,6 +139,10 @@ def chat_node(state: ChatState) -> dict:
     # 1. Get the latest user message
     last_message = state["messages"][-1]
     query = last_message.content
+
+    pinned = state.get("pinned_sections") or None
+    allowed_sections = state.get("allowed_sections") or []
+    section_scope = pinned if pinned is not None else allowed_sections or None
 
     # 2. Retrieve relevant chunks (same pipeline as main RAG retrieval)
     allowed_sections = [

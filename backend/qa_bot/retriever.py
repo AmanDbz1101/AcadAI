@@ -1,7 +1,7 @@
 from typing import Any
 
 
-def retrieve(
+def retrieve_with_metadata(
     query: str,
     document_id: str | None = None,
     allowed_sections: list[str] | None = None,
@@ -11,12 +11,12 @@ def retrieve(
 
     pipeline = rag_graph._get_retrieval_pipeline()
 
-    # Mirror main retrieval behavior used across the app.
     hits, _meta = rag_graph._retrieve_for_question(
         pipeline=pipeline,
         question=query,
         step_sections=allowed_sections or [],
         document_id=(document_id or "").strip(),
+        pinned_sections=pinned_sections,
     )
 
     results: list[Any] = []
