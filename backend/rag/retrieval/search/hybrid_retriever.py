@@ -150,22 +150,8 @@ class HybridRetriever:
                 logger.error("HybridRetriever: dense fallback also failed: %s", exc2)
                 return []
 
-        results = []
-        for doc, score in hits:
-            meta = dict(doc.metadata) if doc.metadata else {}
-            # Enrich with full Qdrant payload fields that LangChain may not surface
-            qdrant_payload = self._get_full_qdrant_payload(doc)
-            if qdrant_payload:
-                # Merge: LangChain metadata first, then Qdrant payload
-                # Qdrant payload fields take precedence if already set
-                meta = {**meta, **qdrant_payload}
-            results.append(
-                RetrievalResult(
-                    content=doc.page_content,
-                    score=float(score),
-                    metadata=meta,
-                )
-            )
+        # Enrich hits with full payloads in a single batch call to Qdrant
+        results = self._enrich_results_with_payload(hits)
 
         logger.info(
             "HybridRetriever: query='%s' → %d results (doc_filter=%s)",
@@ -205,12 +191,14 @@ class HybridRetriever:
                 k=self.top_k,
                 filter=payload_filter,
                 hybrid_fusion=fusion_query,
+                with_payload=True,
             )
         except TypeError:
             return vs.similarity_search_with_score(
                 query,
                 k=self.top_k,
                 filter=payload_filter,
+                with_payload=True,
             )
 
     def _dense_search(self, query: str, payload_filter):
@@ -220,6 +208,7 @@ class HybridRetriever:
             query,
             k=self.top_k,
             filter=payload_filter,
+            with_payload=True,
         )
 
     def _build_hybrid_fusion_query(self):
@@ -236,6 +225,60 @@ class HybridRetriever:
                 )
 
         return models.FusionQuery(fusion=models.Fusion.RRF)
+
+    def _enrich_results_with_payload(self, hits: list) -> list:
+        """Single batch retrieve for all chunk payloads instead of one call per chunk.
+
+        Returns a list of `RetrievalResult` with merged metadata.
+        """
+        from rag.states import RetrievalResult  # local import to avoid circular import
+
+        if not hits:
+            return []
+
+        point_ids = []
+        collection_name = None
+        for doc, _ in hits:
+            meta = doc.metadata or {}
+            _id = meta.get("_id") or meta.get("id")
+            if _id:
+                point_ids.append(str(_id))
+            if collection_name is None:
+                collection_name = meta.get("_collection_name")
+
+        # Fallback to vector store's collection name if not present in metadata
+        payload_map = {}
+        if point_ids:
+            try:
+                vs = self._get_vector_store()
+                if not collection_name:
+                    collection_name = getattr(vs, "collection_name", None)
+                if collection_name:
+                    points = vs.client.retrieve(
+                        collection_name=collection_name,
+                        ids=point_ids,
+                        with_payload=True,
+                        with_vectors=False,
+                    )
+                    payload_map = {str(p.id): dict(p.payload) for p in points if getattr(p, "payload", None)}
+            except Exception as exc:  # noqa: BLE001
+                logger.warning("HybridRetriever: batch payload fetch failed: %s", exc)
+
+        results: list = []
+        for doc, score in hits:
+            meta = dict(doc.metadata) if doc.metadata else {}
+            point_id = str(meta.get("_id") or meta.get("id") or "")
+            if point_id and point_id in payload_map:
+                meta = {**meta, **payload_map[point_id]}
+            results.append(
+                RetrievalResult(
+                    content=doc.page_content,
+                    score=float(score),
+                    metadata=meta,
+                )
+            )
+
+        return results
 
     # ── Filter builder ────────────────────────────────────────────────────────
 
@@ -363,53 +406,7 @@ class HybridRetriever:
             return False
         return bool(_REFERENCE_SECTION_HEADING_RE.match(heading))
 
-    def _get_full_qdrant_payload(self, doc) -> dict | None:
-        """
-        Extract full Qdrant payload for a document.
-
-        LangChain's QdrantVectorStore may not surface all payload fields;
-        this method queries Qdrant directly to get the complete payload.
-        """
-        try:
-            metadata = doc.metadata if isinstance(getattr(doc, "metadata", None), dict) else {}
-            chunk_id = metadata.get("chunk_id")
-            document_id = metadata.get("document_id")
-            if not chunk_id:
-                return None
-
-            vs = self._get_vector_store()
-            client = vs.client
-            collection_name = vs.collection_name
-
-            from qdrant_client.models import Filter, FieldCondition, MatchValue  # type: ignore
-
-            scroll_filter = Filter(
-                must=[
-                    FieldCondition(key="chunk_id", match=MatchValue(value=chunk_id)),
-                ]
-                + (
-                    [FieldCondition(key="document_id", match=MatchValue(value=document_id))]
-                    if document_id
-                    else []
-                )
-            )
-
-            # Retrieve the stored point by payload chunk_id rather than vector ID.
-            points, _ = client.scroll(
-                collection_name=collection_name,
-                scroll_filter=scroll_filter,
-                limit=1,
-                with_payload=True,
-                with_vectors=False,
-            )
-            if not points:
-                return None
-
-            payload = points[0].payload if hasattr(points[0], "payload") else None
-            return dict(payload) if payload else None
-        except Exception as exc:  # noqa: BLE001
-            logger.debug("HybridRetriever: failed to fetch full payload: %s", exc)
-            return None
+    
 
     @classmethod
     def _metadata_is_reference_section(cls, metadata: dict | None) -> bool:
