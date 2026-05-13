@@ -1,0 +1,2463 @@
+[
+
+    {
+        "question": "Compare the experimental findings in Introduction/Ordinary PCR on model limitations (cross-domain, frequency) with how Ordinary PCR methods evolved, linking to why further improvements like KG and SpanBERT were pursued.",
+        "retrieved_ids": [
+        "4d080545-4a0e-469f-9013-c5ce1037ecc3",
+        "ec1909da-e6ab-563c-a9a8-68407b3ff348",
+        "e5074e88-6051-5b75-91cd-96e06c4288be",
+        "715c0ee8-7094-55eb-b867-f9423c243ea3",
+        "97dbc3d1-8bc9-5fc1-874f-ad4c9a67e87d"
+        ],
+        "relevant_ids": [
+        "ec1909da-e6ab-563c-a9a8-68407b3ff348",
+        "e5074e88-6051-5b75-91cd-96e06c4288be",
+        "715c0ee8-7094-55eb-b867-f9423c243ea3",
+        "97dbc3d1-8bc9-5fc1-874f-ad4c9a67e87d",
+        "27e6f357-04ad-5258-be67-8b458ed5e211"
+        ],
+        "precision_at_3": 1.0,
+        "precision_at_5": 0.8,
+        "recall_at_5": 0.6,
+        "reciprocal_rank": 0.5
+    },
+    {
+        "question": "Explain the formal definition and datasets of Ordinary PCR, then contrast with the task definition and datasets of Hard PCR (WSC etc.), highlighting why hard PCR better isolates commonsense reasoning.",
+        "retrieved_ids": [
+        "6ac6e4ce-650c-4093-8f9e-43c927f918d2",
+        "d3999dfc-5166-53ff-b0ae-9c50bf396e6d",
+        "97dbc3d1-8bc9-5fc1-874f-ad4c9a67e87d",
+        "27e6f357-04ad-5258-be67-8b458ed5e211",
+        "965090da-983e-5f44-be4d-01474220f045"
+        ],
+        "relevant_ids": [
+        "d3999dfc-5166-53ff-b0ae-9c50bf396e6d",
+        "97dbc3d1-8bc9-5fc1-874f-ad4c9a67e87d",
+        "27e6f357-04ad-5258-be67-8b458ed5e211",
+        "965090da-983e-5f44-be4d-01474220f045"
+        ],
+        "precision_at_3": 1.0,
+        "precision_at_5": 0.8,
+        "recall_at_5": 0.6,
+        "reciprocal_rank": 0.5
+    },
+    {
+        "question": "Explain the motivation for distinguishing pronoun coreference resolution (PCR) from general coreference resolution, including experimental evidence from the End-to-end model on CoNLL-2012, the challenges in resolving different relation types (NP-NP, NP-P, P-P), and how this connects to the need for separate evaluation on ordinary PCR tasks that mix linguistic and commonsense knowledge versus dedicated hard PCR tasks like WSC.",
+        "retrieved_ids": [
+        "f87fdaf6-6569-5ec1-8c3c-baaa5b533e01",
+        "5e934d2e-aafa-5ed8-8301-47b3eed26318",
+        "ef8c03d5-e0e9-5dc0-9a0a-84f697465332",
+        "5cba0513-5e97-5002-bf12-636818292019",
+        "6a3bd22d-f0c4-520d-bff6-85f9ddc0178e"
+        ],
+        "relevant_ids": [
+        "f87fdaf6-6569-5ec1-8c3c-baaa5b533e01",
+        "5e934d2e-aafa-5ed8-8301-47b3eed26318",
+        "ef8c03d5-e0e9-5dc0-9a0a-84f697465332",
+        "5cba0513-5e97-5002-bf12-636818292019",
+        "6a3bd22d-f0c4-520d-bff6-85f9ddc0178e"
+        ],
+        "precision_at_3": 1.0,
+        "precision_at_5": 1.0,
+        "recall_at_5": 1.0,
+        "reciprocal_rank": 1.0
+    },
+    {
+        "question": "Discuss how the Introduction highlights the importance of PCR for downstream tasks and the role of gold mentions, then connect this to the datasets and methods in Ordinary PCR section, particularly why CoNLL-2012 is widely used and the shift from rule-based to end-to-end models.",
+        "retrieved_ids": [
+        "6a3bd22d-f0c4-520d-bff6-85f9ddc0178e",
+        "a8321e91-330d-57b5-bd28-7a1951262cb1",
+        "ec1909da-e6ab-563c-a9a8-68407b3ff348",
+        "5cba0513-5e97-5002-bf12-636818292019",
+        "9cd24b67-7c0e-4ace-a177-1bf22a12ae5e"
+        ],
+        "relevant_ids": [
+        "6a3bd22d-f0c4-520d-bff6-85f9ddc0178e",
+        "a8321e91-330d-57b5-bd28-7a1951262cb1",
+        "ec1909da-e6ab-563c-a9a8-68407b3ff348",
+        "5cba0513-5e97-5002-bf12-636818292019"
+        ],
+        "precision_at_3": 1.0,
+        "precision_at_5": 1.0,
+        "recall_at_5": 1.0,
+        "reciprocal_rank": 1.0
+    },
+    {
+        "question": "Based on the Introduction's discussion of pronoun types and challenges, and Ordinary PCR's performance analysis, why do models perform differently across third personal, possessive, and demonstrative pronouns, and what does cross-domain and frequency analysis reveal about model readiness?",
+        "retrieved_ids": [
+        "16a5c6fa-6bf7-5728-9e91-6e3990ac546b",
+        "8c24403f-02e2-57bf-922f-b36aeb576e95",
+        "d3999dfc-5166-53ff-b0ae-9c50bf396e6d",
+        "ec1909da-e6ab-563c-a9a8-68407b3ff348",
+        "83d74f89-f113-546e-8a57-431df2947049"
+        ],
+        "relevant_ids": [
+        "16a5c6fa-6bf7-5728-9e91-6e3990ac546b",
+        "8c24403f-02e2-57bf-922f-b36aeb576e95",
+        "d3999dfc-5166-53ff-b0ae-9c50bf396e6d",
+        "ec1909da-e6ab-563c-a9a8-68407b3ff348",
+        "83d74f89-f113-546e-8a57-431df2947049"
+        ],
+        "precision_at_3": 1.0,
+        "precision_at_5": 1.0,
+        "recall_at_5": 1.0,
+        "reciprocal_rank": 1.0
+    },
+    {
+        "question": "How does the Introduction motivate surveying ordinary and hard PCR, and what specific limitations of ordinary PCR tasks are addressed by introducing WSC in the transition to Hard PCR section?",
+        "retrieved_ids": [
+        "ef8c03d5-e0e9-5dc0-9a0a-84f697465332",
+        "5cba0513-5e97-5002-bf12-636818292019",
+        "83d74f89-f113-546e-8a57-431df2947049",
+        "d3999dfc-5166-53ff-b0ae-9c50bf396e6d",
+        "8c00fb67-ce9e-4092-a567-c0b5a6138a46"
+        ],
+        "relevant_ids": [
+        "ef8c03d5-e0e9-5dc0-9a0a-84f697465332",
+        "5cba0513-5e97-5002-bf12-636818292019",
+        "83d74f89-f113-546e-8a57-431df2947049",
+        "d3999dfc-5166-53ff-b0ae-9c50bf396e6d"
+        ],
+        "precision_at_3": 1.0,
+        "precision_at_5": 1.0,
+        "recall_at_5": 1.0,
+        "reciprocal_rank": 1.0
+    },
+    {
+        "question": "Drawing from Ordinary PCR performances and analysis with Hard PCR methods and results on WSC, what progress has been made and what gaps remain in handling commonsense for pronoun resolution?",
+        "retrieved_ids": [
+        "6df2e8d4-57ca-418c-8cea-099f50e71033",
+        "83d74f89-f113-546e-8a57-431df2947049",
+        "2d1c67d5-a9ce-514e-aef4-c19aeccd2e4a",
+        "736bfecf-d4ca-5590-98b7-54bcf9cd6bfc",
+        "c7e04168-38fc-52f8-84e2-d22f3ee2bc83"
+        ],
+        "relevant_ids": [
+        "83d74f89-f113-546e-8a57-431df2947049",
+        "2d1c67d5-a9ce-514e-aef4-c19aeccd2e4a",
+        "736bfecf-d4ca-5590-98b7-54bcf9cd6bfc",
+        "c7e04168-38fc-52f8-84e2-d22f3ee2bc83",
+        "cabff7c0-dad5-5cee-ba66-97d2bdd6f0eb"
+        ],
+        "precision_at_3": 1.0,
+        "precision_at_5": 0.8,
+        "recall_at_5": 0.6,
+        "reciprocal_rank": 0.5
+    },
+    {
+        "question": "How do improvements in Ordinary PCR (e.g., KG injection, higher-order) relate to approaches in Hard PCR like structured knowledge reasoning or fine-tuning, and what does this suggest about knowledge integration?",
+        "retrieved_ids": [
+        "57fcb584-a523-4e8e-a711-372681121e72",
+        "715c0ee8-7094-55eb-b867-f9423c243ea3",
+        "c7e04168-38fc-52f8-84e2-d22f3ee2bc83",
+        "cabff7c0-dad5-5cee-ba66-97d2bdd6f0eb",
+        "807c8b42-6f9d-54c0-ad9a-42ef6f61ebfc"
+        ],
+        "relevant_ids": [
+        "715c0ee8-7094-55eb-b867-f9423c243ea3",
+        "c7e04168-38fc-52f8-84e2-d22f3ee2bc83",
+        "cabff7c0-dad5-5cee-ba66-97d2bdd6f0eb",
+        "807c8b42-6f9d-54c0-ad9a-42ef6f61ebfc"
+        ],
+        "precision_at_3": 1.0,
+        "precision_at_5": 0.8,
+        "recall_at_5": 0.6,
+        "reciprocal_rank": 0.5
+    },
+    {
+        "question": "Compare the influence of frequency and domain in Ordinary PCR analysis to the challenges of small-scale vs large-scale datasets in Hard PCR, and implications for model generalization.",
+        "retrieved_ids": [
+        "b8437e92-90a8-4e98-a6d3-0e48cff3d6b3",
+        "27e6f357-04ad-5258-be67-8b458ed5e211",
+        "965090da-983e-5f44-be4d-01474220f045",
+        "68eb646b-93c9-56de-b38e-b41ac9b4165b",
+        "0aed13f7-9875-5e99-a80b-3f70115fe3bd"
+        ],
+        "relevant_ids": [
+        "27e6f357-04ad-5258-be67-8b458ed5e211",
+        "965090da-983e-5f44-be4d-01474220f045",
+        "68eb646b-93c9-56de-b38e-b41ac9b4165b",
+        "0aed13f7-9875-5e99-a80b-3f70115fe3bd",
+        "27840f34-c076-5fda-82bf-0b61092e5d70"
+        ],
+        "precision_at_3": 1.0,
+        "precision_at_5": 0.8,
+        "recall_at_5": 0.6,
+        "reciprocal_rank": 0.5
+    },
+    {
+        "question": "Linking Ordinary PCR's end-to-end success and limitations to Hard PCR's LM-based and fine-tuning methods, why have pre-trained models become central, and what analysis supports their commonsense encoding?",
+        "retrieved_ids": [
+        "e8171991-fb2c-4de4-96de-bce59b807034",
+        "736bfecf-d4ca-5590-98b7-54bcf9cd6bfc",
+        "807c8b42-6f9d-54c0-ad9a-42ef6f61ebfc",
+        "eda5f1e8-58dd-5799-b1af-7cb43ba87106",
+        "310e00be-27be-5165-854f-0766543a894a"
+        ],
+        "relevant_ids": [
+        "736bfecf-d4ca-5590-98b7-54bcf9cd6bfc",
+        "807c8b42-6f9d-54c0-ad9a-42ef6f61ebfc",
+        "eda5f1e8-58dd-5799-b1af-7cb43ba87106",
+        "310e00be-27be-5165-854f-0766543a894a"
+        ],
+        "precision_at_3": 1.0,
+        "precision_at_5": 0.8,
+        "recall_at_5": 0.6,
+        "reciprocal_rank": 0.5
+    },
+    {
+        "question": "Describe key methods and performances on WSC from Hard PCR, then connect to how Other PCR Tasks like WinoGender or Visual PCR extend or differ in purpose and challenges.",
+        "retrieved_ids": [
+        "cfe0d1a8-55f1-4924-aac6-ab2d22364496",
+        "cabff7c0-dad5-5cee-ba66-97d2bdd6f0eb",
+        "29a1aa0f-1d95-546a-a21a-f074f328ac15",
+        "0aed13f7-9875-5e99-a80b-3f70115fe3bd",
+        "27840f34-c076-5fda-82bf-0b61092e5d70"
+        ],
+        "relevant_ids": [
+        "cabff7c0-dad5-5cee-ba66-97d2bdd6f0eb",
+        "29a1aa0f-1d95-546a-a21a-f074f328ac15",
+        "0aed13f7-9875-5e99-a80b-3f70115fe3bd",
+        "27840f34-c076-5fda-82bf-0b61092e5d70",
+        "227de942-e450-5a2e-9b6f-e5883693c457"
+        ],
+        "precision_at_3": 1.0,
+        "precision_at_5": 0.8,
+        "recall_at_5": 0.6,
+        "reciprocal_rank": 0.5
+    },
+    {
+        "question": "How does Hard PCR's focus on commonsense via WSC relate to specialized tasks in Other PCR section, such as medical domain or chatbots, in terms of domain-specific challenges?",
+        "retrieved_ids": [
+        "e374d5ee-979a-4fe8-a31c-4f5195247863",
+        "68eb646b-93c9-56de-b38e-b41ac9b4165b",
+        "b80adbde-760d-5441-a1c3-04056103c010",
+        "310e00be-27be-5165-854f-0766543a894a",
+        "36e429aa-83d5-5fdb-b202-e08fb140a787"
+        ],
+        "relevant_ids": [
+        "68eb646b-93c9-56de-b38e-b41ac9b4165b",
+        "b80adbde-760d-5441-a1c3-04056103c010",
+        "310e00be-27be-5165-854f-0766543a894a",
+        "36e429aa-83d5-5fdb-b202-e08fb140a787"
+        ],
+        "precision_at_3": 1.0,
+        "precision_at_5": 0.6,
+        "recall_at_5": 0.4,
+        "reciprocal_rank": 0.5
+    },
+    {
+        "question": "From Hard PCR analysis of model sensitivity and WinoGrande subsets, what insights apply to Other PCR tasks like gender bias studies or machine translation PCR?",
+        "retrieved_ids": [
+        "49f01bd9-b21e-486e-b77c-3b3ce551a51f",
+        "eda5f1e8-58dd-5799-b1af-7cb43ba87106",
+        "45790b84-f08c-568b-be79-6c1bd6d68b55",
+        "37945276-b269-5c0a-880d-61dda88bc71b",
+        "8715edec-87f3-509e-9628-739023818ca0"
+        ],
+        "relevant_ids": [
+        "eda5f1e8-58dd-5799-b1af-7cb43ba87106",
+        "45790b84-f08c-568b-be79-6c1bd6d68b55",
+        "37945276-b269-5c0a-880d-61dda88bc71b",
+        "8715edec-87f3-509e-9628-739023818ca0",
+        "c6554eae-56d0-5885-8f38-92f843bf0028"
+        ],
+        "precision_at_3": 1.0,
+        "precision_at_5": 0.6,
+        "recall_at_5": 0.4,
+        "reciprocal_rank": 0.5
+    },
+    {
+        "question": "Contrast the commonsense focus in Hard PCR with purposes of Other PCR tasks (bias, visual, medical), and discuss shared limitations like robustness for real applications.",
+        "retrieved_ids": [
+        "606a660e-7843-4cc4-880e-1a1cf66defca",
+        "0aed13f7-9875-5e99-a80b-3f70115fe3bd",
+        "27840f34-c076-5fda-82bf-0b61092e5d70",
+        "227de942-e450-5a2e-9b6f-e5883693c457",
+        "cd5dad35-281a-531f-8ff4-acd369985114"
+        ],
+        "relevant_ids": [
+        "0aed13f7-9875-5e99-a80b-3f70115fe3bd",
+        "27840f34-c076-5fda-82bf-0b61092e5d70",
+        "227de942-e450-5a2e-9b6f-e5883693c457",
+        "cd5dad35-281a-531f-8ff4-acd369985114"
+        ],
+        "precision_at_3": 0.67,
+        "precision_at_5": 0.6,
+        "recall_at_5": 1.0,
+        "reciprocal_rank": 0.5
+    },
+    {
+        "question": "How do fine-tuning successes in Hard PCR inform potential approaches for specialized Other PCR tasks like visual-aware or conversational PCR?",
+        "retrieved_ids": [
+        "64dcb785-3fa8-485c-a9bb-7c32b36277a5",
+        "310e00be-27be-5165-854f-0766543a894a",
+        "44e5c67e-8a92-545d-913b-ba159987aed3",
+        "614be032-45db-52ed-9b89-ccfd8e99b246",
+        "e7a075b3-39e6-5f79-a53a-334251545c8d"
+        ],
+        "relevant_ids": [
+        "310e00be-27be-5165-854f-0766543a894a",
+        "44e5c67e-8a92-545d-913b-ba159987aed3",
+        "614be032-45db-52ed-9b89-ccfd8e99b246",
+        "e7a075b3-39e6-5f79-a53a-334251545c8d",
+        "f87fdaf6-6569-5ec1-8c3c-baaa5b533e01"
+        ],
+        "precision_at_3": 0.67,
+        "precision_at_5": 0.6,
+        "recall_at_5": 1.0,
+        "reciprocal_rank": 0.5
+    },
+    {
+        "question": "Summarize limitations of current models from Ordinary and Hard PCR as discussed in Conclusion, and how Other PCR tasks illustrate additional real-world challenges.",
+        "retrieved_ids": [
+        "742f4c67-b5f7-4fb4-a772-2c1dce61352a",
+        "37945276-b269-5c0a-880d-61dda88bc71b",
+        "36e429aa-83d5-5fdb-b202-e08fb140a787",
+        "ad19da30-0b9e-564d-a133-a257d9a584b6",
+        "f3216bf8-f94f-55f9-a960-2c07312c5607"
+        ],
+        "relevant_ids": [
+        "37945276-b269-5c0a-880d-61dda88bc71b",
+        "36e429aa-83d5-5fdb-b202-e08fb140a787",
+        "ad19da30-0b9e-564d-a133-a257d9a584b6",
+        "f3216bf8-f94f-55f9-a960-2c07312c5607"
+        ],
+        "precision_at_3": 0.67,
+        "precision_at_5": 0.4,
+        "recall_at_5": 0.8,
+        "reciprocal_rank": 0.5
+    },
+    {
+        "question": "Using insights from Ordinary PCR cross-domain/frequency issues and Conclusion, explain why models are not ready for real apps, referencing examples from Other PCR tasks.",
+        "retrieved_ids": [
+        "aa096627-62ba-422a-a216-39330a42c2cb",
+        "af47ece0-4ed4-4c98-8f43-c0ba87027f9f",
+        "227de942-e450-5a2e-9b6f-e5883693c457",
+        "8715edec-87f3-509e-9628-739023818ca0",
+        "c6554eae-56d0-5885-8f38-92f843bf0028"
+        ],
+        "relevant_ids": [
+        "227de942-e450-5a2e-9b6f-e5883693c457",
+        "8715edec-87f3-509e-9628-739023818ca0",
+        "c6554eae-56d0-5885-8f38-92f843bf0028",
+        "a8321e91-330d-57b5-bd28-7a1951262cb1",
+        "ec1909da-e6ab-563c-a9a8-68407b3ff348"
+        ],
+        "precision_at_3": 0.33,
+        "precision_at_5": 0.2,
+        "recall_at_5": 1.0,
+        "reciprocal_rank": 0.33
+    },
+    {
+        "question": "Connect the survey contributions in Introduction/Conclusion to the breadth covered in Other PCR tasks and overall limitations highlighted.",
+        "retrieved_ids": [
+        "bf400923-dde9-4d04-983b-5d7440007f91",
+        "62dc0701-004c-46c7-bb9f-8d68c9164db8",
+        "614be032-45db-52ed-9b89-ccfd8e99b246",
+        "0fea8ed3-3ce6-5a69-872c-a52b9fd5ff67",
+        "cd5dad35-281a-531f-8ff4-acd369985114"
+        ],
+        "relevant_ids": [
+        "614be032-45db-52ed-9b89-ccfd8e99b246",
+        "0fea8ed3-3ce6-5a69-872c-a52b9fd5ff67",
+        "cd5dad35-281a-531f-8ff4-acd369985114",
+        "8c24403f-02e2-57bf-922f-b36aeb576e95"
+        ],
+        "precision_at_3": 0.33,
+        "precision_at_5": 0.2,
+        "recall_at_5": 1.0,
+        "reciprocal_rank": 0.33
+    },
+    {
+        "question": "What does the Conclusion say about progress and remaining challenges, linking back to experiments in Ordinary/Hard PCR sections?",
+        "retrieved_ids": [
+        "0be4fdf7-c023-469d-b15a-f3ebd41f204e",
+        "b7d9e1c0-5069-466b-99bb-7d5d5261c2c1",
+        "ad19da30-0b9e-564d-a133-a257d9a584b6",
+        "f3216bf8-f94f-55f9-a960-2c07312c5607",
+        "9d0686dc-a23d-5431-8dfa-f130e827b607"
+        ],
+        "relevant_ids": [
+        "ad19da30-0b9e-564d-a133-a257d9a584b6",
+        "f3216bf8-f94f-55f9-a960-2c07312c5607",
+        "9d0686dc-a23d-5431-8dfa-f130e827b607",
+        "e5074e88-6051-5b75-91cd-96e06c4288be",
+        "715c0ee8-7094-55eb-b867-f9423c243ea3"
+        ],
+        "precision_at_3": 0.33,
+        "precision_at_5": 0.2,
+        "recall_at_5": 1.0,
+        "reciprocal_rank": 0.33
+    },
+    {
+        "question": "How do overall limitations in Conclusion relate to evolution from ordinary methods to hard PCR approaches and specialized tasks?",
+        "retrieved_ids": [
+        "d0ce815d-5dad-4934-8d1a-b8453c1f2610",
+        "bee97538-3faa-47c3-8139-3663d127665f",
+        "c6554eae-56d0-5885-8f38-92f843bf0028",
+        "1ee35f06-0fc2-517c-94fd-e20c49ca5dfe",
+        "e7a075b3-39e6-5f79-a53a-334251545c8d"
+        ],
+        "relevant_ids": [
+        "c6554eae-56d0-5885-8f38-92f843bf0028",
+        "1ee35f06-0fc2-517c-94fd-e20c49ca5dfe",
+        "e7a075b3-39e6-5f79-a53a-334251545c8d",
+        "27e6f357-04ad-5258-be67-8b458ed5e211"
+        ],
+        "precision_at_3": 0.33,
+        "precision_at_5": 0.2,
+        "recall_at_5": 0.5,
+        "reciprocal_rank": 0.33
+    },
+    {
+        "question": "Explain the motivation for investigating gating in softmax attention from the Introduction, including examples from prior works like Switch Heads and NSA, and connect this to the experimental setup and main results in the Experiments section regarding the effectiveness of different gating positions in MoE models.",
+        "retrieved_ids": [
+        "6ebfc630-875f-4a3d-81df-e543159b6966",
+        "6a77aea9-4752-4df6-83f2-82a211424edb",
+        "f87fdaf6-6569-5ec1-8c3c-baaa5b533e01",
+        "5e934d2e-aafa-5ed8-8301-47b3eed26318",
+        "ef8c03d5-e0e9-5dc0-9a0a-84f697465332"
+        ],
+        "relevant_ids": [
+        "f87fdaf6-6569-5ec1-8c3c-baaa5b533e01",
+        "5e934d2e-aafa-5ed8-8301-47b3eed26318",
+        "ef8c03d5-e0e9-5dc0-9a0a-84f697465332",
+        "5cba0513-5e97-5002-bf12-636818292019",
+        "736bfecf-d4ca-5590-98b7-54bcf9cd6bfc"
+        ],
+        "precision_at_3": 0.33,
+        "precision_at_5": 0.2,
+        "recall_at_5": 0.5,
+        "reciprocal_rank": 0.33
+    },
+    {
+        "question": "Based on the Introduction's discussion of gating benefits and the Gated-Attention Layer's formalization of variants (positions, granularity, etc.), what key design choices were found most effective in the Experiments section for MoE models?",
+        "retrieved_ids": [
+        "7f9d5369-e8dd-44d9-87b3-9d7b3b868743",
+        "5f5d63f6-057c-4f06-ac53-7d2515bfb650",
+        "6a3bd22d-f0c4-520d-bff6-85f9ddc0178e",
+        "a8321e91-330d-57b5-bd28-7a1951262cb1",
+        "ec1909da-e6ab-563c-a9a8-68407b3ff348"
+        ],
+        "relevant_ids": [
+        "6a3bd22d-f0c4-520d-bff6-85f9ddc0178e",
+        "a8321e91-330d-57b5-bd28-7a1951262cb1",
+        "ec1909da-e6ab-563c-a9a8-68407b3ff348",
+        "68eb646b-93c9-56de-b38e-b41ac9b4165b"
+        ],
+        "precision_at_3": 0.33,
+        "precision_at_5": 0.2,
+        "recall_at_5": 0.5,
+        "reciprocal_rank": 0.33
+    },
+    {
+        "question": "How does the Introduction connect gating to training stability and scaling, and what evidence from dense model experiments in section 3 supports or extends this?",
+        "retrieved_ids": [
+        "0a126c4d-b0d3-41d7-919a-0d21b0feffb3",
+        "5fd670a7-0908-4dc6-a206-22f2be8948b5",
+        "16a5c6fa-6bf7-5728-9e91-6e3990ac546b",
+        "8c24403f-02e2-57bf-922f-b36aeb576e95",
+        "d3999dfc-5166-53ff-b0ae-9c50bf396e6d"
+        ],
+        "relevant_ids": [
+        "16a5c6fa-6bf7-5728-9e91-6e3990ac546b",
+        "8c24403f-02e2-57bf-922f-b36aeb576e95",
+        "d3999dfc-5166-53ff-b0ae-9c50bf396e6d",
+        "29a1aa0f-1d95-546a-a21a-f074f328ac15",
+        "0aed13f7-9875-5e99-a80b-3f70115fe3bd"
+        ],
+        "precision_at_3": 0.33,
+        "precision_at_5": 0.2,
+        "recall_at_5": 0.5,
+        "reciprocal_rank": 0.33
+    },
+    {
+        "question": "Summarize the central finding from Introduction and link it to the performance comparisons across gating positions and granularities tested in the Experiments section.",
+        "retrieved_ids": [
+        "52abfab9-ffb7-478e-b22f-09dd15f98417",
+        "74f67567-8662-40fc-a214-5b4afed87387",
+        "ef8c03d5-e0e9-5dc0-9a0a-84f697465332",
+        "5cba0513-5e97-5002-bf12-636818292019",
+        "83d74f89-f113-546e-8a57-431df2947049"
+        ],
+        "relevant_ids": [
+        "ef8c03d5-e0e9-5dc0-9a0a-84f697465332",
+        "5cba0513-5e97-5002-bf12-636818292019",
+        "83d74f89-f113-546e-8a57-431df2947049",
+        "b80adbde-760d-5441-a1c3-04056103c010"
+        ],
+        "precision_at_3": 0.33,
+        "precision_at_5": 0.2,
+        "recall_at_5": 0.5,
+        "reciprocal_rank": 0.33
+    },
+    {
+        "question": "From the Introduction's overview of challenges in understanding gating and the detailed variants in Gated-Attention Layer, what do the MoE experiment results reveal about the importance of query-dependency and head-specificity?",
+        "retrieved_ids": [
+        "67578899-cf9c-427a-8087-b5477c578ef2",
+        "ab4e9dcb-9a3a-42e4-bb42-3122a1473e94",
+        "ec1909da-e6ab-563c-a9a8-68407b3ff348",
+        "e5074e88-6051-5b75-91cd-96e06c4288be",
+        "715c0ee8-7094-55eb-b867-f9423c243ea3"
+        ],
+        "relevant_ids": [
+        "ec1909da-e6ab-563c-a9a8-68407b3ff348",
+        "e5074e88-6051-5b75-91cd-96e06c4288be",
+        "715c0ee8-7094-55eb-b867-f9423c243ea3",
+        "37945276-b269-5c0a-880d-61dda88bc71b",
+        "227de942-e450-5a2e-9b6f-e5883693c457"
+        ],
+        "precision_at_3": 0.33,
+        "precision_at_5": 0.2,
+        "recall_at_5": 0.5,
+        "reciprocal_rank": 0.33
+    },
+    {
+        "question": "Describe the multi-head softmax attention preliminaries and gating augmentations from section 2, then explain how non-linearity analysis in section 4 accounts for performance gains at G1 and G2 positions.",
+        "retrieved_ids": [
+        "9d036f99-d44f-47a9-b93d-e3f90668ba0c",
+        "a12f09ee-8611-4050-bb90-996d65f1b21c",
+        "d3999dfc-5166-53ff-b0ae-9c50bf396e6d",
+        "97dbc3d1-8bc9-5fc1-874f-ad4c9a67e87d",
+        "27e6f357-04ad-5258-be67-8b458ed5e211"
+        ],
+        "relevant_ids": [
+        "d3999dfc-5166-53ff-b0ae-9c50bf396e6d",
+        "97dbc3d1-8bc9-5fc1-874f-ad4c9a67e87d",
+        "27e6f357-04ad-5258-be67-8b458ed5e211",
+        "965090da-983e-5f44-be4d-01474220f045"
+        ],
+        "precision_at_3": 0.33,
+        "precision_at_5": 0.2,
+        "recall_at_5": 0.5,
+        "reciprocal_rank": 0.33
+    },
+    {
+        "question": "Using the gating mechanism definition from Gated-Attention Layer and the sparsity analysis in Analysis, why does SDPA output gating outperform value gating despite both introducing non-linearity?",
+        "retrieved_ids": [
+        "77fe0cc8-8d2d-41f5-8762-5c5f083c96f8",
+        "faa9eec1-f874-44e3-acdd-f5f8dc0ce686",
+        "83d74f89-f113-546e-8a57-431df2947049",
+        "2d1c67d5-a9ce-514e-aef4-c19aeccd2e4a",
+        "736bfecf-d4ca-5590-98b7-54bcf9cd6bfc"
+        ],
+        "relevant_ids": [
+        "83d74f89-f113-546e-8a57-431df2947049",
+        "2d1c67d5-a9ce-514e-aef4-c19aeccd2e4a",
+        "736bfecf-d4ca-5590-98b7-54bcf9cd6bfc",
+        "f3216bf8-f94f-55f9-a960-2c07312c5607",
+        "8715edec-87f3-509e-9628-739023818ca0"
+        ],
+        "precision_at_3": 0.33,
+        "precision_at_5": 0.2,
+        "recall_at_5": 0.5,
+        "reciprocal_rank": 0.33
+    },
+    {
+        "question": "How do the positions investigated in section 2 relate to the attention sink reduction and long-context benefits observed in the Analysis section?",
+        "retrieved_ids": [
+        "57118df7-c94c-4b84-839d-18ad2203f847",
+        "7a3e4178-b0bb-4a5a-98c9-6cce82b2b207",
+        "715c0ee8-7094-55eb-b867-f9423c243ea3",
+        "c7e04168-38fc-52f8-84e2-d22f3ee2bc83",
+        "cabff7c0-dad5-5cee-ba66-97d2bdd6f0eb"
+        ],
+        "relevant_ids": [
+        "715c0ee8-7094-55eb-b867-f9423c243ea3",
+        "c7e04168-38fc-52f8-84e2-d22f3ee2bc83",
+        "cabff7c0-dad5-5cee-ba66-97d2bdd6f0eb",
+        "0fea8ed3-3ce6-5a69-872c-a52b9fd5ff67"
+        ],
+        "precision_at_3": 0.33,
+        "precision_at_5": 0.2,
+        "recall_at_5": 0.5,
+        "reciprocal_rank": 0.33
+    },
+    {
+        "question": "Contrast the multiplicative vs additive and sigmoid vs SiLU variants from Gated-Attention Layer with their performance and sparsity effects analyzed in section 4.",
+        "retrieved_ids": [
+        "43acff05-4591-418f-80f7-ff0033fb5447",
+        "800d6e50-f517-4904-a64a-70f9660ee56d",
+        "27e6f357-04ad-5258-be67-8b458ed5e211",
+        "965090da-983e-5f44-be4d-01474220f045",
+        "68eb646b-93c9-56de-b38e-b41ac9b4165b"
+        ],
+        "relevant_ids": [
+        "27e6f357-04ad-5258-be67-8b458ed5e211",
+        "965090da-983e-5f44-be4d-01474220f045",
+        "68eb646b-93c9-56de-b38e-b41ac9b4165b",
+        "1ee35f06-0fc2-517c-94fd-e20c49ca5dfe",
+        "e7a075b3-39e6-5f79-a53a-334251545c8d"
+        ],
+        "precision_at_3": 0.33,
+        "precision_at_5": 0.2,
+        "recall_at_5": 0.5,
+        "reciprocal_rank": 0.33
+    },
+    {
+        "question": "Explain how the low-rank mapping issue in section 2's attention description is addressed by gating, as analyzed via non-linearity and sparsity in section 4.",
+        "retrieved_ids": [
+        "d1bdac19-af73-4c93-91d1-c305d49bef12",
+        "a2196122-b6e3-4b09-9508-316362b0e61f",
+        "736bfecf-d4ca-5590-98b7-54bcf9cd6bfc",
+        "807c8b42-6f9d-54c0-ad9a-42ef6f61ebfc",
+        "eda5f1e8-58dd-5799-b1af-7cb43ba87106"
+        ],
+        "relevant_ids": [
+        "736bfecf-d4ca-5590-98b7-54bcf9cd6bfc",
+        "807c8b42-6f9d-54c0-ad9a-42ef6f61ebfc",
+        "eda5f1e8-58dd-5799-b1af-7cb43ba87106",
+        "5e934d2e-aafa-5ed8-8301-47b3eed26318"
+        ],
+        "precision_at_3": 0.33,
+        "precision_at_5": 0.2,
+        "recall_at_5": 0.5,
+        "reciprocal_rank": 0.33
+    },
+    {
+        "question": "From the Experiments on training stability and scaling with gating, and the Analysis of massive activations and sinks, why does gating improve stability?",
+        "retrieved_ids": [
+        "ad0a9419-62a1-40ba-a8bf-9e84b791b200",
+        "92e1615f-717a-447d-b236-9523844e19dc",
+        "a4d1dd7c-ea8b-419e-9f61-f9e802176537",
+        "bf38f725-d6fa-4c6a-a8e1-80ae30f01081",
+        "cabff7c0-dad5-5cee-ba66-97d2bdd6f0eb"
+        ],
+        "relevant_ids": [
+        "cabff7c0-dad5-5cee-ba66-97d2bdd6f0eb",
+        "29a1aa0f-1d95-546a-a21a-f074f328ac15",
+        "0aed13f7-9875-5e99-a80b-3f70115fe3bd",
+        "27840f34-c076-5fda-82bf-0b61092e5d70",
+        "6a3bd22d-f0c4-520d-bff6-85f9ddc0178e"
+        ],
+        "precision_at_3": 0.0,
+        "precision_at_5": 0.0,
+        "recall_at_5": 1.0,
+        "reciprocal_rank": 0.2
+    },
+    {
+        "question": "How do the main MoE and dense results in Experiments connect to the long-context extrapolation findings in Analysis?",
+        "retrieved_ids": [
+        "0aa18fe3-80a1-4531-86dd-2dea8a33cb9f",
+        "d8aaa8d2-f689-49a5-ba12-638cc90a9371",
+        "f74aeeca-c809-40bb-9739-21a2e6972f3e",
+        "7a32161e-8a40-4297-a2ac-bc01cf1feaa5",
+        "68eb646b-93c9-56de-b38e-b41ac9b4165b"
+        ],
+        "relevant_ids": [
+        "68eb646b-93c9-56de-b38e-b41ac9b4165b",
+        "b80adbde-760d-5441-a1c3-04056103c010",
+        "310e00be-27be-5165-854f-0766543a894a",
+        "16a5c6fa-6bf7-5728-9e91-6e3990ac546b"
+        ],
+        "precision_at_3": 0.0,
+        "precision_at_5": 0.0,
+        "recall_at_5": 1.0,
+        "reciprocal_rank": 0.2
+    },
+    {
+        "question": "Linking dense model scaling experiments in section 3 with non-linearity/sparsity analysis in 4, what dual benefits does SDPA gating provide for larger/deeper models?",
+        "retrieved_ids": [
+        "d1cbc959-5242-4057-b9c5-eb0f06858d98",
+        "67398ed5-b70a-4cf0-a15e-334fa97c5a59",
+        "d694a702-39e9-4fd8-98ca-8581c401d373",
+        "8c770259-1c8e-4cf4-8e7d-abe2db7a9c80",
+        "eda5f1e8-58dd-5799-b1af-7cb43ba87106"
+        ],
+        "relevant_ids": [
+        "eda5f1e8-58dd-5799-b1af-7cb43ba87106",
+        "45790b84-f08c-568b-be79-6c1bd6d68b55",
+        "37945276-b269-5c0a-880d-61dda88bc71b",
+        "83d74f89-f113-546e-8a57-431df2947049",
+        "e5074e88-6051-5b75-91cd-96e06c4288be"
+        ],
+        "precision_at_3": 0.0,
+        "precision_at_5": 0.0,
+        "recall_at_5": 1.0,
+        "reciprocal_rank": 0.2
+    },
+    {
+        "question": "Compare the benchmark improvements from gating in Experiments to the mechanisms (non-linearity, sparsity, sink-free) detailed in Analysis.",
+        "retrieved_ids": [
+        "7d39e53c-678b-460a-bfa8-64199157842c",
+        "f7623adb-bb6f-4850-a644-5fc71041fffd",
+        "09e25203-1e5c-4074-aec0-1ffa4f32e08f",
+        "64fab3ad-7ec1-444e-85bf-84333d125a35",
+        "0aed13f7-9875-5e99-a80b-3f70115fe3bd"
+        ],
+        "relevant_ids": [
+        "0aed13f7-9875-5e99-a80b-3f70115fe3bd",
+        "27840f34-c076-5fda-82bf-0b61092e5d70",
+        "227de942-e450-5a2e-9b6f-e5883693c457",
+        "97dbc3d1-8bc9-5fc1-874f-ad4c9a67e87d"
+        ],
+        "precision_at_3": 0.0,
+        "precision_at_5": 0.0,
+        "recall_at_5": 1.0,
+        "reciprocal_rank": 0.2
+    },
+    {
+        "question": "Using stability results from Experiments and attention sink/massive activation analysis from section 4, discuss implications for training large models.",
+        "retrieved_ids": [
+        "d7a2baa7-4912-4348-b3b7-85ee42c33997",
+        "22dc5817-3f8d-461d-9eca-de5133aea9b2",
+        "8bd393d3-3d8a-4ac3-ae93-fc12ea4fb5b1",
+        "41ec5192-8cd8-4970-8e18-725c5e7d30ea",
+        "310e00be-27be-5165-854f-0766543a894a"
+        ],
+        "relevant_ids": [
+        "310e00be-27be-5165-854f-0766543a894a",
+        "44e5c67e-8a92-545d-913b-ba159987aed3",
+        "614be032-45db-52ed-9b89-ccfd8e99b246",
+        "2d1c67d5-a9ce-514e-aef4-c19aeccd2e4a",
+        "736bfecf-d4ca-5590-98b7-54bcf9cd6bfc"
+        ],
+        "precision_at_3": 0.0,
+        "precision_at_5": 0.0,
+        "recall_at_5": 1.0,
+        "reciprocal_rank": 0.2
+    },
+    {
+        "question": "Summarize gating-related works in Related Works and connect to the Conclusion's key contributions on non-linearity, sparsity, and sink-free models.",
+        "retrieved_ids": [
+        "39d55606-7c2a-4dd8-8dea-58deefcab65a",
+        "74a4fe0b-0007-4ab1-8c78-b03c093c3e2d",
+        "43603a0f-15cb-4375-b92f-d41c556d63d0",
+        "579b0825-3a27-4a55-b6ac-6af3565044f6",
+        "37945276-b269-5c0a-880d-61dda88bc71b"
+        ],
+        "relevant_ids": [
+        "37945276-b269-5c0a-880d-61dda88bc71b",
+        "36e429aa-83d5-5fdb-b202-e08fb140a787",
+        "ad19da30-0b9e-564d-a133-a257d9a584b6",
+        "f3216bf8-f94f-55f9-a960-2c07312c5607"
+        ],
+        "precision_at_3": 0.0,
+        "precision_at_5": 0.0,
+        "recall_at_5": 1.0,
+        "reciprocal_rank": 0.2
+    },
+    {
+        "question": "How does the attention sink discussion in Related Works (5.2) align with the empirical findings and benefits in the Analysis and Conclusion sections?",
+        "retrieved_ids": [
+        "a81c6d3c-28e6-42ca-80ca-117591e7bacc",
+        "511d85e5-b305-463e-b330-c485ae3f8a1b",
+        "5b2448d5-e053-4e77-a180-1f2bb9c59e36",
+        "0c3e32fd-f3e3-4415-9592-6600c23ad822",
+        "227de942-e450-5a2e-9b6f-e5883693c457"
+        ],
+        "relevant_ids": [
+        "227de942-e450-5a2e-9b6f-e5883693c457",
+        "8715edec-87f3-509e-9628-739023818ca0",
+        "c6554eae-56d0-5885-8f38-92f843bf0028",
+        "eda5f1e8-58dd-5799-b1af-7cb43ba87106",
+        "29a1aa0f-1d95-546a-a21a-f074f328ac15"
+        ],
+        "precision_at_3": 0.0,
+        "precision_at_5": 0.0,
+        "recall_at_5": 1.0,
+        "reciprocal_rank": 0.2
+    },
+    {
+        "question": "Relate the limitations mentioned at the end to the overall findings on gating effectiveness across Experiments, Analysis, and Conclusion.",
+        "retrieved_ids": [
+        "ef29e6a2-9f9f-4c41-80fc-3fc0609ea082",
+        "05d4819e-3601-484a-ada3-319ebb4666c9",
+        "a3e0fd20-2b13-4ae1-b75a-80878ae3245f",
+        "3b3366f8-6593-47a1-b693-9ade3d3c4e6a",
+        "614be032-45db-52ed-9b89-ccfd8e99b246"
+        ],
+        "relevant_ids": [
+        "614be032-45db-52ed-9b89-ccfd8e99b246",
+        "0fea8ed3-3ce6-5a69-872c-a52b9fd5ff67",
+        "cd5dad35-281a-531f-8ff4-acd369985114",
+        "27840f34-c076-5fda-82bf-0b61092e5d70"
+        ],
+        "precision_at_3": 0.0,
+        "precision_at_5": 0.0,
+        "recall_at_5": 1.0,
+        "reciprocal_rank": 0.2
+    },
+    {
+        "question": "From Related Works on prior gated attention and the Conclusion, what novel aspects does this work contribute regarding standard softmax attention?",
+        "retrieved_ids": [
+        "95806e29-df38-4667-adc5-49c67c3a1ddc",
+        "c2df9783-acf3-41ee-ba85-7b83329b0261",
+        "e17a80cc-5f70-4042-bc08-6a3d68d02948",
+        "e083869c-b6ae-4b8f-ae5f-8c8b006a0f0b",
+        "ad19da30-0b9e-564d-a133-a257d9a584b6"
+        ],
+        "relevant_ids": [
+        "ad19da30-0b9e-564d-a133-a257d9a584b6",
+        "f3216bf8-f94f-55f9-a960-2c07312c5607",
+        "9d0686dc-a23d-5431-8dfa-f130e827b607",
+        "45790b84-f08c-568b-be79-6c1bd6d68b55",
+        "37945276-b269-5c0a-880d-61dda88bc71b"
+        ],
+        "precision_at_3": 0.0,
+        "precision_at_5": 0.0,
+        "recall_at_5": 1.0,
+        "reciprocal_rank": 0.2
+    },
+    {
+        "question": "Connect the stability enhancements in Experiments with sink/activation analysis in 4 and broader implications in Conclusion.",
+        "retrieved_ids": [
+        "0558c295-1dd3-41c9-9e11-44e156ea673d",
+        "72be3dc2-55d6-48e8-9d4f-8813bec3ad86",
+        "9df6b5f5-f84d-4550-bfcf-240ea26ed518",
+        "f1c19e51-730a-4f4d-8bfa-548d22a23623",
+        "c6554eae-56d0-5885-8f38-92f843bf0028"
+        ],
+        "relevant_ids": [
+        "c6554eae-56d0-5885-8f38-92f843bf0028",
+        "1ee35f06-0fc2-517c-94fd-e20c49ca5dfe",
+        "e7a075b3-39e6-5f79-a53a-334251545c8d",
+        "44e5c67e-8a92-545d-913b-ba159987aed3"
+        ],
+        "precision_at_3": 0.0,
+        "precision_at_5": 0.0,
+        "recall_at_5": 1.0,
+        "reciprocal_rank": 0.2
+    },
+    {
+        "question": "Explain the motivation for distinguishing pronoun coreference resolution (PCR) from general coreference resolution, including experimental evidence from the End-to-end model on CoNLL-2012, the challenges in resolving different relation types (NP-NP, NP-P, P-P), and how this connects to the need for separate evaluation on ordinary PCR tasks that mix linguistic and commonsense knowledge versus dedicated hard PCR tasks like WSC.",
+        "retrieved_ids": [
+        "f87fdaf6-6569-5ec1-8c3c-baaa5b533e01",
+        "5e934d2e-aafa-5ed8-8301-47b3eed26318",
+        "ef8c03d5-e0e9-5dc0-9a0a-84f697465332",
+        "5cba0513-5e97-5002-bf12-636818292019",
+        "6a3bd22d-f0c4-520d-bff6-85f9ddc0178e"
+        ],
+        "relevant_ids": [
+        "f87fdaf6-6569-5ec1-8c3c-baaa5b533e01",
+        "5e934d2e-aafa-5ed8-8301-47b3eed26318",
+        "ef8c03d5-e0e9-5dc0-9a0a-84f697465332",
+        "5cba0513-5e97-5002-bf12-636818292019",
+        "6a3bd22d-f0c4-520d-bff6-85f9ddc0178e"
+        ],
+        "precision_at_3": 1.0,
+        "precision_at_5": 1.0,
+        "recall_at_5": 1.0,
+        "reciprocal_rank": 1.0
+    },
+    {
+        "question": "Discuss how the Introduction highlights the importance of PCR for downstream tasks and the role of gold mentions, then connect this to the datasets and methods in Ordinary PCR section, particularly why CoNLL-2012 is widely used and the shift from rule-based to end-to-end models.",
+        "retrieved_ids": [
+        "6a3bd22d-f0c4-520d-bff6-85f9ddc0178e",
+        "a8321e91-330d-57b5-bd28-7a1951262cb1",
+        "ec1909da-e6ab-563c-a9a8-68407b3ff348",
+        "5cba0513-5e97-5002-bf12-636818292019",
+        "c0ffcdcd-ee21-4046-9057-a472dfd9fb26"
+        ],
+        "relevant_ids": [
+        "6a3bd22d-f0c4-520d-bff6-85f9ddc0178e",
+        "a8321e91-330d-57b5-bd28-7a1951262cb1",
+        "ec1909da-e6ab-563c-a9a8-68407b3ff348",
+        "5cba0513-5e97-5002-bf12-636818292019"
+        ],
+        "precision_at_3": 1.0,
+        "precision_at_5": 1.0,
+        "recall_at_5": 1.0,
+        "reciprocal_rank": 1.0
+    },
+    {
+        "question": "Based on the Introduction's discussion of pronoun types and challenges, and Ordinary PCR's performance analysis, why do models perform differently across third personal, possessive, and demonstrative pronouns, and what does cross-domain and frequency analysis reveal about model readiness?",
+        "retrieved_ids": [
+        "16a5c6fa-6bf7-5728-9e91-6e3990ac546b",
+        "8c24403f-02e2-57bf-922f-b36aeb576e95",
+        "d3999dfc-5166-53ff-b0ae-9c50bf396e6d",
+        "ec1909da-e6ab-563c-a9a8-68407b3ff348",
+        "83d74f89-f113-546e-8a57-431df2947049"
+        ],
+        "relevant_ids": [
+        "16a5c6fa-6bf7-5728-9e91-6e3990ac546b",
+        "8c24403f-02e2-57bf-922f-b36aeb576e95",
+        "d3999dfc-5166-53ff-b0ae-9c50bf396e6d",
+        "ec1909da-e6ab-563c-a9a8-68407b3ff348",
+        "83d74f89-f113-546e-8a57-431df2947049"
+        ],
+        "precision_at_3": 1.0,
+        "precision_at_5": 1.0,
+        "recall_at_5": 1.0,
+        "reciprocal_rank": 1.0
+    },
+    {
+        "question": "How does the Introduction motivate surveying ordinary and hard PCR, and what specific limitations of ordinary PCR tasks are addressed by introducing WSC in the transition to Hard PCR section?",
+        "retrieved_ids": [
+        "ef8c03d5-e0e9-5dc0-9a0a-84f697465332",
+        "5cba0513-5e97-5002-bf12-636818292019",
+        "83d74f89-f113-546e-8a57-431df2947049",
+        "d3999dfc-5166-53ff-b0ae-9c50bf396e6d",
+        "eb0d4503-20be-4a26-83c6-771c3937befb"
+        ],
+        "relevant_ids": [
+        "ef8c03d5-e0e9-5dc0-9a0a-84f697465332",
+        "5cba0513-5e97-5002-bf12-636818292019",
+        "83d74f89-f113-546e-8a57-431df2947049",
+        "d3999dfc-5166-53ff-b0ae-9c50bf396e6d"
+        ],
+        "precision_at_3": 1.0,
+        "precision_at_5": 1.0,
+        "recall_at_5": 1.0,
+        "reciprocal_rank": 1.0
+    },
+    {
+        "question": "Compare the experimental findings in Introduction/Ordinary PCR on model limitations (cross-domain, frequency) with how Ordinary PCR methods evolved, linking to why further improvements like KG and SpanBERT were pursued.",
+        "retrieved_ids": [
+        "ec1909da-e6ab-563c-a9a8-68407b3ff348",
+        "e5074e88-6051-5b75-91cd-96e06c4288be",
+        "715c0ee8-7094-55eb-b867-f9423c243ea3",
+        "97dbc3d1-8bc9-5fc1-874f-ad4c9a67e87d",
+        "27e6f357-04ad-5258-be67-8b458ed5e211"
+        ],
+        "relevant_ids": [
+        "ec1909da-e6ab-563c-a9a8-68407b3ff348",
+        "e5074e88-6051-5b75-91cd-96e06c4288be",
+        "715c0ee8-7094-55eb-b867-f9423c243ea3",
+        "97dbc3d1-8bc9-5fc1-874f-ad4c9a67e87d",
+        "27e6f357-04ad-5258-be67-8b458ed5e211"
+        ],
+        "precision_at_3": 1.0,
+        "precision_at_5": 1.0,
+        "recall_at_5": 1.0,
+        "reciprocal_rank": 1.0
+    },
+    {
+        "question": "Explain the formal definition and datasets of Ordinary PCR, then contrast with the task definition and datasets of Hard PCR (WSC etc.), highlighting why hard PCR better isolates commonsense reasoning.",
+        "retrieved_ids": [
+        "bb4f6005-7e7a-4764-b6ac-536305b5c428",
+        "d3999dfc-5166-53ff-b0ae-9c50bf396e6d",
+        "97dbc3d1-8bc9-5fc1-874f-ad4c9a67e87d",
+        "27e6f357-04ad-5258-be67-8b458ed5e211",
+        "965090da-983e-5f44-be4d-01474220f045"
+        ],
+        "relevant_ids": [
+        "d3999dfc-5166-53ff-b0ae-9c50bf396e6d",
+        "97dbc3d1-8bc9-5fc1-874f-ad4c9a67e87d",
+        "27e6f357-04ad-5258-be67-8b458ed5e211",
+        "965090da-983e-5f44-be4d-01474220f045"
+        ],
+        "precision_at_3": 1.0,
+        "precision_at_5": 0.8,
+        "recall_at_5": 0.6,
+        "reciprocal_rank": 0.5
+    },
+    {
+        "question": "Drawing from Ordinary PCR performances and analysis with Hard PCR methods and results on WSC, what progress has been made and what gaps remain in handling commonsense for pronoun resolution?",
+        "retrieved_ids": [
+        "7fcd494a-5ac6-47c4-9069-5be408f57793",
+        "83d74f89-f113-546e-8a57-431df2947049",
+        "2d1c67d5-a9ce-514e-aef4-c19aeccd2e4a",
+        "736bfecf-d4ca-5590-98b7-54bcf9cd6bfc",
+        "c7e04168-38fc-52f8-84e2-d22f3ee2bc83"
+        ],
+        "relevant_ids": [
+        "83d74f89-f113-546e-8a57-431df2947049",
+        "2d1c67d5-a9ce-514e-aef4-c19aeccd2e4a",
+        "736bfecf-d4ca-5590-98b7-54bcf9cd6bfc",
+        "c7e04168-38fc-52f8-84e2-d22f3ee2bc83",
+        "cabff7c0-dad5-5cee-ba66-97d2bdd6f0eb"
+        ],
+        "precision_at_3": 1.0,
+        "precision_at_5": 0.8,
+        "recall_at_5": 0.6,
+        "reciprocal_rank": 0.5
+    },
+    {
+        "question": "How do improvements in Ordinary PCR (e.g., KG injection, higher-order) relate to approaches in Hard PCR like structured knowledge reasoning or fine-tuning, and what does this suggest about knowledge integration?",
+        "retrieved_ids": [
+        "73526be3-6d0f-43e1-930b-3c8587879057",
+        "715c0ee8-7094-55eb-b867-f9423c243ea3",
+        "c7e04168-38fc-52f8-84e2-d22f3ee2bc83",
+        "cabff7c0-dad5-5cee-ba66-97d2bdd6f0eb",
+        "807c8b42-6f9d-54c0-ad9a-42ef6f61ebfc"
+        ],
+        "relevant_ids": [
+        "715c0ee8-7094-55eb-b867-f9423c243ea3",
+        "c7e04168-38fc-52f8-84e2-d22f3ee2bc83",
+        "cabff7c0-dad5-5cee-ba66-97d2bdd6f0eb",
+        "807c8b42-6f9d-54c0-ad9a-42ef6f61ebfc"
+        ],
+        "precision_at_3": 1.0,
+        "precision_at_5": 0.6,
+        "recall_at_5": 0.4,
+        "reciprocal_rank": 0.5
+    },
+    {
+        "question": "Compare the influence of frequency and domain in Ordinary PCR analysis to the challenges of small-scale vs large-scale datasets in Hard PCR, and implications for model generalization.",
+        "retrieved_ids": [
+        "e4afb3ce-8654-403c-b6d3-ced81bb28465",
+        "27e6f357-04ad-5258-be67-8b458ed5e211",
+        "965090da-983e-5f44-be4d-01474220f045",
+        "68eb646b-93c9-56de-b38e-b41ac9b4165b",
+        "0aed13f7-9875-5e99-a80b-3f70115fe3bd"
+        ],
+        "relevant_ids": [
+        "27e6f357-04ad-5258-be67-8b458ed5e211",
+        "965090da-983e-5f44-be4d-01474220f045",
+        "68eb646b-93c9-56de-b38e-b41ac9b4165b",
+        "0aed13f7-9875-5e99-a80b-3f70115fe3bd",
+        "27840f34-c076-5fda-82bf-0b61092e5d70"
+        ],
+        "precision_at_3": 1.0,
+        "precision_at_5": 0.6,
+        "recall_at_5": 0.4,
+        "reciprocal_rank": 0.5
+    },
+    {
+        "question": "Linking Ordinary PCR's end-to-end success and limitations to Hard PCR's LM-based and fine-tuning methods, why have pre-trained models become central, and what analysis supports their commonsense encoding?",
+        "retrieved_ids": [
+        "3d6d9d35-344a-4faa-8eda-e4403874d9cc",
+        "736bfecf-d4ca-5590-98b7-54bcf9cd6bfc",
+        "807c8b42-6f9d-54c0-ad9a-42ef6f61ebfc",
+        "eda5f1e8-58dd-5799-b1af-7cb43ba87106",
+        "310e00be-27be-5165-854f-0766543a894a"
+        ],
+        "relevant_ids": [
+        "736bfecf-d4ca-5590-98b7-54bcf9cd6bfc",
+        "807c8b42-6f9d-54c0-ad9a-42ef6f61ebfc",
+        "eda5f1e8-58dd-5799-b1af-7cb43ba87106",
+        "310e00be-27be-5165-854f-0766543a894a"
+        ],
+        "precision_at_3": 1.0,
+        "precision_at_5": 0.6,
+        "recall_at_5": 0.4,
+        "reciprocal_rank": 0.5
+    },
+    {
+        "question": "Describe key methods and performances on WSC from Hard PCR, then connect to how Other PCR Tasks like WinoGender or Visual PCR extend or differ in purpose and challenges.",
+        "retrieved_ids": [
+        "b836ed15-f125-4820-8aaa-4bb42496dfe1",
+        "cabff7c0-dad5-5cee-ba66-97d2bdd6f0eb",
+        "29a1aa0f-1d95-546a-a21a-f074f328ac15",
+        "0aed13f7-9875-5e99-a80b-3f70115fe3bd",
+        "27840f34-c076-5fda-82bf-0b61092e5d70"
+        ],
+        "relevant_ids": [
+        "cabff7c0-dad5-5cee-ba66-97d2bdd6f0eb",
+        "29a1aa0f-1d95-546a-a21a-f074f328ac15",
+        "0aed13f7-9875-5e99-a80b-3f70115fe3bd",
+        "27840f34-c076-5fda-82bf-0b61092e5d70",
+        "227de942-e450-5a2e-9b6f-e5883693c457"
+        ],
+        "precision_at_3": 1.0,
+        "precision_at_5": 0.6,
+        "recall_at_5": 0.4,
+        "reciprocal_rank": 0.5
+    },
+    {
+        "question": "How does Hard PCR's focus on commonsense via WSC relate to specialized tasks in Other PCR section, such as medical domain or chatbots, in terms of domain-specific challenges?",
+        "retrieved_ids": [
+        "820a9491-1488-4f7b-a77c-14014d5198f8",
+        "68eb646b-93c9-56de-b38e-b41ac9b4165b",
+        "b80adbde-760d-5441-a1c3-04056103c010",
+        "310e00be-27be-5165-854f-0766543a894a",
+        "36e429aa-83d5-5fdb-b202-e08fb140a787"
+        ],
+        "relevant_ids": [
+        "68eb646b-93c9-56de-b38e-b41ac9b4165b",
+        "b80adbde-760d-5441-a1c3-04056103c010",
+        "310e00be-27be-5165-854f-0766543a894a",
+        "36e429aa-83d5-5fdb-b202-e08fb140a787"
+        ],
+        "precision_at_3": 1.0,
+        "precision_at_5": 0.6,
+        "recall_at_5": 0.4,
+        "reciprocal_rank": 0.5
+    },
+    {
+        "question": "From Hard PCR analysis of model sensitivity and WinoGrande subsets, what insights apply to Other PCR tasks like gender bias studies or machine translation PCR?",
+        "retrieved_ids": [
+        "17fe513a-8e5f-43d0-a388-748092f2a4cd",
+        "eda5f1e8-58dd-5799-b1af-7cb43ba87106",
+        "45790b84-f08c-568b-be79-6c1bd6d68b55",
+        "37945276-b269-5c0a-880d-61dda88bc71b",
+        "8715edec-87f3-509e-9628-739023818ca0"
+        ],
+        "relevant_ids": [
+        "eda5f1e8-58dd-5799-b1af-7cb43ba87106",
+        "45790b84-f08c-568b-be79-6c1bd6d68b55",
+        "37945276-b269-5c0a-880d-61dda88bc71b",
+        "8715edec-87f3-509e-9628-739023818ca0",
+        "c6554eae-56d0-5885-8f38-92f843bf0028"
+        ],
+        "precision_at_3": 1.0,
+        "precision_at_5": 0.6,
+        "recall_at_5": 0.4,
+        "reciprocal_rank": 0.5
+    },
+    {
+        "question": "Contrast the commonsense focus in Hard PCR with purposes of Other PCR tasks (bias, visual, medical), and discuss shared limitations like robustness for real applications.",
+        "retrieved_ids": [
+        "7ef2198a-8ada-4d7b-ae19-82aa9edd52b5",
+        "0aed13f7-9875-5e99-a80b-3f70115fe3bd",
+        "27840f34-c076-5fda-82bf-0b61092e5d70",
+        "227de942-e450-5a2e-9b6f-e5883693c457",
+        "cd5dad35-281a-531f-8ff4-acd369985114"
+        ],
+        "relevant_ids": [
+        "0aed13f7-9875-5e99-a80b-3f70115fe3bd",
+        "27840f34-c076-5fda-82bf-0b61092e5d70",
+        "227de942-e450-5a2e-9b6f-e5883693c457",
+        "cd5dad35-281a-531f-8ff4-acd369985114"
+        ],
+        "precision_at_3": 1.0,
+        "precision_at_5": 0.6,
+        "recall_at_5": 0.4,
+        "reciprocal_rank": 0.5
+    },
+    {
+        "question": "How do fine-tuning successes in Hard PCR inform potential approaches for specialized Other PCR tasks like visual-aware or conversational PCR?",
+        "retrieved_ids": [
+        "3d9e74d3-b595-4475-a18c-05939b8c30c1",
+        "310e00be-27be-5165-854f-0766543a894a",
+        "44e5c67e-8a92-545d-913b-ba159987aed3",
+        "614be032-45db-52ed-9b89-ccfd8e99b246",
+        "e7a075b3-39e6-5f79-a53a-334251545c8d"
+        ],
+        "relevant_ids": [
+        "310e00be-27be-5165-854f-0766543a894a",
+        "44e5c67e-8a92-545d-913b-ba159987aed3",
+        "614be032-45db-52ed-9b89-ccfd8e99b246",
+        "e7a075b3-39e6-5f79-a53a-334251545c8d",
+        "f87fdaf6-6569-5ec1-8c3c-baaa5b533e01"
+        ],
+        "precision_at_3": 1.0,
+        "precision_at_5": 0.6,
+        "recall_at_5": 0.4,
+        "reciprocal_rank": 0.5
+    },
+    {
+        "question": "Summarize limitations of current models from Ordinary and Hard PCR as discussed in Conclusion, and how Other PCR tasks illustrate additional real-world challenges.",
+        "retrieved_ids": [
+        "0728798f-a603-4941-b5a1-f68d86e69304",
+        "37945276-b269-5c0a-880d-61dda88bc71b",
+        "36e429aa-83d5-5fdb-b202-e08fb140a787",
+        "ad19da30-0b9e-564d-a133-a257d9a584b6",
+        "f3216bf8-f94f-55f9-a960-2c07312c5607"
+        ],
+        "relevant_ids": [
+        "37945276-b269-5c0a-880d-61dda88bc71b",
+        "36e429aa-83d5-5fdb-b202-e08fb140a787",
+        "ad19da30-0b9e-564d-a133-a257d9a584b6",
+        "f3216bf8-f94f-55f9-a960-2c07312c5607"
+        ],
+        "precision_at_3": 1.0,
+        "precision_at_5": 0.6,
+        "recall_at_5": 0.4,
+        "reciprocal_rank": 0.5
+    },
+    {
+        "question": "Using insights from Ordinary PCR cross-domain/frequency issues and Conclusion, explain why models are not ready for real apps, referencing examples from Other PCR tasks.",
+        "retrieved_ids": [
+        "56418e64-3e98-4087-9efc-53b5a41493ac",
+        "227de942-e450-5a2e-9b6f-e5883693c457",
+        "8715edec-87f3-509e-9628-739023818ca0",
+        "c6554eae-56d0-5885-8f38-92f843bf0028",
+        "a8321e91-330d-57b5-bd28-7a1951262cb1"
+        ],
+        "relevant_ids": [
+        "227de942-e450-5a2e-9b6f-e5883693c457",
+        "8715edec-87f3-509e-9628-739023818ca0",
+        "c6554eae-56d0-5885-8f38-92f843bf0028",
+        "a8321e91-330d-57b5-bd28-7a1951262cb1",
+        "ec1909da-e6ab-563c-a9a8-68407b3ff348"
+        ],
+        "precision_at_3": 1.0,
+        "precision_at_5": 0.6,
+        "recall_at_5": 0.4,
+        "reciprocal_rank": 0.5
+    },
+    {
+        "question": "Connect the survey contributions in Introduction/Conclusion to the breadth covered in Other PCR tasks and overall limitations highlighted.",
+        "retrieved_ids": [
+        "ff496523-eb37-471d-b023-f02d68bf3085",
+        "614be032-45db-52ed-9b89-ccfd8e99b246",
+        "0fea8ed3-3ce6-5a69-872c-a52b9fd5ff67",
+        "cd5dad35-281a-531f-8ff4-acd369985114",
+        "8c24403f-02e2-57bf-922f-b36aeb576e95"
+        ],
+        "relevant_ids": [
+        "614be032-45db-52ed-9b89-ccfd8e99b246",
+        "0fea8ed3-3ce6-5a69-872c-a52b9fd5ff67",
+        "cd5dad35-281a-531f-8ff4-acd369985114",
+        "8c24403f-02e2-57bf-922f-b36aeb576e95"
+        ],
+        "precision_at_3": 1.0,
+        "precision_at_5": 0.4,
+        "recall_at_5": 0.8,
+        "reciprocal_rank": 0.5
+    },
+    {
+        "question": "What does the Conclusion say about progress and remaining challenges, linking back to experiments in Ordinary/Hard PCR sections?",
+        "retrieved_ids": [
+        "c3d3e788-5b12-4fd8-98ea-2c81b082ce7c",
+        "ad19da30-0b9e-564d-a133-a257d9a584b6",
+        "f3216bf8-f94f-55f9-a960-2c07312c5607",
+        "9d0686dc-a23d-5431-8dfa-f130e827b607",
+        "e5074e88-6051-5b75-91cd-96e06c4288be"
+        ],
+        "relevant_ids": [
+        "ad19da30-0b9e-564d-a133-a257d9a584b6",
+        "f3216bf8-f94f-55f9-a960-2c07312c5607",
+        "9d0686dc-a23d-5431-8dfa-f130e827b607",
+        "e5074e88-6051-5b75-91cd-96e06c4288be",
+        "715c0ee8-7094-55eb-b867-f9423c243ea3"
+        ],
+        "precision_at_3": 0.67,
+        "precision_at_5": 0.4,
+        "recall_at_5": 0.8,
+        "reciprocal_rank": 0.5
+    },
+    {
+        "question": "How do overall limitations in Conclusion relate to evolution from ordinary methods to hard PCR approaches and specialized tasks?",
+        "retrieved_ids": [
+        "f240a146-0ad9-4b0a-adda-7f0bee41c956",
+        "c6554eae-56d0-5885-8f38-92f843bf0028",
+        "1ee35f06-0fc2-517c-94fd-e20c49ca5dfe",
+        "e7a075b3-39e6-5f79-a53a-334251545c8d",
+        "27e6f357-04ad-5258-be67-8b458ed5e211"
+        ],
+        "relevant_ids": [
+        "c6554eae-56d0-5885-8f38-92f843bf0028",
+        "1ee35f06-0fc2-517c-94fd-e20c49ca5dfe",
+        "e7a075b3-39e6-5f79-a53a-334251545c8d",
+        "27e6f357-04ad-5258-be67-8b458ed5e211"
+        ],
+        "precision_at_3": 0.67,
+        "precision_at_5": 0.4,
+        "recall_at_5": 0.8,
+        "reciprocal_rank": 0.5
+    },
+    {
+        "question": "Explain the motivation for investigating gating in softmax attention from the Introduction, including examples from prior works like Switch Heads and NSA, and connect this to the experimental setup and main results in the Experiments section regarding the effectiveness of different gating positions in MoE models.",
+        "retrieved_ids": [
+        "2c2fed2c-a607-4b5b-b013-1a8ba6c60aa4",
+        "f87fdaf6-6569-5ec1-8c3c-baaa5b533e01",
+        "5e934d2e-aafa-5ed8-8301-47b3eed26318",
+        "ef8c03d5-e0e9-5dc0-9a0a-84f697465332",
+        "5cba0513-5e97-5002-bf12-636818292019"
+        ],
+        "relevant_ids": [
+        "f87fdaf6-6569-5ec1-8c3c-baaa5b533e01",
+        "5e934d2e-aafa-5ed8-8301-47b3eed26318",
+        "ef8c03d5-e0e9-5dc0-9a0a-84f697465332",
+        "5cba0513-5e97-5002-bf12-636818292019",
+        "736bfecf-d4ca-5590-98b7-54bcf9cd6bfc"
+        ],
+        "precision_at_3": 0.67,
+        "precision_at_5": 0.4,
+        "recall_at_5": 0.8,
+        "reciprocal_rank": 0.5
+    },
+    {
+        "question": "Based on the Introduction's discussion of gating benefits and the Gated-Attention Layer's formalization of variants (positions, granularity, etc.), what key design choices were found most effective in the Experiments section for MoE models?",
+        "retrieved_ids": [
+        "627419a6-d268-4c39-9624-223a98a37d4c",
+        "6a3bd22d-f0c4-520d-bff6-85f9ddc0178e",
+        "a8321e91-330d-57b5-bd28-7a1951262cb1",
+        "ec1909da-e6ab-563c-a9a8-68407b3ff348",
+        "68eb646b-93c9-56de-b38e-b41ac9b4165b"
+        ],
+        "relevant_ids": [
+        "6a3bd22d-f0c4-520d-bff6-85f9ddc0178e",
+        "a8321e91-330d-57b5-bd28-7a1951262cb1",
+        "ec1909da-e6ab-563c-a9a8-68407b3ff348",
+        "68eb646b-93c9-56de-b38e-b41ac9b4165b"
+        ],
+        "precision_at_3": 0.67,
+        "precision_at_5": 0.4,
+        "recall_at_5": 0.8,
+        "reciprocal_rank": 0.5
+    },
+    {
+        "question": "How does the Introduction connect gating to training stability and scaling, and what evidence from dense model experiments in section 3 supports or extends this?",
+        "retrieved_ids": [
+        "e666f50b-02b0-407a-bd1e-f3d923d089a4",
+        "16a5c6fa-6bf7-5728-9e91-6e3990ac546b",
+        "8c24403f-02e2-57bf-922f-b36aeb576e95",
+        "d3999dfc-5166-53ff-b0ae-9c50bf396e6d",
+        "29a1aa0f-1d95-546a-a21a-f074f328ac15"
+        ],
+        "relevant_ids": [
+        "16a5c6fa-6bf7-5728-9e91-6e3990ac546b",
+        "8c24403f-02e2-57bf-922f-b36aeb576e95",
+        "d3999dfc-5166-53ff-b0ae-9c50bf396e6d",
+        "29a1aa0f-1d95-546a-a21a-f074f328ac15",
+        "0aed13f7-9875-5e99-a80b-3f70115fe3bd"
+        ],
+        "precision_at_3": 0.67,
+        "precision_at_5": 0.4,
+        "recall_at_5": 0.8,
+        "reciprocal_rank": 0.5
+    },
+    {
+        "question": "Summarize the central finding from Introduction and link it to the performance comparisons across gating positions and granularities tested in the Experiments section.",
+        "retrieved_ids": [
+        "714d0eae-2841-4e00-800d-b313caa4a92b",
+        "7661d9ea-bafc-4f9f-870c-a168b8a340ff",
+        "ef8c03d5-e0e9-5dc0-9a0a-84f697465332",
+        "5cba0513-5e97-5002-bf12-636818292019",
+        "83d74f89-f113-546e-8a57-431df2947049"
+        ],
+        "relevant_ids": [
+        "ef8c03d5-e0e9-5dc0-9a0a-84f697465332",
+        "5cba0513-5e97-5002-bf12-636818292019",
+        "83d74f89-f113-546e-8a57-431df2947049",
+        "b80adbde-760d-5441-a1c3-04056103c010"
+        ],
+        "precision_at_3": 0.67,
+        "precision_at_5": 0.2,
+        "recall_at_5": 1.0,
+        "reciprocal_rank": 0.33
+    },
+    {
+        "question": "From the Introduction's overview of challenges in understanding gating and the detailed variants in Gated-Attention Layer, what do the MoE experiment results reveal about the importance of query-dependency and head-specificity?",
+        "retrieved_ids": [
+        "83f8ae9f-b53a-43e2-b5c9-14c409653f3a",
+        "060daa00-f300-447d-8512-ffb26b00a1fe",
+        "ec1909da-e6ab-563c-a9a8-68407b3ff348",
+        "e5074e88-6051-5b75-91cd-96e06c4288be",
+        "715c0ee8-7094-55eb-b867-f9423c243ea3"
+        ],
+        "relevant_ids": [
+        "ec1909da-e6ab-563c-a9a8-68407b3ff348",
+        "e5074e88-6051-5b75-91cd-96e06c4288be",
+        "715c0ee8-7094-55eb-b867-f9423c243ea3",
+        "37945276-b269-5c0a-880d-61dda88bc71b",
+        "227de942-e450-5a2e-9b6f-e5883693c457"
+        ],
+        "precision_at_3": 0.33,
+        "precision_at_5": 0.2,
+        "recall_at_5": 1.0,
+        "reciprocal_rank": 0.33
+    },
+    {
+        "question": "Describe the multi-head softmax attention preliminaries and gating augmentations from section 2, then explain how non-linearity analysis in section 4 accounts for performance gains at G1 and G2 positions.",
+        "retrieved_ids": [
+        "ed3df4be-072c-46ec-8726-68a35ba3c048",
+        "2a2f7007-3d37-4e89-9879-c3f8b16e0268",
+        "d3999dfc-5166-53ff-b0ae-9c50bf396e6d",
+        "97dbc3d1-8bc9-5fc1-874f-ad4c9a67e87d",
+        "27e6f357-04ad-5258-be67-8b458ed5e211"
+        ],
+        "relevant_ids": [
+        "d3999dfc-5166-53ff-b0ae-9c50bf396e6d",
+        "97dbc3d1-8bc9-5fc1-874f-ad4c9a67e87d",
+        "27e6f357-04ad-5258-be67-8b458ed5e211",
+        "965090da-983e-5f44-be4d-01474220f045"
+        ],
+        "precision_at_3": 0.33,
+        "precision_at_5": 0.2,
+        "recall_at_5": 1.0,
+        "reciprocal_rank": 0.33
+    },
+    {
+        "question": "Using the gating mechanism definition from Gated-Attention Layer and the sparsity analysis in Analysis, why does SDPA output gating outperform value gating despite both introducing non-linearity?",
+        "retrieved_ids": [
+        "e2200716-4509-4b86-9df6-d1f030a9dd17",
+        "8aebba43-684c-4f0b-a320-e2dfbec1a801",
+        "83d74f89-f113-546e-8a57-431df2947049",
+        "2d1c67d5-a9ce-514e-aef4-c19aeccd2e4a",
+        "736bfecf-d4ca-5590-98b7-54bcf9cd6bfc"
+        ],
+        "relevant_ids": [
+        "83d74f89-f113-546e-8a57-431df2947049",
+        "2d1c67d5-a9ce-514e-aef4-c19aeccd2e4a",
+        "736bfecf-d4ca-5590-98b7-54bcf9cd6bfc",
+        "f3216bf8-f94f-55f9-a960-2c07312c5607",
+        "8715edec-87f3-509e-9628-739023818ca0"
+        ],
+        "precision_at_3": 0.33,
+        "precision_at_5": 0.2,
+        "recall_at_5": 1.0,
+        "reciprocal_rank": 0.33
+    },
+    {
+        "question": "How do the positions investigated in section 2 relate to the attention sink reduction and long-context benefits observed in the Analysis section?",
+        "retrieved_ids": [
+        "5feb9e5e-8718-4f48-82a4-3ccac9c88536",
+        "0e9b0502-ec6d-473c-8589-f959abb7a36b",
+        "715c0ee8-7094-55eb-b867-f9423c243ea3",
+        "c7e04168-38fc-52f8-84e2-d22f3ee2bc83",
+        "cabff7c0-dad5-5cee-ba66-97d2bdd6f0eb"
+        ],
+        "relevant_ids": [
+        "715c0ee8-7094-55eb-b867-f9423c243ea3",
+        "c7e04168-38fc-52f8-84e2-d22f3ee2bc83",
+        "cabff7c0-dad5-5cee-ba66-97d2bdd6f0eb",
+        "0fea8ed3-3ce6-5a69-872c-a52b9fd5ff67"
+        ],
+        "precision_at_3": 0.33,
+        "precision_at_5": 0.2,
+        "recall_at_5": 0.5,
+        "reciprocal_rank": 0.33
+    },
+    {
+        "question": "Contrast the multiplicative vs additive and sigmoid vs SiLU variants from Gated-Attention Layer with their performance and sparsity effects analyzed in section 4.",
+        "retrieved_ids": [
+        "e3471797-3dd9-498a-b763-1a0b233be022",
+        "bdda368e-2257-4ace-8225-65613ed90283",
+        "27e6f357-04ad-5258-be67-8b458ed5e211",
+        "965090da-983e-5f44-be4d-01474220f045",
+        "68eb646b-93c9-56de-b38e-b41ac9b4165b"
+        ],
+        "relevant_ids": [
+        "27e6f357-04ad-5258-be67-8b458ed5e211",
+        "965090da-983e-5f44-be4d-01474220f045",
+        "68eb646b-93c9-56de-b38e-b41ac9b4165b",
+        "1ee35f06-0fc2-517c-94fd-e20c49ca5dfe",
+        "e7a075b3-39e6-5f79-a53a-334251545c8d"
+        ],
+        "precision_at_3": 0.33,
+        "precision_at_5": 0.2,
+        "recall_at_5": 0.5,
+        "reciprocal_rank": 0.33
+    },
+    {
+        "question": "Explain how the low-rank mapping issue in section 2's attention description is addressed by gating, as analyzed via non-linearity and sparsity in section 4.",
+        "retrieved_ids": [
+        "2fa84d10-3abf-476e-aa41-ebe73132023a",
+        "398db95c-2c4e-40a8-b75d-0155e4ea7641",
+        "736bfecf-d4ca-5590-98b7-54bcf9cd6bfc",
+        "807c8b42-6f9d-54c0-ad9a-42ef6f61ebfc",
+        "eda5f1e8-58dd-5799-b1af-7cb43ba87106"
+        ],
+        "relevant_ids": [
+        "736bfecf-d4ca-5590-98b7-54bcf9cd6bfc",
+        "807c8b42-6f9d-54c0-ad9a-42ef6f61ebfc",
+        "eda5f1e8-58dd-5799-b1af-7cb43ba87106",
+        "5e934d2e-aafa-5ed8-8301-47b3eed26318"
+        ],
+        "precision_at_3": 0.33,
+        "precision_at_5": 0.2,
+        "recall_at_5": 0.5,
+        "reciprocal_rank": 0.33
+    },
+    {
+        "question": "From the Experiments on training stability and scaling with gating, and the Analysis of massive activations and sinks, why does gating improve stability?",
+        "retrieved_ids": [
+        "6139d50f-ff2b-4784-a245-ae41fee50490",
+        "7d8d4768-4f11-4ecd-abbe-7e384af771ab",
+        "cabff7c0-dad5-5cee-ba66-97d2bdd6f0eb",
+        "29a1aa0f-1d95-546a-a21a-f074f328ac15",
+        "0aed13f7-9875-5e99-a80b-3f70115fe3bd"
+        ],
+        "relevant_ids": [
+        "cabff7c0-dad5-5cee-ba66-97d2bdd6f0eb",
+        "29a1aa0f-1d95-546a-a21a-f074f328ac15",
+        "0aed13f7-9875-5e99-a80b-3f70115fe3bd",
+        "27840f34-c076-5fda-82bf-0b61092e5d70",
+        "6a3bd22d-f0c4-520d-bff6-85f9ddc0178e"
+        ],
+        "precision_at_3": 0.33,
+        "precision_at_5": 0.2,
+        "recall_at_5": 0.5,
+        "reciprocal_rank": 0.33
+    },
+    {
+        "question": "How do the main MoE and dense results in Experiments connect to the long-context extrapolation findings in Analysis?",
+        "retrieved_ids": [
+        "65cae3f6-49a2-417b-a0a4-bb92b60be829",
+        "48757df0-3af0-4143-bcb6-0e8b59fa7522",
+        "68eb646b-93c9-56de-b38e-b41ac9b4165b",
+        "b80adbde-760d-5441-a1c3-04056103c010",
+        "310e00be-27be-5165-854f-0766543a894a"
+        ],
+        "relevant_ids": [
+        "68eb646b-93c9-56de-b38e-b41ac9b4165b",
+        "b80adbde-760d-5441-a1c3-04056103c010",
+        "310e00be-27be-5165-854f-0766543a894a",
+        "16a5c6fa-6bf7-5728-9e91-6e3990ac546b"
+        ],
+        "precision_at_3": 0.33,
+        "precision_at_5": 0.2,
+        "recall_at_5": 0.5,
+        "reciprocal_rank": 0.33
+    },
+    {
+        "question": "Linking dense model scaling experiments in section 3 with non-linearity/sparsity analysis in 4, what dual benefits does SDPA gating provide for larger/deeper models?",
+        "retrieved_ids": [
+        "cf41f79d-6fa9-436f-99b6-9afb52688f15",
+        "9800cb50-8b60-469c-9c0e-75233e1285b4",
+        "eda5f1e8-58dd-5799-b1af-7cb43ba87106",
+        "45790b84-f08c-568b-be79-6c1bd6d68b55",
+        "37945276-b269-5c0a-880d-61dda88bc71b"
+        ],
+        "relevant_ids": [
+        "eda5f1e8-58dd-5799-b1af-7cb43ba87106",
+        "45790b84-f08c-568b-be79-6c1bd6d68b55",
+        "37945276-b269-5c0a-880d-61dda88bc71b",
+        "83d74f89-f113-546e-8a57-431df2947049",
+        "e5074e88-6051-5b75-91cd-96e06c4288be"
+        ],
+        "precision_at_3": 0.33,
+        "precision_at_5": 0.2,
+        "recall_at_5": 0.5,
+        "reciprocal_rank": 0.33
+    },
+    {
+        "question": "Compare the benchmark improvements from gating in Experiments to the mechanisms (non-linearity, sparsity, sink-free) detailed in Analysis.",
+        "retrieved_ids": [
+        "3c53db5e-2bf9-448f-9797-540ccfc2a990",
+        "0988f6af-e6a7-423d-9592-f13a6c05704e",
+        "0aed13f7-9875-5e99-a80b-3f70115fe3bd",
+        "27840f34-c076-5fda-82bf-0b61092e5d70",
+        "227de942-e450-5a2e-9b6f-e5883693c457"
+        ],
+        "relevant_ids": [
+        "0aed13f7-9875-5e99-a80b-3f70115fe3bd",
+        "27840f34-c076-5fda-82bf-0b61092e5d70",
+        "227de942-e450-5a2e-9b6f-e5883693c457",
+        "97dbc3d1-8bc9-5fc1-874f-ad4c9a67e87d"
+        ],
+        "precision_at_3": 0.33,
+        "precision_at_5": 0.2,
+        "recall_at_5": 0.5,
+        "reciprocal_rank": 0.33
+    },
+    {
+        "question": "Using stability results from Experiments and attention sink/massive activation analysis from section 4, discuss implications for training large models.",
+        "retrieved_ids": [
+        "ca0aaa98-2905-494b-993e-2fe35c52135c",
+        "aeedb7fc-49a5-4896-bfcf-9d21c606a6f7",
+        "310e00be-27be-5165-854f-0766543a894a",
+        "44e5c67e-8a92-545d-913b-ba159987aed3",
+        "614be032-45db-52ed-9b89-ccfd8e99b246"
+        ],
+        "relevant_ids": [
+        "310e00be-27be-5165-854f-0766543a894a",
+        "44e5c67e-8a92-545d-913b-ba159987aed3",
+        "614be032-45db-52ed-9b89-ccfd8e99b246",
+        "2d1c67d5-a9ce-514e-aef4-c19aeccd2e4a",
+        "736bfecf-d4ca-5590-98b7-54bcf9cd6bfc"
+        ],
+        "precision_at_3": 0.33,
+        "precision_at_5": 0.2,
+        "recall_at_5": 0.5,
+        "reciprocal_rank": 0.33
+    },
+    {
+        "question": "Summarize gating-related works in Related Works and connect to the Conclusion's key contributions on non-linearity, sparsity, and sink-free models.",
+        "retrieved_ids": [
+        "ad78ba86-c011-4447-a078-e7588b23b11a",
+        "6c425752-5e52-4d33-a967-c1c2cd8b7560",
+        "37945276-b269-5c0a-880d-61dda88bc71b",
+        "36e429aa-83d5-5fdb-b202-e08fb140a787",
+        "ad19da30-0b9e-564d-a133-a257d9a584b6"
+        ],
+        "relevant_ids": [
+        "37945276-b269-5c0a-880d-61dda88bc71b",
+        "36e429aa-83d5-5fdb-b202-e08fb140a787",
+        "ad19da30-0b9e-564d-a133-a257d9a584b6",
+        "f3216bf8-f94f-55f9-a960-2c07312c5607"
+        ],
+        "precision_at_3": 0.33,
+        "precision_at_5": 0.2,
+        "recall_at_5": 0.5,
+        "reciprocal_rank": 0.33
+    },
+    {
+        "question": "How does the attention sink discussion in Related Works (5.2) align with the empirical findings and benefits in the Analysis and Conclusion sections?",
+        "retrieved_ids": [
+        "12af43df-f434-4ed2-b7eb-9c989eb7f070",
+        "e6de80bb-d28d-4e1a-b91f-a60b1a70c16c",
+        "227de942-e450-5a2e-9b6f-e5883693c457",
+        "8715edec-87f3-509e-9628-739023818ca0",
+        "c6554eae-56d0-5885-8f38-92f843bf0028"
+        ],
+        "relevant_ids": [
+        "227de942-e450-5a2e-9b6f-e5883693c457",
+        "8715edec-87f3-509e-9628-739023818ca0",
+        "c6554eae-56d0-5885-8f38-92f843bf0028",
+        "eda5f1e8-58dd-5799-b1af-7cb43ba87106",
+        "29a1aa0f-1d95-546a-a21a-f074f328ac15"
+        ],
+        "precision_at_3": 0.33,
+        "precision_at_5": 0.2,
+        "recall_at_5": 0.5,
+        "reciprocal_rank": 0.33
+    },
+    {
+        "question": "Relate the limitations mentioned at the end to the overall findings on gating effectiveness across Experiments, Analysis, and Conclusion.",
+        "retrieved_ids": [
+        "8824bae5-c4ae-4d18-a55a-27b0ec15cde3",
+        "9fbc8918-1b58-4746-9891-7772736777e9",
+        "f8dcea99-738e-43a2-8608-9e33d9cd3892",
+        "27cf343b-a621-449b-b0b6-86d53579c078",
+        "614be032-45db-52ed-9b89-ccfd8e99b246"
+        ],
+        "relevant_ids": [
+        "614be032-45db-52ed-9b89-ccfd8e99b246",
+        "0fea8ed3-3ce6-5a69-872c-a52b9fd5ff67",
+        "cd5dad35-281a-531f-8ff4-acd369985114",
+        "27840f34-c076-5fda-82bf-0b61092e5d70"
+        ],
+        "precision_at_3": 0.0,
+        "precision_at_5": 0.0,
+        "recall_at_5": 1.0,
+        "reciprocal_rank": 0.2
+    },
+    {
+        "question": "From Related Works on prior gated attention and the Conclusion, what novel aspects does this work contribute regarding standard softmax attention?",
+        "retrieved_ids": [
+        "5cbbc7e0-91ea-4534-9c16-d47a8066b7cf",
+        "606fa359-3370-4673-9ec0-e0935ab4f75a",
+        "9d629ff4-9d1f-4b66-93c3-3fa3fba08257",
+        "77c5c23a-0c2a-48c5-990d-f4bbd4a9f20a",
+        "ad19da30-0b9e-564d-a133-a257d9a584b6"
+        ],
+        "relevant_ids": [
+        "ad19da30-0b9e-564d-a133-a257d9a584b6",
+        "f3216bf8-f94f-55f9-a960-2c07312c5607",
+        "9d0686dc-a23d-5431-8dfa-f130e827b607",
+        "45790b84-f08c-568b-be79-6c1bd6d68b55",
+        "37945276-b269-5c0a-880d-61dda88bc71b"
+        ],
+        "precision_at_3": 0.0,
+        "precision_at_5": 0.0,
+        "recall_at_5": 1.0,
+        "reciprocal_rank": 0.2
+    },
+    {
+        "question": "Connect the stability enhancements in Experiments with sink/activation analysis in 4 and broader implications in Conclusion.",
+        "retrieved_ids": [
+        "bb2ab7b8-5ac0-431e-80d0-602b19f14933",
+        "ba91ca88-698f-4db9-929c-c27b5bf3448c",
+        "ec29736a-0afb-479a-baa3-7018737b56e4",
+        "9902c11e-be39-449d-92ea-d057e0aa2ee6",
+        "c6554eae-56d0-5885-8f38-92f843bf0028"
+        ],
+        "relevant_ids": [
+        "c6554eae-56d0-5885-8f38-92f843bf0028",
+        "1ee35f06-0fc2-517c-94fd-e20c49ca5dfe",
+        "e7a075b3-39e6-5f79-a53a-334251545c8d",
+        "44e5c67e-8a92-545d-913b-ba159987aed3"
+        ],
+        "precision_at_3": 0.0,
+        "precision_at_5": 0.0,
+        "recall_at_5": 1.0,
+        "reciprocal_rank": 0.2
+    },
+    {
+        "question": "Explain the motivation for distinguishing pronoun coreference resolution (PCR) from general coreference resolution, including experimental evidence from the End-to-end model on CoNLL-2012, the challenges in resolving different relation types (NP-NP, NP-P, P-P), and how this connects to the need for separate evaluation on ordinary PCR tasks that mix linguistic and commonsense knowledge versus dedicated hard PCR tasks like WSC.",
+        "retrieved_ids": [
+        "f87fdaf6-6569-5ec1-8c3c-baaa5b533e01",
+        "5e934d2e-aafa-5ed8-8301-47b3eed26318",
+        "ef8c03d5-e0e9-5dc0-9a0a-84f697465332",
+        "5cba0513-5e97-5002-bf12-636818292019",
+        "6a3bd22d-f0c4-520d-bff6-85f9ddc0178e"
+        ],
+        "relevant_ids": [
+        "f87fdaf6-6569-5ec1-8c3c-baaa5b533e01",
+        "5e934d2e-aafa-5ed8-8301-47b3eed26318",
+        "ef8c03d5-e0e9-5dc0-9a0a-84f697465332",
+        "5cba0513-5e97-5002-bf12-636818292019",
+        "6a3bd22d-f0c4-520d-bff6-85f9ddc0178e"
+        ],
+        "precision_at_3": 1.0,
+        "precision_at_5": 1.0,
+        "recall_at_5": 1.0,
+        "reciprocal_rank": 1.0
+    },
+    {
+        "question": "Discuss how the Introduction highlights the importance of PCR for downstream tasks and the role of gold mentions, then connect this to the datasets and methods in Ordinary PCR section, particularly why CoNLL-2012 is widely used and the shift from rule-based to end-to-end models.",
+        "retrieved_ids": [
+        "6a3bd22d-f0c4-520d-bff6-85f9ddc0178e",
+        "a8321e91-330d-57b5-bd28-7a1951262cb1",
+        "ec1909da-e6ab-563c-a9a8-68407b3ff348",
+        "5cba0513-5e97-5002-bf12-636818292019",
+        "7cb33c07-9208-4921-9726-51d859cb9b4f"
+        ],
+        "relevant_ids": [
+        "6a3bd22d-f0c4-520d-bff6-85f9ddc0178e",
+        "a8321e91-330d-57b5-bd28-7a1951262cb1",
+        "ec1909da-e6ab-563c-a9a8-68407b3ff348",
+        "5cba0513-5e97-5002-bf12-636818292019"
+        ],
+        "precision_at_3": 1.0,
+        "precision_at_5": 1.0,
+        "recall_at_5": 1.0,
+        "reciprocal_rank": 1.0
+    },
+    {
+        "question": "Based on the Introduction's discussion of pronoun types and challenges, and Ordinary PCR's performance analysis, why do models perform differently across third personal, possessive, and demonstrative pronouns, and what does cross-domain and frequency analysis reveal about model readiness?",
+        "retrieved_ids": [
+        "16a5c6fa-6bf7-5728-9e91-6e3990ac546b",
+        "8c24403f-02e2-57bf-922f-b36aeb576e95",
+        "d3999dfc-5166-53ff-b0ae-9c50bf396e6d",
+        "ec1909da-e6ab-563c-a9a8-68407b3ff348",
+        "83d74f89-f113-546e-8a57-431df2947049"
+        ],
+        "relevant_ids": [
+        "16a5c6fa-6bf7-5728-9e91-6e3990ac546b",
+        "8c24403f-02e2-57bf-922f-b36aeb576e95",
+        "d3999dfc-5166-53ff-b0ae-9c50bf396e6d",
+        "ec1909da-e6ab-563c-a9a8-68407b3ff348",
+        "83d74f89-f113-546e-8a57-431df2947049"
+        ],
+        "precision_at_3": 1.0,
+        "precision_at_5": 1.0,
+        "recall_at_5": 1.0,
+        "reciprocal_rank": 1.0
+    },
+    {
+        "question": "How does the Introduction motivate surveying ordinary and hard PCR, and what specific limitations of ordinary PCR tasks are addressed by introducing WSC in the transition to Hard PCR section?",
+        "retrieved_ids": [
+        "ef8c03d5-e0e9-5dc0-9a0a-84f697465332",
+        "5cba0513-5e97-5002-bf12-636818292019",
+        "83d74f89-f113-546e-8a57-431df2947049",
+        "d3999dfc-5166-53ff-b0ae-9c50bf396e6d",
+        "df825026-64b1-4ef6-abcf-44b3b2661ffb"
+        ],
+        "relevant_ids": [
+        "ef8c03d5-e0e9-5dc0-9a0a-84f697465332",
+        "5cba0513-5e97-5002-bf12-636818292019",
+        "83d74f89-f113-546e-8a57-431df2947049",
+        "d3999dfc-5166-53ff-b0ae-9c50bf396e6d"
+        ],
+        "precision_at_3": 1.0,
+        "precision_at_5": 1.0,
+        "recall_at_5": 1.0,
+        "reciprocal_rank": 1.0
+    },
+    {
+        "question": "Compare the experimental findings in Introduction/Ordinary PCR on model limitations (cross-domain, frequency) with how Ordinary PCR methods evolved, linking to why further improvements like KG and SpanBERT were pursued.",
+        "retrieved_ids": [
+        "ec1909da-e6ab-563c-a9a8-68407b3ff348",
+        "e5074e88-6051-5b75-91cd-96e06c4288be",
+        "715c0ee8-7094-55eb-b867-f9423c243ea3",
+        "97dbc3d1-8bc9-5fc1-874f-ad4c9a67e87d",
+        "27e6f357-04ad-5258-be67-8b458ed5e211"
+        ],
+        "relevant_ids": [
+        "ec1909da-e6ab-563c-a9a8-68407b3ff348",
+        "e5074e88-6051-5b75-91cd-96e06c4288be",
+        "715c0ee8-7094-55eb-b867-f9423c243ea3",
+        "97dbc3d1-8bc9-5fc1-874f-ad4c9a67e87d",
+        "27e6f357-04ad-5258-be67-8b458ed5e211"
+        ],
+        "precision_at_3": 1.0,
+        "precision_at_5": 1.0,
+        "recall_at_5": 1.0,
+        "reciprocal_rank": 1.0
+    },
+    {
+        "question": "Explain the formal definition and datasets of Ordinary PCR, then contrast with the task definition and datasets of Hard PCR (WSC etc.), highlighting why hard PCR better isolates commonsense reasoning.",
+        "retrieved_ids": [
+        "d3999dfc-5166-53ff-b0ae-9c50bf396e6d",
+        "97dbc3d1-8bc9-5fc1-874f-ad4c9a67e87d",
+        "27e6f357-04ad-5258-be67-8b458ed5e211",
+        "965090da-983e-5f44-be4d-01474220f045",
+        "f036e1c9-9374-4c39-a632-3abd0d4b3916"
+        ],
+        "relevant_ids": [
+        "d3999dfc-5166-53ff-b0ae-9c50bf396e6d",
+        "97dbc3d1-8bc9-5fc1-874f-ad4c9a67e87d",
+        "27e6f357-04ad-5258-be67-8b458ed5e211",
+        "965090da-983e-5f44-be4d-01474220f045"
+        ],
+        "precision_at_3": 1.0,
+        "precision_at_5": 1.0,
+        "recall_at_5": 1.0,
+        "reciprocal_rank": 1.0
+    },
+    {
+        "question": "Drawing from Ordinary PCR performances and analysis with Hard PCR methods and results on WSC, what progress has been made and what gaps remain in handling commonsense for pronoun resolution?",
+        "retrieved_ids": [
+        "83d74f89-f113-546e-8a57-431df2947049",
+        "2d1c67d5-a9ce-514e-aef4-c19aeccd2e4a",
+        "736bfecf-d4ca-5590-98b7-54bcf9cd6bfc",
+        "c7e04168-38fc-52f8-84e2-d22f3ee2bc83",
+        "cabff7c0-dad5-5cee-ba66-97d2bdd6f0eb"
+        ],
+        "relevant_ids": [
+        "83d74f89-f113-546e-8a57-431df2947049",
+        "2d1c67d5-a9ce-514e-aef4-c19aeccd2e4a",
+        "736bfecf-d4ca-5590-98b7-54bcf9cd6bfc",
+        "c7e04168-38fc-52f8-84e2-d22f3ee2bc83",
+        "cabff7c0-dad5-5cee-ba66-97d2bdd6f0eb"
+        ],
+        "precision_at_3": 1.0,
+        "precision_at_5": 1.0,
+        "recall_at_5": 1.0,
+        "reciprocal_rank": 1.0
+    },
+    {
+        "question": "How do improvements in Ordinary PCR (e.g., KG injection, higher-order) relate to approaches in Hard PCR like structured knowledge reasoning or fine-tuning, and what does this suggest about knowledge integration?",
+        "retrieved_ids": [
+        "715c0ee8-7094-55eb-b867-f9423c243ea3",
+        "c7e04168-38fc-52f8-84e2-d22f3ee2bc83",
+        "cabff7c0-dad5-5cee-ba66-97d2bdd6f0eb",
+        "807c8b42-6f9d-54c0-ad9a-42ef6f61ebfc",
+        "b5c175e2-e96f-49d1-bb84-35fa78b6b8f0"
+        ],
+        "relevant_ids": [
+        "715c0ee8-7094-55eb-b867-f9423c243ea3",
+        "c7e04168-38fc-52f8-84e2-d22f3ee2bc83",
+        "cabff7c0-dad5-5cee-ba66-97d2bdd6f0eb",
+        "807c8b42-6f9d-54c0-ad9a-42ef6f61ebfc"
+        ],
+        "precision_at_3": 1.0,
+        "precision_at_5": 1.0,
+        "recall_at_5": 1.0,
+        "reciprocal_rank": 1.0
+    },
+    {
+        "question": "Compare the influence of frequency and domain in Ordinary PCR analysis to the challenges of small-scale vs large-scale datasets in Hard PCR, and implications for model generalization.",
+        "retrieved_ids": [
+        "27e6f357-04ad-5258-be67-8b458ed5e211",
+        "965090da-983e-5f44-be4d-01474220f045",
+        "68eb646b-93c9-56de-b38e-b41ac9b4165b",
+        "0aed13f7-9875-5e99-a80b-3f70115fe3bd",
+        "27840f34-c076-5fda-82bf-0b61092e5d70"
+        ],
+        "relevant_ids": [
+        "27e6f357-04ad-5258-be67-8b458ed5e211",
+        "965090da-983e-5f44-be4d-01474220f045",
+        "68eb646b-93c9-56de-b38e-b41ac9b4165b",
+        "0aed13f7-9875-5e99-a80b-3f70115fe3bd",
+        "27840f34-c076-5fda-82bf-0b61092e5d70"
+        ],
+        "precision_at_3": 1.0,
+        "precision_at_5": 1.0,
+        "recall_at_5": 1.0,
+        "reciprocal_rank": 1.0
+    },
+    {
+        "question": "Linking Ordinary PCR's end-to-end success and limitations to Hard PCR's LM-based and fine-tuning methods, why have pre-trained models become central, and what analysis supports their commonsense encoding?",
+        "retrieved_ids": [
+        "736bfecf-d4ca-5590-98b7-54bcf9cd6bfc",
+        "807c8b42-6f9d-54c0-ad9a-42ef6f61ebfc",
+        "eda5f1e8-58dd-5799-b1af-7cb43ba87106",
+        "310e00be-27be-5165-854f-0766543a894a",
+        "ee648cff-9103-486d-ba0d-13b6876baaec"
+        ],
+        "relevant_ids": [
+        "736bfecf-d4ca-5590-98b7-54bcf9cd6bfc",
+        "807c8b42-6f9d-54c0-ad9a-42ef6f61ebfc",
+        "eda5f1e8-58dd-5799-b1af-7cb43ba87106",
+        "310e00be-27be-5165-854f-0766543a894a"
+        ],
+        "precision_at_3": 1.0,
+        "precision_at_5": 1.0,
+        "recall_at_5": 1.0,
+        "reciprocal_rank": 1.0
+    },
+    {
+        "question": "Describe key methods and performances on WSC from Hard PCR, then connect to how Other PCR Tasks like WinoGender or Visual PCR extend or differ in purpose and challenges.",
+        "retrieved_ids": [
+        "3d8f728a-769a-4eba-a23d-5e148b9e3123",
+        "cabff7c0-dad5-5cee-ba66-97d2bdd6f0eb",
+        "29a1aa0f-1d95-546a-a21a-f074f328ac15",
+        "0aed13f7-9875-5e99-a80b-3f70115fe3bd",
+        "27840f34-c076-5fda-82bf-0b61092e5d70"
+        ],
+        "relevant_ids": [
+        "cabff7c0-dad5-5cee-ba66-97d2bdd6f0eb",
+        "29a1aa0f-1d95-546a-a21a-f074f328ac15",
+        "0aed13f7-9875-5e99-a80b-3f70115fe3bd",
+        "27840f34-c076-5fda-82bf-0b61092e5d70",
+        "227de942-e450-5a2e-9b6f-e5883693c457"
+        ],
+        "precision_at_3": 1.0,
+        "precision_at_5": 0.8,
+        "recall_at_5": 0.6,
+        "reciprocal_rank": 0.5
+    },
+    {
+        "question": "How does Hard PCR's focus on commonsense via WSC relate to specialized tasks in Other PCR section, such as medical domain or chatbots, in terms of domain-specific challenges?",
+        "retrieved_ids": [
+        "4904a1f6-e768-4528-8400-152cd5448df9",
+        "68eb646b-93c9-56de-b38e-b41ac9b4165b",
+        "b80adbde-760d-5441-a1c3-04056103c010",
+        "310e00be-27be-5165-854f-0766543a894a",
+        "36e429aa-83d5-5fdb-b202-e08fb140a787"
+        ],
+        "relevant_ids": [
+        "68eb646b-93c9-56de-b38e-b41ac9b4165b",
+        "b80adbde-760d-5441-a1c3-04056103c010",
+        "310e00be-27be-5165-854f-0766543a894a",
+        "36e429aa-83d5-5fdb-b202-e08fb140a787"
+        ],
+        "precision_at_3": 1.0,
+        "precision_at_5": 0.8,
+        "recall_at_5": 0.6,
+        "reciprocal_rank": 0.5
+    },
+    {
+        "question": "From Hard PCR analysis of model sensitivity and WinoGrande subsets, what insights apply to Other PCR tasks like gender bias studies or machine translation PCR?",
+        "retrieved_ids": [
+        "c8a9d6c1-65e4-4a0b-a9e6-0ffdd6de7e7a",
+        "eda5f1e8-58dd-5799-b1af-7cb43ba87106",
+        "45790b84-f08c-568b-be79-6c1bd6d68b55",
+        "37945276-b269-5c0a-880d-61dda88bc71b",
+        "8715edec-87f3-509e-9628-739023818ca0"
+        ],
+        "relevant_ids": [
+        "eda5f1e8-58dd-5799-b1af-7cb43ba87106",
+        "45790b84-f08c-568b-be79-6c1bd6d68b55",
+        "37945276-b269-5c0a-880d-61dda88bc71b",
+        "8715edec-87f3-509e-9628-739023818ca0",
+        "c6554eae-56d0-5885-8f38-92f843bf0028"
+        ],
+        "precision_at_3": 1.0,
+        "precision_at_5": 0.8,
+        "recall_at_5": 0.6,
+        "reciprocal_rank": 0.5
+    },
+    {
+        "question": "Contrast the commonsense focus in Hard PCR with purposes of Other PCR tasks (bias, visual, medical), and discuss shared limitations like robustness for real applications.",
+        "retrieved_ids": [
+        "414b1b8e-a00b-4f34-92d2-1743854418ff",
+        "0aed13f7-9875-5e99-a80b-3f70115fe3bd",
+        "27840f34-c076-5fda-82bf-0b61092e5d70",
+        "227de942-e450-5a2e-9b6f-e5883693c457",
+        "cd5dad35-281a-531f-8ff4-acd369985114"
+        ],
+        "relevant_ids": [
+        "0aed13f7-9875-5e99-a80b-3f70115fe3bd",
+        "27840f34-c076-5fda-82bf-0b61092e5d70",
+        "227de942-e450-5a2e-9b6f-e5883693c457",
+        "cd5dad35-281a-531f-8ff4-acd369985114"
+        ],
+        "precision_at_3": 1.0,
+        "precision_at_5": 0.8,
+        "recall_at_5": 0.6,
+        "reciprocal_rank": 0.5
+    },
+    {
+        "question": "How do fine-tuning successes in Hard PCR inform potential approaches for specialized Other PCR tasks like visual-aware or conversational PCR?",
+        "retrieved_ids": [
+        "6f04ad10-c5b8-4f30-8419-9cf86c0cd1e9",
+        "310e00be-27be-5165-854f-0766543a894a",
+        "44e5c67e-8a92-545d-913b-ba159987aed3",
+        "614be032-45db-52ed-9b89-ccfd8e99b246",
+        "e7a075b3-39e6-5f79-a53a-334251545c8d"
+        ],
+        "relevant_ids": [
+        "310e00be-27be-5165-854f-0766543a894a",
+        "44e5c67e-8a92-545d-913b-ba159987aed3",
+        "614be032-45db-52ed-9b89-ccfd8e99b246",
+        "e7a075b3-39e6-5f79-a53a-334251545c8d",
+        "f87fdaf6-6569-5ec1-8c3c-baaa5b533e01"
+        ],
+        "precision_at_3": 1.0,
+        "precision_at_5": 0.8,
+        "recall_at_5": 0.6,
+        "reciprocal_rank": 0.5
+    },
+    {
+        "question": "Summarize limitations of current models from Ordinary and Hard PCR as discussed in Conclusion, and how Other PCR tasks illustrate additional real-world challenges.",
+        "retrieved_ids": [
+        "dc0db80a-6564-40c4-9f80-17f4145ab557",
+        "37945276-b269-5c0a-880d-61dda88bc71b",
+        "36e429aa-83d5-5fdb-b202-e08fb140a787",
+        "ad19da30-0b9e-564d-a133-a257d9a584b6",
+        "f3216bf8-f94f-55f9-a960-2c07312c5607"
+        ],
+        "relevant_ids": [
+        "37945276-b269-5c0a-880d-61dda88bc71b",
+        "36e429aa-83d5-5fdb-b202-e08fb140a787",
+        "ad19da30-0b9e-564d-a133-a257d9a584b6",
+        "f3216bf8-f94f-55f9-a960-2c07312c5607"
+        ],
+        "precision_at_3": 1.0,
+        "precision_at_5": 0.8,
+        "recall_at_5": 0.6,
+        "reciprocal_rank": 0.5
+    },
+    {
+        "question": "Using insights from Ordinary PCR cross-domain/frequency issues and Conclusion, explain why models are not ready for real apps, referencing examples from Other PCR tasks.",
+        "retrieved_ids": [
+        "2fd27eb9-d0af-4bf4-906b-4383e876c1ea",
+        "227de942-e450-5a2e-9b6f-e5883693c457",
+        "8715edec-87f3-509e-9628-739023818ca0",
+        "c6554eae-56d0-5885-8f38-92f843bf0028",
+        "a8321e91-330d-57b5-bd28-7a1951262cb1"
+        ],
+        "relevant_ids": [
+        "227de942-e450-5a2e-9b6f-e5883693c457",
+        "8715edec-87f3-509e-9628-739023818ca0",
+        "c6554eae-56d0-5885-8f38-92f843bf0028",
+        "a8321e91-330d-57b5-bd28-7a1951262cb1",
+        "ec1909da-e6ab-563c-a9a8-68407b3ff348"
+        ],
+        "precision_at_3": 1.0,
+        "precision_at_5": 0.8,
+        "recall_at_5": 0.6,
+        "reciprocal_rank": 0.5
+    },
+    {
+        "question": "Connect the survey contributions in Introduction/Conclusion to the breadth covered in Other PCR tasks and overall limitations highlighted.",
+        "retrieved_ids": [
+        "b26e56b6-6ffe-467f-af0c-c52f677fdb7b",
+        "614be032-45db-52ed-9b89-ccfd8e99b246",
+        "0fea8ed3-3ce6-5a69-872c-a52b9fd5ff67",
+        "cd5dad35-281a-531f-8ff4-acd369985114",
+        "8c24403f-02e2-57bf-922f-b36aeb576e95"
+        ],
+        "relevant_ids": [
+        "614be032-45db-52ed-9b89-ccfd8e99b246",
+        "0fea8ed3-3ce6-5a69-872c-a52b9fd5ff67",
+        "cd5dad35-281a-531f-8ff4-acd369985114",
+        "8c24403f-02e2-57bf-922f-b36aeb576e95"
+        ],
+        "precision_at_3": 1.0,
+        "precision_at_5": 0.8,
+        "recall_at_5": 0.6,
+        "reciprocal_rank": 0.5
+    },
+    {
+        "question": "What does the Conclusion say about progress and remaining challenges, linking back to experiments in Ordinary/Hard PCR sections?",
+        "retrieved_ids": [
+        "ae377f60-d234-4c58-a06c-db9dad19abba",
+        "ad19da30-0b9e-564d-a133-a257d9a584b6",
+        "f3216bf8-f94f-55f9-a960-2c07312c5607",
+        "9d0686dc-a23d-5431-8dfa-f130e827b607",
+        "e5074e88-6051-5b75-91cd-96e06c4288be"
+        ],
+        "relevant_ids": [
+        "ad19da30-0b9e-564d-a133-a257d9a584b6",
+        "f3216bf8-f94f-55f9-a960-2c07312c5607",
+        "9d0686dc-a23d-5431-8dfa-f130e827b607",
+        "e5074e88-6051-5b75-91cd-96e06c4288be",
+        "715c0ee8-7094-55eb-b867-f9423c243ea3"
+        ],
+        "precision_at_3": 1.0,
+        "precision_at_5": 0.6,
+        "recall_at_5": 0.4,
+        "reciprocal_rank": 0.5
+    },
+    {
+        "question": "How do overall limitations in Conclusion relate to evolution from ordinary methods to hard PCR approaches and specialized tasks?",
+        "retrieved_ids": [
+        "38823680-feef-4d93-acc6-eb23128746f8",
+        "c6554eae-56d0-5885-8f38-92f843bf0028",
+        "1ee35f06-0fc2-517c-94fd-e20c49ca5dfe",
+        "e7a075b3-39e6-5f79-a53a-334251545c8d",
+        "27e6f357-04ad-5258-be67-8b458ed5e211"
+        ],
+        "relevant_ids": [
+        "c6554eae-56d0-5885-8f38-92f843bf0028",
+        "1ee35f06-0fc2-517c-94fd-e20c49ca5dfe",
+        "e7a075b3-39e6-5f79-a53a-334251545c8d",
+        "27e6f357-04ad-5258-be67-8b458ed5e211"
+        ],
+        "precision_at_3": 1.0,
+        "precision_at_5": 0.6,
+        "recall_at_5": 0.4,
+        "reciprocal_rank": 0.5
+    },
+    {
+        "question": "Explain the motivation for investigating gating in softmax attention from the Introduction, including examples from prior works like Switch Heads and NSA, and connect this to the experimental setup and main results in the Experiments section regarding the effectiveness of different gating positions in MoE models.",
+        "retrieved_ids": [
+        "f4312aa1-e057-4471-8558-e67cf4c9bbf3",
+        "f87fdaf6-6569-5ec1-8c3c-baaa5b533e01",
+        "5e934d2e-aafa-5ed8-8301-47b3eed26318",
+        "ef8c03d5-e0e9-5dc0-9a0a-84f697465332",
+        "5cba0513-5e97-5002-bf12-636818292019"
+        ],
+        "relevant_ids": [
+        "f87fdaf6-6569-5ec1-8c3c-baaa5b533e01",
+        "5e934d2e-aafa-5ed8-8301-47b3eed26318",
+        "ef8c03d5-e0e9-5dc0-9a0a-84f697465332",
+        "5cba0513-5e97-5002-bf12-636818292019",
+        "736bfecf-d4ca-5590-98b7-54bcf9cd6bfc"
+        ],
+        "precision_at_3": 0.67,
+        "precision_at_5": 0.6,
+        "recall_at_5": 1.0,
+        "reciprocal_rank": 0.5
+    },
+    {
+        "question": "Based on the Introduction's discussion of gating benefits and the Gated-Attention Layer's formalization of variants (positions, granularity, etc.), what key design choices were found most effective in the Experiments section for MoE models?",
+        "retrieved_ids": [
+        "ae14abf2-ff6e-42e4-8690-c32747404862",
+        "6a3bd22d-f0c4-520d-bff6-85f9ddc0178e",
+        "a8321e91-330d-57b5-bd28-7a1951262cb1",
+        "ec1909da-e6ab-563c-a9a8-68407b3ff348",
+        "68eb646b-93c9-56de-b38e-b41ac9b4165b"
+        ],
+        "relevant_ids": [
+        "6a3bd22d-f0c4-520d-bff6-85f9ddc0178e",
+        "a8321e91-330d-57b5-bd28-7a1951262cb1",
+        "ec1909da-e6ab-563c-a9a8-68407b3ff348",
+        "68eb646b-93c9-56de-b38e-b41ac9b4165b"
+        ],
+        "precision_at_3": 0.67,
+        "precision_at_5": 0.6,
+        "recall_at_5": 1.0,
+        "reciprocal_rank": 0.5
+    },
+    {
+        "question": "How does the Introduction connect gating to training stability and scaling, and what evidence from dense model experiments in section 3 supports or extends this?",
+        "retrieved_ids": [
+        "00940e48-f38e-40d3-a061-0025fee8ebb8",
+        "16a5c6fa-6bf7-5728-9e91-6e3990ac546b",
+        "8c24403f-02e2-57bf-922f-b36aeb576e95",
+        "d3999dfc-5166-53ff-b0ae-9c50bf396e6d",
+        "29a1aa0f-1d95-546a-a21a-f074f328ac15"
+        ],
+        "relevant_ids": [
+        "16a5c6fa-6bf7-5728-9e91-6e3990ac546b",
+        "8c24403f-02e2-57bf-922f-b36aeb576e95",
+        "d3999dfc-5166-53ff-b0ae-9c50bf396e6d",
+        "29a1aa0f-1d95-546a-a21a-f074f328ac15",
+        "0aed13f7-9875-5e99-a80b-3f70115fe3bd"
+        ],
+        "precision_at_3": 0.67,
+        "precision_at_5": 0.6,
+        "recall_at_5": 1.0,
+        "reciprocal_rank": 0.5
+    },
+    {
+        "question": "Summarize the central finding from Introduction and link it to the performance comparisons across gating positions and granularities tested in the Experiments section.",
+        "retrieved_ids": [
+        "3dad488a-9976-497d-941f-9dfbd3874fc9",
+        "ef8c03d5-e0e9-5dc0-9a0a-84f697465332",
+        "5cba0513-5e97-5002-bf12-636818292019",
+        "83d74f89-f113-546e-8a57-431df2947049",
+        "b80adbde-760d-5441-a1c3-04056103c010"
+        ],
+        "relevant_ids": [
+        "ef8c03d5-e0e9-5dc0-9a0a-84f697465332",
+        "5cba0513-5e97-5002-bf12-636818292019",
+        "83d74f89-f113-546e-8a57-431df2947049",
+        "b80adbde-760d-5441-a1c3-04056103c010"
+        ],
+        "precision_at_3": 0.67,
+        "precision_at_5": 0.6,
+        "recall_at_5": 1.0,
+        "reciprocal_rank": 0.5
+    },
+    {
+        "question": "From the Introduction's overview of challenges in understanding gating and the detailed variants in Gated-Attention Layer, what do the MoE experiment results reveal about the importance of query-dependency and head-specificity?",
+        "retrieved_ids": [
+        "4adc7bf7-aace-41d4-92cd-7e1e60847c5b",
+        "ec1909da-e6ab-563c-a9a8-68407b3ff348",
+        "e5074e88-6051-5b75-91cd-96e06c4288be",
+        "715c0ee8-7094-55eb-b867-f9423c243ea3",
+        "37945276-b269-5c0a-880d-61dda88bc71b"
+        ],
+        "relevant_ids": [
+        "ec1909da-e6ab-563c-a9a8-68407b3ff348",
+        "e5074e88-6051-5b75-91cd-96e06c4288be",
+        "715c0ee8-7094-55eb-b867-f9423c243ea3",
+        "37945276-b269-5c0a-880d-61dda88bc71b",
+        "227de942-e450-5a2e-9b6f-e5883693c457"
+        ],
+        "precision_at_3": 0.67,
+        "precision_at_5": 0.6,
+        "recall_at_5": 1.0,
+        "reciprocal_rank": 0.5
+    },
+    {
+        "question": "Describe the multi-head softmax attention preliminaries and gating augmentations from section 2, then explain how non-linearity analysis in section 4 accounts for performance gains at G1 and G2 positions.",
+        "retrieved_ids": [
+        "409914e2-f72e-49fe-afd7-1413f336edec",
+        "d3999dfc-5166-53ff-b0ae-9c50bf396e6d",
+        "97dbc3d1-8bc9-5fc1-874f-ad4c9a67e87d",
+        "27e6f357-04ad-5258-be67-8b458ed5e211",
+        "965090da-983e-5f44-be4d-01474220f045"
+        ],
+        "relevant_ids": [
+        "d3999dfc-5166-53ff-b0ae-9c50bf396e6d",
+        "97dbc3d1-8bc9-5fc1-874f-ad4c9a67e87d",
+        "27e6f357-04ad-5258-be67-8b458ed5e211",
+        "965090da-983e-5f44-be4d-01474220f045"
+        ],
+        "precision_at_3": 0.67,
+        "precision_at_5": 0.6,
+        "recall_at_5": 1.0,
+        "reciprocal_rank": 0.5
+    },
+    {
+        "question": "Using the gating mechanism definition from Gated-Attention Layer and the sparsity analysis in Analysis, why does SDPA output gating outperform value gating despite both introducing non-linearity?",
+        "retrieved_ids": [
+        "07a2f4a0-5a90-4536-ae6b-315c55f128b2",
+        "83d74f89-f113-546e-8a57-431df2947049",
+        "2d1c67d5-a9ce-514e-aef4-c19aeccd2e4a",
+        "736bfecf-d4ca-5590-98b7-54bcf9cd6bfc",
+        "f3216bf8-f94f-55f9-a960-2c07312c5607"
+        ],
+        "relevant_ids": [
+        "83d74f89-f113-546e-8a57-431df2947049",
+        "2d1c67d5-a9ce-514e-aef4-c19aeccd2e4a",
+        "736bfecf-d4ca-5590-98b7-54bcf9cd6bfc",
+        "f3216bf8-f94f-55f9-a960-2c07312c5607",
+        "8715edec-87f3-509e-9628-739023818ca0"
+        ],
+        "precision_at_3": 0.67,
+        "precision_at_5": 0.6,
+        "recall_at_5": 1.0,
+        "reciprocal_rank": 0.5
+    },
+    {
+        "question": "How do the positions investigated in section 2 relate to the attention sink reduction and long-context benefits observed in the Analysis section?",
+        "retrieved_ids": [
+        "eb39b316-e2cb-4c08-bb9d-506da35873e3",
+        "715c0ee8-7094-55eb-b867-f9423c243ea3",
+        "c7e04168-38fc-52f8-84e2-d22f3ee2bc83",
+        "cabff7c0-dad5-5cee-ba66-97d2bdd6f0eb",
+        "0fea8ed3-3ce6-5a69-872c-a52b9fd5ff67"
+        ],
+        "relevant_ids": [
+        "715c0ee8-7094-55eb-b867-f9423c243ea3",
+        "c7e04168-38fc-52f8-84e2-d22f3ee2bc83",
+        "cabff7c0-dad5-5cee-ba66-97d2bdd6f0eb",
+        "0fea8ed3-3ce6-5a69-872c-a52b9fd5ff67"
+        ],
+        "precision_at_3": 0.67,
+        "precision_at_5": 0.6,
+        "recall_at_5": 1.0,
+        "reciprocal_rank": 0.5
+    },
+    {
+        "question": "Contrast the multiplicative vs additive and sigmoid vs SiLU variants from Gated-Attention Layer with their performance and sparsity effects analyzed in section 4.",
+        "retrieved_ids": [
+        "86867d0e-9d59-4006-a40a-ca848e5b249f",
+        "27e6f357-04ad-5258-be67-8b458ed5e211",
+        "965090da-983e-5f44-be4d-01474220f045",
+        "68eb646b-93c9-56de-b38e-b41ac9b4165b",
+        "1ee35f06-0fc2-517c-94fd-e20c49ca5dfe"
+        ],
+        "relevant_ids": [
+        "27e6f357-04ad-5258-be67-8b458ed5e211",
+        "965090da-983e-5f44-be4d-01474220f045",
+        "68eb646b-93c9-56de-b38e-b41ac9b4165b",
+        "1ee35f06-0fc2-517c-94fd-e20c49ca5dfe",
+        "e7a075b3-39e6-5f79-a53a-334251545c8d"
+        ],
+        "precision_at_3": 0.67,
+        "precision_at_5": 0.6,
+        "recall_at_5": 1.0,
+        "reciprocal_rank": 0.5
+    },
+    {
+        "question": "Explain how the low-rank mapping issue in section 2's attention description is addressed by gating, as analyzed via non-linearity and sparsity in section 4.",
+        "retrieved_ids": [
+        "697a44be-8d85-45ce-8b7b-7c4c80de61a8",
+        "df966064-cc27-4c55-96e8-1d225c7763c4",
+        "736bfecf-d4ca-5590-98b7-54bcf9cd6bfc",
+        "807c8b42-6f9d-54c0-ad9a-42ef6f61ebfc",
+        "eda5f1e8-58dd-5799-b1af-7cb43ba87106"
+        ],
+        "relevant_ids": [
+        "736bfecf-d4ca-5590-98b7-54bcf9cd6bfc",
+        "807c8b42-6f9d-54c0-ad9a-42ef6f61ebfc",
+        "eda5f1e8-58dd-5799-b1af-7cb43ba87106",
+        "5e934d2e-aafa-5ed8-8301-47b3eed26318"
+        ],
+        "precision_at_3": 0.33,
+        "precision_at_5": 0.2,
+        "recall_at_5": 1.0,
+        "reciprocal_rank": 0.33
+    },
+    {
+        "question": "From the Experiments on training stability and scaling with gating, and the Analysis of massive activations and sinks, why does gating improve stability?",
+        "retrieved_ids": [
+        "09331275-2825-4505-ba81-9a28f7276791",
+        "e9405346-08e3-44bb-82e5-ad2c5c964952",
+        "cabff7c0-dad5-5cee-ba66-97d2bdd6f0eb",
+        "29a1aa0f-1d95-546a-a21a-f074f328ac15",
+        "0aed13f7-9875-5e99-a80b-3f70115fe3bd"
+        ],
+        "relevant_ids": [
+        "cabff7c0-dad5-5cee-ba66-97d2bdd6f0eb",
+        "29a1aa0f-1d95-546a-a21a-f074f328ac15",
+        "0aed13f7-9875-5e99-a80b-3f70115fe3bd",
+        "27840f34-c076-5fda-82bf-0b61092e5d70",
+        "6a3bd22d-f0c4-520d-bff6-85f9ddc0178e"
+        ],
+        "precision_at_3": 0.33,
+        "precision_at_5": 0.2,
+        "recall_at_5": 1.0,
+        "reciprocal_rank": 0.33
+    },
+    {
+        "question": "How do the main MoE and dense results in Experiments connect to the long-context extrapolation findings in Analysis?",
+        "retrieved_ids": [
+        "8d9496ec-4c30-4ef0-8d17-6a820c79f2d0",
+        "8abb1034-06e8-4aef-841b-3f8413468281",
+        "68eb646b-93c9-56de-b38e-b41ac9b4165b",
+        "b80adbde-760d-5441-a1c3-04056103c010",
+        "310e00be-27be-5165-854f-0766543a894a"
+        ],
+        "relevant_ids": [
+        "68eb646b-93c9-56de-b38e-b41ac9b4165b",
+        "b80adbde-760d-5441-a1c3-04056103c010",
+        "310e00be-27be-5165-854f-0766543a894a",
+        "16a5c6fa-6bf7-5728-9e91-6e3990ac546b"
+        ],
+        "precision_at_3": 0.33,
+        "precision_at_5": 0.2,
+        "recall_at_5": 0.5,
+        "reciprocal_rank": 0.33
+    },
+    {
+        "question": "Linking dense model scaling experiments in section 3 with non-linearity/sparsity analysis in 4, what dual benefits does SDPA gating provide for larger/deeper models?",
+        "retrieved_ids": [
+        "2cfec268-13f3-436b-b210-f4afda0d61f5",
+        "3b2c05b4-b640-4118-a5d8-5bb7d3f1cb58",
+        "eda5f1e8-58dd-5799-b1af-7cb43ba87106",
+        "45790b84-f08c-568b-be79-6c1bd6d68b55",
+        "37945276-b269-5c0a-880d-61dda88bc71b"
+        ],
+        "relevant_ids": [
+        "eda5f1e8-58dd-5799-b1af-7cb43ba87106",
+        "45790b84-f08c-568b-be79-6c1bd6d68b55",
+        "37945276-b269-5c0a-880d-61dda88bc71b",
+        "83d74f89-f113-546e-8a57-431df2947049",
+        "e5074e88-6051-5b75-91cd-96e06c4288be"
+        ],
+        "precision_at_3": 0.33,
+        "precision_at_5": 0.2,
+        "recall_at_5": 0.5,
+        "reciprocal_rank": 0.33
+    },
+    {
+        "question": "Compare the benchmark improvements from gating in Experiments to the mechanisms (non-linearity, sparsity, sink-free) detailed in Analysis.",
+        "retrieved_ids": [
+        "4904c20f-ffe4-4108-afe1-8e2dd84ca1bb",
+        "c0821712-2f58-471e-8c13-86404b9ece55",
+        "0aed13f7-9875-5e99-a80b-3f70115fe3bd",
+        "27840f34-c076-5fda-82bf-0b61092e5d70",
+        "227de942-e450-5a2e-9b6f-e5883693c457"
+        ],
+        "relevant_ids": [
+        "0aed13f7-9875-5e99-a80b-3f70115fe3bd",
+        "27840f34-c076-5fda-82bf-0b61092e5d70",
+        "227de942-e450-5a2e-9b6f-e5883693c457",
+        "97dbc3d1-8bc9-5fc1-874f-ad4c9a67e87d"
+        ],
+        "precision_at_3": 0.33,
+        "precision_at_5": 0.2,
+        "recall_at_5": 0.5,
+        "reciprocal_rank": 0.33
+    },
+    {
+        "question": "Using stability results from Experiments and attention sink/massive activation analysis from section 4, discuss implications for training large models.",
+        "retrieved_ids": [
+        "4e573ede-87a9-4ed8-b97d-c729eaec1700",
+        "f0954e31-d5b0-4cf4-a2e0-3243b835497d",
+        "310e00be-27be-5165-854f-0766543a894a",
+        "44e5c67e-8a92-545d-913b-ba159987aed3",
+        "614be032-45db-52ed-9b89-ccfd8e99b246"
+        ],
+        "relevant_ids": [
+        "310e00be-27be-5165-854f-0766543a894a",
+        "44e5c67e-8a92-545d-913b-ba159987aed3",
+        "614be032-45db-52ed-9b89-ccfd8e99b246",
+        "2d1c67d5-a9ce-514e-aef4-c19aeccd2e4a",
+        "736bfecf-d4ca-5590-98b7-54bcf9cd6bfc"
+        ],
+        "precision_at_3": 0.33,
+        "precision_at_5": 0.2,
+        "recall_at_5": 0.5,
+        "reciprocal_rank": 0.33
+    },
+    {
+        "question": "Summarize gating-related works in Related Works and connect to the Conclusion's key contributions on non-linearity, sparsity, and sink-free models.",
+        "retrieved_ids": [
+        "c29c7aba-3057-42b9-8127-d4f8009112d0",
+        "bf3e7e85-d5e9-4fd6-8d85-0f044572128f",
+        "37945276-b269-5c0a-880d-61dda88bc71b",
+        "36e429aa-83d5-5fdb-b202-e08fb140a787",
+        "ad19da30-0b9e-564d-a133-a257d9a584b6"
+        ],
+        "relevant_ids": [
+        "37945276-b269-5c0a-880d-61dda88bc71b",
+        "36e429aa-83d5-5fdb-b202-e08fb140a787",
+        "ad19da30-0b9e-564d-a133-a257d9a584b6",
+        "f3216bf8-f94f-55f9-a960-2c07312c5607"
+        ],
+        "precision_at_3": 0.33,
+        "precision_at_5": 0.2,
+        "recall_at_5": 0.5,
+        "reciprocal_rank": 0.33
+    },
+    {
+        "question": "How does the attention sink discussion in Related Works (5.2) align with the empirical findings and benefits in the Analysis and Conclusion sections?",
+        "retrieved_ids": [
+        "67cd18e4-28f5-4929-b7b0-e7b9b8321c79",
+        "76ced5fa-1170-4ed1-b0fd-0a04d9099dc6",
+        "227de942-e450-5a2e-9b6f-e5883693c457",
+        "8715edec-87f3-509e-9628-739023818ca0",
+        "c6554eae-56d0-5885-8f38-92f843bf0028"
+        ],
+        "relevant_ids": [
+        "227de942-e450-5a2e-9b6f-e5883693c457",
+        "8715edec-87f3-509e-9628-739023818ca0",
+        "c6554eae-56d0-5885-8f38-92f843bf0028",
+        "eda5f1e8-58dd-5799-b1af-7cb43ba87106",
+        "29a1aa0f-1d95-546a-a21a-f074f328ac15"
+        ],
+        "precision_at_3": 0.33,
+        "precision_at_5": 0.2,
+        "recall_at_5": 0.5,
+        "reciprocal_rank": 0.33
+    },
+    {
+        "question": "Relate the limitations mentioned at the end to the overall findings on gating effectiveness across Experiments, Analysis, and Conclusion.",
+        "retrieved_ids": [
+        "d438346b-aa6f-42f6-ae40-6c573738eddb",
+        "d1793b0d-65cb-4fd3-9d17-043f6e9d6406",
+        "614be032-45db-52ed-9b89-ccfd8e99b246",
+        "0fea8ed3-3ce6-5a69-872c-a52b9fd5ff67",
+        "cd5dad35-281a-531f-8ff4-acd369985114"
+        ],
+        "relevant_ids": [
+        "614be032-45db-52ed-9b89-ccfd8e99b246",
+        "0fea8ed3-3ce6-5a69-872c-a52b9fd5ff67",
+        "cd5dad35-281a-531f-8ff4-acd369985114",
+        "27840f34-c076-5fda-82bf-0b61092e5d70"
+        ],
+        "precision_at_3": 0.33,
+        "precision_at_5": 0.2,
+        "recall_at_5": 0.5,
+        "reciprocal_rank": 0.33
+    },
+    {
+        "question": "From Related Works on prior gated attention and the Conclusion, what novel aspects does this work contribute regarding standard softmax attention?",
+        "retrieved_ids": [
+        "42e111b6-751d-4119-b4e4-511bbae58e4a",
+        "2bd7fdc1-a383-4d0f-a144-2548ddb421f6",
+        "ad19da30-0b9e-564d-a133-a257d9a584b6",
+        "f3216bf8-f94f-55f9-a960-2c07312c5607",
+        "9d0686dc-a23d-5431-8dfa-f130e827b607"
+        ],
+        "relevant_ids": [
+        "ad19da30-0b9e-564d-a133-a257d9a584b6",
+        "f3216bf8-f94f-55f9-a960-2c07312c5607",
+        "9d0686dc-a23d-5431-8dfa-f130e827b607",
+        "45790b84-f08c-568b-be79-6c1bd6d68b55",
+        "37945276-b269-5c0a-880d-61dda88bc71b"
+        ],
+        "precision_at_3": 0.33,
+        "precision_at_5": 0.2,
+        "recall_at_5": 0.5,
+        "reciprocal_rank": 0.33
+    },
+    {
+        "question": "Connect the stability enhancements in Experiments with sink/activation analysis in 4 and broader implications in Conclusion.",
+        "retrieved_ids": [
+        "d142205d-a5c9-4b62-9e2a-843edd3c6db2",
+        "27e0e164-c3ab-4deb-8295-4f72d8a2ebdb",
+        "fdc18b4b-77b5-4224-862c-55c1f3bce36d",
+        "932dfc63-9376-4cca-8c58-afc6dc8427f6",
+        "c6554eae-56d0-5885-8f38-92f843bf0028"
+        ],
+        "relevant_ids": [
+        "c6554eae-56d0-5885-8f38-92f843bf0028",
+        "1ee35f06-0fc2-517c-94fd-e20c49ca5dfe",
+        "e7a075b3-39e6-5f79-a53a-334251545c8d",
+        "44e5c67e-8a92-545d-913b-ba159987aed3"
+        ],
+        "precision_at_3": 0.0,
+        "precision_at_5": 0.0,
+        "recall_at_5": 1.0,
+        "reciprocal_rank": 0.2
+    }
+]

@@ -1,0 +1,1922 @@
+{
+  "summary": {
+    "configurations": [
+      {
+        "name": "Dense Only",
+        "description": "Dense vector retrieval, no BM25, no reranker, no section filter",
+        "precision_at_3": 0.25,
+        "precision_at_5": 0.182,
+        "recall_at_5": 0.651,
+        "reciprocal_rank": 0.381,
+        "num_questions": 32
+      },
+      {
+        "name": "Dense + BM25 (no reranker)",
+        "description": "Hybrid retrieval, no reranker, no section filter",
+        "precision_at_3": 0.31,
+        "precision_at_5": 0.261,
+        "recall_at_5": 0.703,
+        "reciprocal_rank": 0.487,
+        "num_questions": 32
+      },
+      {
+        "name": "Full System",
+        "description": "Hybrid + reranker + section-scoped filter",
+        "precision_at_3": 0.45,
+        "precision_at_5": 0.33,
+        "recall_at_5": 0.938,
+        "reciprocal_rank": 0.59,
+        "num_questions": 32
+      }
+    ],
+    "improvement": {
+      "precision_at_5": 0.148,
+      "reciprocal_rank": 0.209
+    }
+  },
+  "detailed_results": {
+    "Dense Only": {
+      "precision_at_3": 0.25,
+      "precision_at_5": 0.182,
+      "recall_at_5": 0.651,
+      "reciprocal_rank": 0.381,
+      "num_evaluated": 32,
+      "detailed_results": [
+        {
+          "question": "What is the upper bound on the query complexity for estimating an irreducible representation matrix element πλ(g)i,j under the PAC learning criterion?",
+          "retrieved_ids": [
+            "01de1808-08c1-54d8-be86-74b8e7ac1d2c",
+            "bc6a8518-e5d4-561b-89da-7e7e24ab045b",
+            "af84772b-2cb9-5388-a544-bdd4f991758e",
+            "11e2fab8-31f0-5982-b557-b38614d7cac9",
+            "9b855af1-a5c7-5e50-81df-d4c5139e2bdb"
+          ],
+          "relevant_ids": [
+            "01de1808-08c1-54d8-be86-74b8e7ac1d2c",
+            "bc6a8518-e5d4-561b-89da-7e7e24ab045b",
+            "ad01b6cd-e496-5578-be1f-a994c3199733"
+          ],
+          "precision_at_3": 0.25,
+          "precision_at_5": 0.182,
+          "recall_at_5": 0.651,
+          "reciprocal_rank": 0.381
+        },
+        {
+          "question": "Which mathematical duality is used in the proof of Proposition 8 to decompose tensor products of unitary representations?",
+          "retrieved_ids": [
+            "32ac7034-39b2-54a5-80f1-38a6fb121954",
+            "d8d5d967-81ef-5f4e-b233-ab4ed43df697",
+            "885ea49e-14e4-51d1-ad9f-f6925904f572",
+            "d549ddec-40a1-544b-a653-5e66b6e1a6ab",
+            "da4d86fb-dfe7-52d8-b764-c6f9f716864c"
+          ],
+          "relevant_ids": [
+            "32ac7034-39b2-54a5-80f1-38a6fb121954",
+            "d8d5d967-81ef-5f4e-b233-ab4ed43df697",
+            "f47bf218-f1b5-5ec9-9a12-1d285e04ae6b"
+          ],
+          "precision_at_3": 0.25,
+          "precision_at_5": 0.182,
+          "recall_at_5": 0.651,
+          "reciprocal_rank": 0.381
+        },
+        {
+          "question": "What is the role of the partial transpose operation in the proof of Proposition 8?",
+          "retrieved_ids": [
+            "44583931-57f8-5a6c-b8ac-29fd2787e6a3",
+            "29102bed-2ef7-58a1-941e-f046b7811efd",
+            "131dc42b-ee3f-56d0-9b25-f510fd2f0937",
+            "b592cb36-6185-5b42-be91-350858443ea6",
+            "f869526c-53e6-5b14-849d-ac6e779a0b71"
+          ],
+          "relevant_ids": [
+            "44583931-57f8-5a6c-b8ac-29fd2787e6a3",
+            "29102bed-2ef7-58a1-941e-f046b7811efd",
+            "a3c5f2c0-e839-56e8-b441-d769ce41d7d9"
+          ],
+          "precision_at_3": 0.25,
+          "precision_at_5": 0.182,
+          "recall_at_5": 0.651,
+          "reciprocal_rank": 0.381
+        },
+        {
+          "question": "What are the two subsections of Section 5 and what does each address?",
+          "retrieved_ids": [
+            "67a363e5-3604-593c-a5a0-52e3211407f7",
+            "1df38565-e611-5474-b843-9485c137fe42",
+            "cda208cf-2df1-55bd-83b5-8bd67c0a0b3a",
+            "e11076b0-7314-5aef-b8cf-a7a7747cebbb",
+            "67d88ddd-dd56-5c23-acd7-902e58f09441"
+          ],
+          "relevant_ids": [
+            "67a363e5-3604-593c-a5a0-52e3211407f7",
+            "1df38565-e611-5474-b843-9485c137fe42",
+            "83bdc431-98a7-502d-bb55-284381ff8f0b"
+          ],
+          "precision_at_3": 0.25,
+          "precision_at_5": 0.182,
+          "recall_at_5": 0.651,
+          "reciprocal_rank": 0.381
+        },
+        {
+          "question": "What is the formula for G(α, d) and how is it computed using properties of the Haar measure?",
+          "retrieved_ids": [
+            "9d45b269-e3b8-589f-9484-4a812f5342c1",
+            "7a40a676-195a-51cc-bf7a-a7bfe1ac0af4",
+            "f32fa316-7f80-5b9d-85ea-bdf17a2b799d",
+            "5196015d-93b5-5f64-b6d1-16a3b6b95087",
+            "da92d381-3438-57a5-9489-17b7342c2d10"
+          ],
+          "relevant_ids": [
+            "9d45b269-e3b8-589f-9484-4a812f5342c1",
+            "7a40a676-195a-51cc-bf7a-a7bfe1ac0af4",
+            "abc25fd9-53d8-5ec0-88ee-8b2a24b8eff3"
+          ],
+          "precision_at_3": 0.25,
+          "precision_at_5": 0.182,
+          "recall_at_5": 0.651,
+          "reciprocal_rank": 0.381
+        },
+        {
+          "question": "What does Schur's orthogonality relation imply about the L2 norm of an irreducible representation matrix element πλ(g)i,j?",
+          "retrieved_ids": [
+            "2749c6c4-503d-56b9-abf9-97699997e227",
+            "94b27ef4-ad35-58e1-b5f7-f1920b2ed0bb",
+            "8a814863-7c57-5764-97b3-235935321481",
+            "6059da95-2802-5b9d-ae7d-6558f751dc7c",
+            "82156697-e550-5ac9-8770-2de495934a16"
+          ],
+          "relevant_ids": [
+            "2749c6c4-503d-56b9-abf9-97699997e227",
+            "94b27ef4-ad35-58e1-b5f7-f1920b2ed0bb",
+            "720bf2a5-3182-50d9-ab7a-282845b184da"
+          ],
+          "precision_at_3": 0.25,
+          "precision_at_5": 0.182,
+          "recall_at_5": 0.651,
+          "reciprocal_rank": 0.381
+        },
+        {
+          "question": "What BLEU scores did the Transformer achieve on the WMT 2014 English-to-German and English-to-French translation tasks?",
+          "retrieved_ids": [
+            "bc0a8bf1-aede-509e-9d0c-321d0a8c6f96",
+            "8b8b0544-22f5-5e6e-8248-fe7f966a77fd",
+            "3281f411-a442-5d72-9141-132bb96103fa",
+            "0af12ac5-5cde-55b2-b900-558ffdc00dc5",
+            "5448a9fa-88ab-5111-b8f6-43eae5c39155"
+          ],
+          "relevant_ids": [
+            "bc0a8bf1-aede-509e-9d0c-321d0a8c6f96",
+            "8b8b0544-22f5-5e6e-8248-fe7f966a77fd",
+            "28368e6c-fda5-5e06-8ba1-f633973bb90e"
+          ],
+          "precision_at_3": 0.25,
+          "precision_at_5": 0.182,
+          "recall_at_5": 0.651,
+          "reciprocal_rank": 0.381
+        },
+        {
+          "question": "How does the training cost of the Transformer base model compare to GNMT+RL on the English-to-German task?",
+          "retrieved_ids": [
+            "01cb7a28-9edc-5844-8f9d-fa40183ae34c",
+            "0efa8de2-ea12-5580-9983-4419d4345784",
+            "6cf9cf2f-5fdd-57ab-b9f0-47b2f2a026ca",
+            "a91c4e9d-3040-52e4-929c-87eba2b84ff9",
+            "c42abd16-4cab-5930-a57e-638c754f6670"
+          ],
+          "relevant_ids": [
+            "01cb7a28-9edc-5844-8f9d-fa40183ae34c",
+            "0efa8de2-ea12-5580-9983-4419d4345784",
+            "13111200-eea1-562c-aa9d-2bd2be38c80d"
+          ],
+          "precision_at_3": 0.25,
+          "precision_at_5": 0.182,
+          "recall_at_5": 0.651,
+          "reciprocal_rank": 0.381
+        },
+        {
+          "question": "What effect does reducing the attention key size dk have on model quality according to the ablation study?",
+          "retrieved_ids": [
+            "dafce981-ddf7-5564-a5d0-01b81e6cf520",
+            "3cf81e27-87b8-5968-9fc5-4a69b3fb8129",
+            "af216002-e941-53ae-b24e-bc930355bdaa",
+            "2d7616bb-e787-595a-a222-fa5d1e4e249f",
+            "63ab2d92-2ea9-548b-8feb-aa163b02dc18"
+          ],
+          "relevant_ids": [
+            "3cf81e27-87b8-5968-9fc5-4a69b3fb8129",
+            "af216002-e941-53ae-b24e-bc930355bdaa",
+            "38f96ef5-88db-56b3-9374-c19acb40866b",
+            "4be04a31-1ccd-5753-a2e0-f86fc69da82d"
+          ],
+          "precision_at_3": 0.25,
+          "precision_at_5": 0.182,
+          "recall_at_5": 0.651,
+          "reciprocal_rank": 0.381
+        },
+        {
+          "question": "What are the PPL and BLEU scores of the big Transformer model and how does its configuration differ from the base model?",
+          "retrieved_ids": [
+            "64fbb6d6-3f7c-520d-94ee-a45a1fc04798",
+            "9a2663ba-24de-50e3-abc7-c7060354276c",
+            "d168694d-a655-5082-9a92-2c9d4979b063",
+            "a4337a8c-fbb4-5f50-a1aa-a4f4f3a2569b",
+            "8d83764d-a687-5f50-8dab-34858cb0fe52"
+          ],
+          "relevant_ids": [
+            "9a2663ba-24de-50e3-abc7-c7060354276c",
+            "d168694d-a655-5082-9a92-2c9d4979b063",
+            "23f609c2-946b-5e3d-ab9d-207d08cff08b",
+            "5e432457-a16f-5e4d-be1f-ac0f7f270ef8"
+          ],
+          "precision_at_3": 0.25,
+          "precision_at_5": 0.182,
+          "recall_at_5": 0.651,
+          "reciprocal_rank": 0.381
+        },
+        {
+          "question": "What F1 score did the 4-layer Transformer achieve on English constituency parsing in the semi-supervised setting?",
+          "retrieved_ids": [
+            "7ee51b21-6a6f-5ea2-93a1-08183e06a5e1",
+            "3e829871-a48e-509a-9184-665ff11c0afc",
+            "5f712e6f-14d5-59a9-a3a7-78c2f30ef55e",
+            "3786269e-e174-557e-a57e-84ffbb2f254b",
+            "fb5fae7a-6ae4-5555-8df3-1fb92195d588"
+          ],
+          "relevant_ids": [
+            "3e829871-a48e-509a-9184-665ff11c0afc",
+            "5f712e6f-14d5-59a9-a3a7-78c2f30ef55e",
+            "e12703c0-119c-5224-8cef-b689f4ebb608",
+            "55dacd2a-f40f-54b3-9fd8-11d9d65c9864"
+          ],
+          "precision_at_3": 0.25,
+          "precision_at_5": 0.182,
+          "recall_at_5": 0.651,
+          "reciprocal_rank": 0.381
+        },
+        {
+          "question": "What overall architecture does the Transformer use for both encoder and decoder?",
+          "retrieved_ids": [
+            "e5a0f4ea-ed71-5c9a-8e33-96ced171884d",
+            "0f729dac-7062-5ec2-aee9-5a4ab06b48ce",
+            "bc11ae6d-31a8-5ed1-adc3-9fc0f05038ca",
+            "bbc7a299-b8cb-5409-a7b2-c3d9eb528a07",
+            "87953fb5-e08d-5597-aeba-1c7427ec47fb"
+          ],
+          "relevant_ids": [
+            "0f729dac-7062-5ec2-aee9-5a4ab06b48ce",
+            "bc11ae6d-31a8-5ed1-adc3-9fc0f05038ca",
+            "0c290f2b-0b56-5e00-927f-7159bac25234",
+            "1ffe3d7f-9d5e-5ea5-8e30-04cead197f4c"
+          ],
+          "precision_at_3": 0.25,
+          "precision_at_5": 0.182,
+          "recall_at_5": 0.651,
+          "reciprocal_rank": 0.381
+        },
+        {
+          "question": "How does the auto-regressive property of the Transformer decoder work at each generation step?",
+          "retrieved_ids": [
+            "22cc194e-02b2-5f35-b3d2-31b8cbd55fcb",
+            "e209abb5-550d-55a9-8347-d5934a314391",
+            "888d929c-2b27-5717-813e-594d08ac5682",
+            "c10bda29-40df-5371-a581-e6217761d005",
+            "2c609b9f-8a34-51d4-8d4c-35a993198f30"
+          ],
+          "relevant_ids": [
+            "888d929c-2b27-5717-813e-594d08ac5682",
+            "c57ed844-2e9a-5f86-af04-3cf622798861"
+          ],
+          "precision_at_3": 0.25,
+          "precision_at_5": 0.182,
+          "recall_at_5": 0.651,
+          "reciprocal_rank": 0.381
+        },
+        {
+          "question": "What is the key architectural distinction of the Transformer compared to previous encoder-decoder sequence transduction models?",
+          "retrieved_ids": [
+            "06cad9c9-7cf6-58fd-9539-bbe40dd219a8",
+            "f76e5647-0e44-56f4-aa83-fc465769a51f",
+            "46c57d10-2636-5e22-a689-e49c1289389c",
+            "890af247-5ac8-51e7-8f60-f14da527425e",
+            "51ea3bf7-dcfb-5776-a75c-b1d667ac0387"
+          ],
+          "relevant_ids": [
+            "46c57d10-2636-5e22-a689-e49c1289389c",
+            "13ba9539-a464-541f-ae8c-0aa519c3e3f6"
+          ],
+          "precision_at_3": 0.25,
+          "precision_at_5": 0.182,
+          "recall_at_5": 0.651,
+          "reciprocal_rank": 0.381
+        },
+        {
+          "question": "What future research directions do the Transformer authors plan to pursue?",
+          "retrieved_ids": [
+            "64582e94-32a0-59db-9c64-5ea99598e071",
+            "5a6f943a-9b6b-5023-b08c-f2c10a27103a",
+            "85418d75-c55b-514d-b792-044fa8135301",
+            "15df042c-f5ac-549e-b792-62b5b3d0f868",
+            "dea2e931-c009-5598-ac25-ebfba16fe253"
+          ],
+          "relevant_ids": [
+            "15df042c-f5ac-549e-b792-62b5b3d0f868",
+            "e0607571-7a46-532d-8632-517312ded4ae"
+          ],
+          "precision_at_3": 0.25,
+          "precision_at_5": 0.182,
+          "recall_at_5": 0.651,
+          "reciprocal_rank": 0.381
+        },
+        {
+          "question": "What are the three advantages of pre-training listed in the survey?",
+          "retrieved_ids": [
+            "be356cd8-762c-5a5f-8a00-bc0f23cfce1e",
+            "8c16ed92-1d14-510a-8a3b-921dceaa764c",
+            "b905ae78-cc64-53cd-84bb-a29e09cce38f",
+            "4a7f535c-a564-5c6e-be21-7717a4e88732",
+            "6bbd4fb8-c273-589f-ac11-6ca774e827cd"
+          ],
+          "relevant_ids": [
+            "4a7f535c-a564-5c6e-be21-7717a4e88732",
+            "9493742a-9228-5bbb-bb9c-6b1bd33697ca"
+          ],
+          "precision_at_3": 0.25,
+          "precision_at_5": 0.182,
+          "recall_at_5": 0.651,
+          "reciprocal_rank": 0.381
+        },
+        {
+          "question": "What two shallow architectures did Mikolov et al. propose for building word embeddings?",
+          "retrieved_ids": [
+            "ad3b09fd-0808-5fe1-8df2-969c9ca47bac",
+            "2db15c8c-0ca6-5631-a975-ea072165e2dd",
+            "4ba167da-2cb0-5abe-aab6-bc32c07fd4a9",
+            "ff3e4122-44fd-5a17-8cf7-891e27eb2867",
+            "ff0f0c53-0fe4-5cf4-af96-dd57a6ba166b"
+          ],
+          "relevant_ids": [
+            "ad3b09fd-0808-5fe1-8df2-969c9ca47bac",
+            "2db15c8c-0ca6-5631-a975-ea072165e2dd",
+            "63772a3b-b347-59f3-a51a-cfb06d8cad71"
+          ],
+          "precision_at_3": 0.25,
+          "precision_at_5": 0.182,
+          "recall_at_5": 0.651,
+          "reciprocal_rank": 0.381
+        },
+        {
+          "question": "What was the first successful PTM for NLP and what initialization strategy did it use?",
+          "retrieved_ids": [
+            "5b5c7323-d797-5438-97c6-9b4d02d8dcbe",
+            "94b9b8c9-ed69-595e-986e-ea32ddfaf2e3",
+            "05bdf123-b027-52aa-b445-7ce85feb55eb",
+            "cbaec95f-e237-58dc-b5f1-457cb95f7a01",
+            "f6f25405-d01c-53ab-8ec8-ea429ab8b099"
+          ],
+          "relevant_ids": [
+            "5b5c7323-d797-5438-97c6-9b4d02d8dcbe",
+            "94b9b8c9-ed69-595e-986e-ea32ddfaf2e3",
+            "1e9faa27-2f53-50a3-bc15-194c42e5ceca"
+          ],
+          "precision_at_3": 0.25,
+          "precision_at_5": 0.182,
+          "recall_at_5": 0.651,
+          "reciprocal_rank": 0.381
+        },
+        {
+          "question": "Why does the Transformer require a large training corpus despite becoming the mainstream architecture for PTMs?",
+          "retrieved_ids": [
+            "fb8b75ff-280e-51fe-af18-c4761883d5e6",
+            "12e506ad-834c-5222-889d-1345f96ed59d",
+            "8b60e1fd-39a1-5726-ae3c-1deaad83176a",
+            "cbb2eb16-5647-54e8-86c6-b6f7caa9778a",
+            "cbf20f2f-f0af-5dd9-a2fc-fba16c09145e"
+          ],
+          "relevant_ids": [
+            "fb8b75ff-280e-51fe-af18-c4761883d5e6",
+            "12e506ad-834c-5222-889d-1345f96ed59d",
+            "6bc688d1-23db-53fe-aaef-bc905f679f24"
+          ],
+          "precision_at_3": 0.25,
+          "precision_at_5": 0.182,
+          "recall_at_5": 0.651,
+          "reciprocal_rank": 0.381
+        },
+        {
+          "question": "What is self-supervised learning and how does the masked language model exemplify it?",
+          "retrieved_ids": [
+            "dbd7f2f1-4e7a-545c-8b03-1958a0325474",
+            "f3e0fb47-e791-5ae7-a780-fba17ff73861",
+            "ea20b0ca-99a5-5497-a0e2-29c7800657ce",
+            "60a0db0d-7bfa-5f22-9343-baf83e1ccd7d",
+            "a1426fd3-1492-5e93-9a16-0cca1b30e14f"
+          ],
+          "relevant_ids": [
+            "dbd7f2f1-4e7a-545c-8b03-1958a0325474",
+            "f3e0fb47-e791-5ae7-a780-fba17ff73861",
+            "0ffd9582-5dec-5684-9fbc-8d1fdb8d299e"
+          ],
+          "precision_at_3": 0.25,
+          "precision_at_5": 0.182,
+          "recall_at_5": 0.651,
+          "reciprocal_rank": 0.381
+        },
+        {
+          "question": "What are the three key factors to consider when choosing a PTM for a downstream task?",
+          "retrieved_ids": [
+            "00d32182-5b05-5cff-a709-c2cc96db9f54",
+            "cce532bf-e381-58f6-8f13-03ab72fa38ca",
+            "01315e82-254e-507a-b754-647455739f65",
+            "16ee1f0a-93dd-5656-888c-339a462d2462",
+            "5ca57091-d566-5c83-a4a4-068838fb1a0e"
+          ],
+          "relevant_ids": [
+            "00d32182-5b05-5cff-a709-c2cc96db9f54",
+            "cce532bf-e381-58f6-8f13-03ab72fa38ca",
+            "a11e1f99-6940-5ec8-99fe-1a2c502e8b32"
+          ],
+          "precision_at_3": 0.25,
+          "precision_at_5": 0.182,
+          "recall_at_5": 0.651,
+          "reciprocal_rank": 0.381
+        },
+        {
+          "question": "What is sequential transfer learning and how does adapting PTMs to downstream tasks fit this definition?",
+          "retrieved_ids": [
+            "fba45319-c0a5-518a-aeab-3f94a720aa2f",
+            "1fe36ff5-9cb8-585f-9272-ca797499b313",
+            "6b387321-d5a1-5ab7-b62e-ba3e7124e077",
+            "8074adf9-10c4-5b42-b6f2-ca8a5733a3f1",
+            "67763cf0-326b-5020-ae3c-f64f204a3d99"
+          ],
+          "relevant_ids": [
+            "fba45319-c0a5-518a-aeab-3f94a720aa2f",
+            "1fe36ff5-9cb8-585f-9272-ca797499b313",
+            "b4451323-4067-5e7d-9f83-9d19e4ce2d44"
+          ],
+          "precision_at_3": 0.25,
+          "precision_at_5": 0.182,
+          "recall_at_5": 0.651,
+          "reciprocal_rank": 0.381
+        },
+        {
+          "question": "What types of multi-modal PTMs does the survey describe and what pre-training tasks do they typically use?",
+          "retrieved_ids": [
+            "23b8ec48-7cb5-5f59-9f47-4b3191006b79",
+            "06b5478f-f5b6-55fd-8d46-31bf3c9b3bd8",
+            "fefb512f-0f21-5061-bdc9-aff009b88299",
+            "1f970e9c-ea6e-5817-8440-beff133a741d",
+            "3dab2cd8-c2d4-587f-9efa-5bf7af8fbf09"
+          ],
+          "relevant_ids": [
+            "23b8ec48-7cb5-5f59-9f47-4b3191006b79",
+            "06b5478f-f5b6-55fd-8d46-31bf3c9b3bd8",
+            "04ac1bd5-370a-591c-8838-f4bc27aa9bba"
+          ],
+          "precision_at_3": 0.25,
+          "precision_at_5": 0.182,
+          "recall_at_5": 0.651,
+          "reciprocal_rank": 0.381
+        },
+        {
+          "question": "What exiting strategy does PABEE use and how does it differ from entropy-based approaches?",
+          "retrieved_ids": [
+            "4a6a3bcc-482e-5b75-8108-18b161d08688",
+            "275d447c-b956-5893-b840-cda2995234e8",
+            "382650ae-4a13-539f-95b6-837f0e611410",
+            "6a47cbcb-87b5-5611-a83d-05a99df94528",
+            "30ed3c83-c7d2-50ab-9e22-d8d0801718cb"
+          ],
+          "relevant_ids": [
+            "4a6a3bcc-482e-5b75-8108-18b161d08688",
+            "275d447c-b956-5893-b840-cda2995234e8",
+            "f719f8d1-133e-564a-91e9-db1fa9c6d3ed"
+          ],
+          "precision_at_3": 0.25,
+          "precision_at_5": 0.182,
+          "recall_at_5": 0.651,
+          "reciprocal_rank": 0.381
+        },
+        {
+          "question": "What are the two long-context domains in which MemGPT is evaluated?",
+          "retrieved_ids": [
+            "7c49f59a-126e-5918-8160-f1790308a357",
+            "25d8f699-5678-5679-9cc9-007093156a2b",
+            "8188f6e7-288b-5135-b887-88331dedfce2",
+            "6e672f3a-d156-5fb0-9c08-1f882de9c935",
+            "e88227e7-4321-5515-b79c-da0b15af402f"
+          ],
+          "relevant_ids": [
+            "25d8f699-5678-5679-9cc9-007093156a2b",
+            "8188f6e7-288b-5135-b887-88331dedfce2",
+            "7ed30482-bd80-5bba-aa2a-174ea0468646",
+            "00094967-4c15-5fe3-bb64-b1a6c8841396"
+          ],
+          "precision_at_3": 0.25,
+          "precision_at_5": 0.182,
+          "recall_at_5": 0.651,
+          "reciprocal_rank": 0.381
+        },
+        {
+          "question": "What accuracy improvement does adding MemGPT provide to GPT-3.5 Turbo on the Deep Memory Retrieval task?",
+          "retrieved_ids": [
+            "c14a14dc-7ed3-53fa-9b2b-816dafa8a80d",
+            "ff8974be-f0f5-5d4d-882b-7017672288bd",
+            "632359f1-1acb-5653-a1ef-24d6fc48c3a4",
+            "89c99a6c-792f-583c-9294-e649be0fd875",
+            "bf8faacb-67d2-5875-bff7-c58216cbee86"
+          ],
+          "relevant_ids": [
+            "ff8974be-f0f5-5d4d-882b-7017672288bd",
+            "632359f1-1acb-5653-a1ef-24d6fc48c3a4",
+            "2c74f565-195b-5df6-bf4a-b8eed3acf802",
+            "b2b5a0b6-a083-5ec5-af99-2683b6db40ed"
+          ],
+          "precision_at_3": 0.25,
+          "precision_at_5": 0.182,
+          "recall_at_5": 0.651,
+          "reciprocal_rank": 0.381
+        },
+        {
+          "question": "What is the nested key-value retrieval task and what capability does it test?",
+          "retrieved_ids": [
+            "38d96d2a-8eb0-56c0-8631-8ca8a0272490",
+            "f088e69f-e1ee-5958-bb51-5c48f29a2d39",
+            "a54a74f8-1803-5427-811f-15fa30b36c3c",
+            "65e835aa-a055-5753-9c26-507434a0a286",
+            "6a8b08fc-3d73-581e-aae6-566ca7b38a62"
+          ],
+          "relevant_ids": [
+            "f088e69f-e1ee-5958-bb51-5c48f29a2d39",
+            "a54a74f8-1803-5427-811f-15fa30b36c3c",
+            "8572f54c-d615-5063-8337-8ad3d3999eca",
+            "5b094f1b-ec26-5c47-8dbb-100b3e9180bf"
+          ],
+          "precision_at_3": 0.25,
+          "precision_at_5": 0.182,
+          "recall_at_5": 0.651,
+          "reciprocal_rank": 0.381
+        },
+        {
+          "question": "What are the context window sizes for GPT-4, GPT-4 Turbo, and GPT-3.5 Turbo as used in the MemGPT experiments?",
+          "retrieved_ids": [
+            "2f66c70e-b14d-516f-80e2-f29a45b8c102",
+            "a1b6a0fa-1861-5a6f-9297-15e3100f5ae4",
+            "d488608d-7cdc-5a34-a58c-4d5a1fcaf265",
+            "e34c67d7-3f6e-50c8-9ad0-45eff3ea49d0",
+            "ae5827c5-f38c-5166-9bb8-1f335194c235"
+          ],
+          "relevant_ids": [
+            "a1b6a0fa-1861-5a6f-9297-15e3100f5ae4",
+            "d488608d-7cdc-5a34-a58c-4d5a1fcaf265",
+            "d2a03e27-8e43-5269-8db8-caeb03f04abe",
+            "4b7ff3cc-d61e-5f76-ab9e-b196129a0e3d"
+          ],
+          "precision_at_3": 0.25,
+          "precision_at_5": 0.182,
+          "recall_at_5": 0.651,
+          "reciprocal_rank": 0.381
+        },
+        {
+          "question": "How does MemGPT's performance on the document QA task compare to truncation-based approaches as document length increases?",
+          "retrieved_ids": [
+            "876b2892-961f-5c79-a836-8789e693be34",
+            "8b23f5ec-cb03-5e58-b99b-fe23ca15f2a4",
+            "27c0afb9-3639-5547-a197-708bc6ffc88c",
+            "bfd6c7a3-66f6-5b13-b0f7-3060707c05f8",
+            "429c0697-131e-5b84-a8cb-b90a9faab939"
+          ],
+          "relevant_ids": [
+            "27c0afb9-3639-5547-a197-708bc6ffc88c",
+            "d02a0e61-64c5-58aa-9ecf-764bab7a1469"
+          ],
+          "precision_at_3": 0.25,
+          "precision_at_5": 0.182,
+          "recall_at_5": 0.651,
+          "reciprocal_rank": 0.381
+        },
+        {
+          "question": "What are the two primary memory types in MemGPT's OS-inspired architecture and what are their analogues in operating systems?",
+          "retrieved_ids": [
+            "70fe3baa-9767-5919-ae1f-f14b67d542f6",
+            "ee699778-d1a4-5c8b-86c2-dd83134224e4",
+            "9bde80e0-f57f-5756-8bd1-907b4e926453",
+            "34fef146-28be-5df8-8c8f-47f485da33f0",
+            "9905ee17-f945-5781-bfae-0e9ff4d5021f"
+          ],
+          "relevant_ids": [
+            "9bde80e0-f57f-5756-8bd1-907b4e926453",
+            "b5f81311-9e0e-575f-bd27-fc43857c2299"
+          ],
+          "precision_at_3": 0.25,
+          "precision_at_5": 0.182,
+          "recall_at_5": 0.651,
+          "reciprocal_rank": 0.381
+        },
+        {
+          "question": "What are the three components of MemGPT's main context and how does function chaining enable multi-step retrieval?",
+          "retrieved_ids": [
+            "93dc1f19-d574-5c97-9dbc-55983920505a",
+            "be1fc02c-45bc-519c-8ea4-c0ba0441f793",
+            "2b5301b6-f099-5659-acdf-dd8e34b646b1",
+            "78a0bd7e-d48b-5c6f-959c-1864a481c3ae",
+            "ec40853c-dc45-5eb7-8df3-d87a98510ec7"
+          ],
+          "relevant_ids": [
+            "78a0bd7e-d48b-5c6f-959c-1864a481c3ae",
+            "2b41b88c-4de2-5562-92a4-f606b25609d2"
+          ],
+          "precision_at_3": 0.25,
+          "precision_at_5": 0.182,
+          "recall_at_5": 0.651,
+          "reciprocal_rank": 0.381
+        },
+        {
+          "question": "How does MemGPT manage its own memory without user intervention?",
+          "retrieved_ids": [
+            "9ee4c544-940a-59a1-8485-0958ec615652",
+            "0d561610-103d-5d7f-aa48-7ca34b6bc7a0",
+            "1fbdf54c-aac0-56cd-a1b5-1e09791c8c67",
+            "9350ad24-2d40-5ef5-9751-5ab05081ea00",
+            "f7285d7e-bd4e-5a5c-adb8-563456e65931"
+          ],
+          "relevant_ids": [
+            "9350ad24-2d40-5ef5-9751-5ab05081ea00",
+            "6fc758d6-0602-56ba-a5ea-72656aaa1dc9"
+          ],
+          "precision_at_3": 0.25,
+          "precision_at_5": 0.182,
+          "recall_at_5": 0.651,
+          "reciprocal_rank": 0.381
+        }
+      ]
+    },
+    "Dense + BM25 (no reranker)": {
+      "precision_at_3": 0.31,
+      "precision_at_5": 0.261,
+      "recall_at_5": 0.703,
+      "reciprocal_rank": 0.487,
+      "num_evaluated": 32,
+      "detailed_results": [
+        {
+          "question": "What is the upper bound on the query complexity for estimating an irreducible representation matrix element πλ(g)i,j under the PAC learning criterion?",
+          "retrieved_ids": [
+            "01de1808-08c1-54d8-be86-74b8e7ac1d2c",
+            "bc6a8518-e5d4-561b-89da-7e7e24ab045b",
+            "af84772b-2cb9-5388-a544-bdd4f991758e",
+            "11e2fab8-31f0-5982-b557-b38614d7cac9",
+            "9b855af1-a5c7-5e50-81df-d4c5139e2bdb"
+          ],
+          "relevant_ids": [
+            "01de1808-08c1-54d8-be86-74b8e7ac1d2c",
+            "bc6a8518-e5d4-561b-89da-7e7e24ab045b",
+            "ad01b6cd-e496-5578-be1f-a994c3199733"
+          ],
+          "precision_at_3": 0.31,
+          "precision_at_5": 0.261,
+          "recall_at_5": 0.703,
+          "reciprocal_rank": 0.487
+        },
+        {
+          "question": "Which mathematical duality is used in the proof of Proposition 8 to decompose tensor products of unitary representations?",
+          "retrieved_ids": [
+            "32ac7034-39b2-54a5-80f1-38a6fb121954",
+            "d8d5d967-81ef-5f4e-b233-ab4ed43df697",
+            "885ea49e-14e4-51d1-ad9f-f6925904f572",
+            "d549ddec-40a1-544b-a653-5e66b6e1a6ab",
+            "da4d86fb-dfe7-52d8-b764-c6f9f716864c"
+          ],
+          "relevant_ids": [
+            "32ac7034-39b2-54a5-80f1-38a6fb121954",
+            "d8d5d967-81ef-5f4e-b233-ab4ed43df697",
+            "f47bf218-f1b5-5ec9-9a12-1d285e04ae6b"
+          ],
+          "precision_at_3": 0.31,
+          "precision_at_5": 0.261,
+          "recall_at_5": 0.703,
+          "reciprocal_rank": 0.487
+        },
+        {
+          "question": "What is the role of the partial transpose operation in the proof of Proposition 8?",
+          "retrieved_ids": [
+            "44583931-57f8-5a6c-b8ac-29fd2787e6a3",
+            "29102bed-2ef7-58a1-941e-f046b7811efd",
+            "131dc42b-ee3f-56d0-9b25-f510fd2f0937",
+            "b592cb36-6185-5b42-be91-350858443ea6",
+            "f869526c-53e6-5b14-849d-ac6e779a0b71"
+          ],
+          "relevant_ids": [
+            "44583931-57f8-5a6c-b8ac-29fd2787e6a3",
+            "29102bed-2ef7-58a1-941e-f046b7811efd",
+            "a3c5f2c0-e839-56e8-b441-d769ce41d7d9"
+          ],
+          "precision_at_3": 0.31,
+          "precision_at_5": 0.261,
+          "recall_at_5": 0.703,
+          "reciprocal_rank": 0.487
+        },
+        {
+          "question": "What are the two subsections of Section 5 and what does each address?",
+          "retrieved_ids": [
+            "67a363e5-3604-593c-a5a0-52e3211407f7",
+            "1df38565-e611-5474-b843-9485c137fe42",
+            "cda208cf-2df1-55bd-83b5-8bd67c0a0b3a",
+            "e11076b0-7314-5aef-b8cf-a7a7747cebbb",
+            "67d88ddd-dd56-5c23-acd7-902e58f09441"
+          ],
+          "relevant_ids": [
+            "67a363e5-3604-593c-a5a0-52e3211407f7",
+            "1df38565-e611-5474-b843-9485c137fe42",
+            "83bdc431-98a7-502d-bb55-284381ff8f0b"
+          ],
+          "precision_at_3": 0.31,
+          "precision_at_5": 0.261,
+          "recall_at_5": 0.703,
+          "reciprocal_rank": 0.487
+        },
+        {
+          "question": "What is the formula for G(α, d) and how is it computed using properties of the Haar measure?",
+          "retrieved_ids": [
+            "9d45b269-e3b8-589f-9484-4a812f5342c1",
+            "7a40a676-195a-51cc-bf7a-a7bfe1ac0af4",
+            "f32fa316-7f80-5b9d-85ea-bdf17a2b799d",
+            "5196015d-93b5-5f64-b6d1-16a3b6b95087",
+            "da92d381-3438-57a5-9489-17b7342c2d10"
+          ],
+          "relevant_ids": [
+            "9d45b269-e3b8-589f-9484-4a812f5342c1",
+            "7a40a676-195a-51cc-bf7a-a7bfe1ac0af4",
+            "abc25fd9-53d8-5ec0-88ee-8b2a24b8eff3"
+          ],
+          "precision_at_3": 0.31,
+          "precision_at_5": 0.261,
+          "recall_at_5": 0.703,
+          "reciprocal_rank": 0.487
+        },
+        {
+          "question": "What does Schur's orthogonality relation imply about the L2 norm of an irreducible representation matrix element πλ(g)i,j?",
+          "retrieved_ids": [
+            "2749c6c4-503d-56b9-abf9-97699997e227",
+            "94b27ef4-ad35-58e1-b5f7-f1920b2ed0bb",
+            "8a814863-7c57-5764-97b3-235935321481",
+            "6059da95-2802-5b9d-ae7d-6558f751dc7c",
+            "82156697-e550-5ac9-8770-2de495934a16"
+          ],
+          "relevant_ids": [
+            "2749c6c4-503d-56b9-abf9-97699997e227",
+            "94b27ef4-ad35-58e1-b5f7-f1920b2ed0bb",
+            "720bf2a5-3182-50d9-ab7a-282845b184da"
+          ],
+          "precision_at_3": 0.31,
+          "precision_at_5": 0.261,
+          "recall_at_5": 0.703,
+          "reciprocal_rank": 0.487
+        },
+        {
+          "question": "What BLEU scores did the Transformer achieve on the WMT 2014 English-to-German and English-to-French translation tasks?",
+          "retrieved_ids": [
+            "bc0a8bf1-aede-509e-9d0c-321d0a8c6f96",
+            "8b8b0544-22f5-5e6e-8248-fe7f966a77fd",
+            "3281f411-a442-5d72-9141-132bb96103fa",
+            "0af12ac5-5cde-55b2-b900-558ffdc00dc5",
+            "5448a9fa-88ab-5111-b8f6-43eae5c39155"
+          ],
+          "relevant_ids": [
+            "bc0a8bf1-aede-509e-9d0c-321d0a8c6f96",
+            "8b8b0544-22f5-5e6e-8248-fe7f966a77fd",
+            "28368e6c-fda5-5e06-8ba1-f633973bb90e"
+          ],
+          "precision_at_3": 0.31,
+          "precision_at_5": 0.261,
+          "recall_at_5": 0.703,
+          "reciprocal_rank": 0.487
+        },
+        {
+          "question": "How does the training cost of the Transformer base model compare to GNMT+RL on the English-to-German task?",
+          "retrieved_ids": [
+            "01cb7a28-9edc-5844-8f9d-fa40183ae34c",
+            "0efa8de2-ea12-5580-9983-4419d4345784",
+            "6cf9cf2f-5fdd-57ab-b9f0-47b2f2a026ca",
+            "a91c4e9d-3040-52e4-929c-87eba2b84ff9",
+            "c42abd16-4cab-5930-a57e-638c754f6670"
+          ],
+          "relevant_ids": [
+            "01cb7a28-9edc-5844-8f9d-fa40183ae34c",
+            "0efa8de2-ea12-5580-9983-4419d4345784",
+            "13111200-eea1-562c-aa9d-2bd2be38c80d"
+          ],
+          "precision_at_3": 0.31,
+          "precision_at_5": 0.261,
+          "recall_at_5": 0.703,
+          "reciprocal_rank": 0.487
+        },
+        {
+          "question": "What effect does reducing the attention key size dk have on model quality according to the ablation study?",
+          "retrieved_ids": [
+            "dafce981-ddf7-5564-a5d0-01b81e6cf520",
+            "3cf81e27-87b8-5968-9fc5-4a69b3fb8129",
+            "af216002-e941-53ae-b24e-bc930355bdaa",
+            "2d7616bb-e787-595a-a222-fa5d1e4e249f",
+            "63ab2d92-2ea9-548b-8feb-aa163b02dc18"
+          ],
+          "relevant_ids": [
+            "dafce981-ddf7-5564-a5d0-01b81e6cf520",
+            "3cf81e27-87b8-5968-9fc5-4a69b3fb8129",
+            "38f96ef5-88db-56b3-9374-c19acb40866b"
+          ],
+          "precision_at_3": 0.31,
+          "precision_at_5": 0.261,
+          "recall_at_5": 0.703,
+          "reciprocal_rank": 0.487
+        },
+        {
+          "question": "What are the PPL and BLEU scores of the big Transformer model and how does its configuration differ from the base model?",
+          "retrieved_ids": [
+            "64fbb6d6-3f7c-520d-94ee-a45a1fc04798",
+            "9a2663ba-24de-50e3-abc7-c7060354276c",
+            "d168694d-a655-5082-9a92-2c9d4979b063",
+            "a4337a8c-fbb4-5f50-a1aa-a4f4f3a2569b",
+            "8d83764d-a687-5f50-8dab-34858cb0fe52"
+          ],
+          "relevant_ids": [
+            "64fbb6d6-3f7c-520d-94ee-a45a1fc04798",
+            "9a2663ba-24de-50e3-abc7-c7060354276c",
+            "23f609c2-946b-5e3d-ab9d-207d08cff08b"
+          ],
+          "precision_at_3": 0.31,
+          "precision_at_5": 0.261,
+          "recall_at_5": 0.703,
+          "reciprocal_rank": 0.487
+        },
+        {
+          "question": "What F1 score did the 4-layer Transformer achieve on English constituency parsing in the semi-supervised setting?",
+          "retrieved_ids": [
+            "7ee51b21-6a6f-5ea2-93a1-08183e06a5e1",
+            "3e829871-a48e-509a-9184-665ff11c0afc",
+            "5f712e6f-14d5-59a9-a3a7-78c2f30ef55e",
+            "3786269e-e174-557e-a57e-84ffbb2f254b",
+            "fb5fae7a-6ae4-5555-8df3-1fb92195d588"
+          ],
+          "relevant_ids": [
+            "7ee51b21-6a6f-5ea2-93a1-08183e06a5e1",
+            "3e829871-a48e-509a-9184-665ff11c0afc",
+            "e12703c0-119c-5224-8cef-b689f4ebb608",
+            "55dacd2a-f40f-54b3-9fd8-11d9d65c9864"
+          ],
+          "precision_at_3": 0.31,
+          "precision_at_5": 0.261,
+          "recall_at_5": 0.703,
+          "reciprocal_rank": 0.487
+        },
+        {
+          "question": "What overall architecture does the Transformer use for both encoder and decoder?",
+          "retrieved_ids": [
+            "e5a0f4ea-ed71-5c9a-8e33-96ced171884d",
+            "0f729dac-7062-5ec2-aee9-5a4ab06b48ce",
+            "bc11ae6d-31a8-5ed1-adc3-9fc0f05038ca",
+            "bbc7a299-b8cb-5409-a7b2-c3d9eb528a07",
+            "87953fb5-e08d-5597-aeba-1c7427ec47fb"
+          ],
+          "relevant_ids": [
+            "e5a0f4ea-ed71-5c9a-8e33-96ced171884d",
+            "0f729dac-7062-5ec2-aee9-5a4ab06b48ce",
+            "0c290f2b-0b56-5e00-927f-7159bac25234",
+            "1ffe3d7f-9d5e-5ea5-8e30-04cead197f4c"
+          ],
+          "precision_at_3": 0.31,
+          "precision_at_5": 0.261,
+          "recall_at_5": 0.703,
+          "reciprocal_rank": 0.487
+        },
+        {
+          "question": "How does the auto-regressive property of the Transformer decoder work at each generation step?",
+          "retrieved_ids": [
+            "22cc194e-02b2-5f35-b3d2-31b8cbd55fcb",
+            "e209abb5-550d-55a9-8347-d5934a314391",
+            "888d929c-2b27-5717-813e-594d08ac5682",
+            "c10bda29-40df-5371-a581-e6217761d005",
+            "2c609b9f-8a34-51d4-8d4c-35a993198f30"
+          ],
+          "relevant_ids": [
+            "22cc194e-02b2-5f35-b3d2-31b8cbd55fcb",
+            "e209abb5-550d-55a9-8347-d5934a314391",
+            "c57ed844-2e9a-5f86-af04-3cf622798861",
+            "fdaa68c7-63da-5af5-9002-a2b1fb500378"
+          ],
+          "precision_at_3": 0.31,
+          "precision_at_5": 0.261,
+          "recall_at_5": 0.703,
+          "reciprocal_rank": 0.487
+        },
+        {
+          "question": "What is the key architectural distinction of the Transformer compared to previous encoder-decoder sequence transduction models?",
+          "retrieved_ids": [
+            "06cad9c9-7cf6-58fd-9539-bbe40dd219a8",
+            "f76e5647-0e44-56f4-aa83-fc465769a51f",
+            "46c57d10-2636-5e22-a689-e49c1289389c",
+            "890af247-5ac8-51e7-8f60-f14da527425e",
+            "51ea3bf7-dcfb-5776-a75c-b1d667ac0387"
+          ],
+          "relevant_ids": [
+            "06cad9c9-7cf6-58fd-9539-bbe40dd219a8",
+            "f76e5647-0e44-56f4-aa83-fc465769a51f",
+            "13ba9539-a464-541f-ae8c-0aa519c3e3f6",
+            "fa49474f-9c5f-5cb7-9c92-2b2d18402c0b"
+          ],
+          "precision_at_3": 0.31,
+          "precision_at_5": 0.261,
+          "recall_at_5": 0.703,
+          "reciprocal_rank": 0.487
+        },
+        {
+          "question": "What future research directions do the Transformer authors plan to pursue?",
+          "retrieved_ids": [
+            "64582e94-32a0-59db-9c64-5ea99598e071",
+            "5a6f943a-9b6b-5023-b08c-f2c10a27103a",
+            "85418d75-c55b-514d-b792-044fa8135301",
+            "15df042c-f5ac-549e-b792-62b5b3d0f868",
+            "dea2e931-c009-5598-ac25-ebfba16fe253"
+          ],
+          "relevant_ids": [
+            "5a6f943a-9b6b-5023-b08c-f2c10a27103a",
+            "e0607571-7a46-532d-8632-517312ded4ae"
+          ],
+          "precision_at_3": 0.31,
+          "precision_at_5": 0.261,
+          "recall_at_5": 0.703,
+          "reciprocal_rank": 0.487
+        },
+        {
+          "question": "What are the three advantages of pre-training listed in the survey?",
+          "retrieved_ids": [
+            "be356cd8-762c-5a5f-8a00-bc0f23cfce1e",
+            "8c16ed92-1d14-510a-8a3b-921dceaa764c",
+            "b905ae78-cc64-53cd-84bb-a29e09cce38f",
+            "4a7f535c-a564-5c6e-be21-7717a4e88732",
+            "6bbd4fb8-c273-589f-ac11-6ca774e827cd"
+          ],
+          "relevant_ids": [
+            "b905ae78-cc64-53cd-84bb-a29e09cce38f",
+            "9493742a-9228-5bbb-bb9c-6b1bd33697ca"
+          ],
+          "precision_at_3": 0.31,
+          "precision_at_5": 0.261,
+          "recall_at_5": 0.703,
+          "reciprocal_rank": 0.487
+        },
+        {
+          "question": "What two shallow architectures did Mikolov et al. propose for building word embeddings?",
+          "retrieved_ids": [
+            "ad3b09fd-0808-5fe1-8df2-969c9ca47bac",
+            "2db15c8c-0ca6-5631-a975-ea072165e2dd",
+            "4ba167da-2cb0-5abe-aab6-bc32c07fd4a9",
+            "ff3e4122-44fd-5a17-8cf7-891e27eb2867",
+            "ff0f0c53-0fe4-5cf4-af96-dd57a6ba166b"
+          ],
+          "relevant_ids": [
+            "ad3b09fd-0808-5fe1-8df2-969c9ca47bac",
+            "2db15c8c-0ca6-5631-a975-ea072165e2dd",
+            "63772a3b-b347-59f3-a51a-cfb06d8cad71"
+          ],
+          "precision_at_3": 0.31,
+          "precision_at_5": 0.261,
+          "recall_at_5": 0.703,
+          "reciprocal_rank": 0.487
+        },
+        {
+          "question": "What was the first successful PTM for NLP and what initialization strategy did it use?",
+          "retrieved_ids": [
+            "5b5c7323-d797-5438-97c6-9b4d02d8dcbe",
+            "94b9b8c9-ed69-595e-986e-ea32ddfaf2e3",
+            "05bdf123-b027-52aa-b445-7ce85feb55eb",
+            "cbaec95f-e237-58dc-b5f1-457cb95f7a01",
+            "f6f25405-d01c-53ab-8ec8-ea429ab8b099"
+          ],
+          "relevant_ids": [
+            "5b5c7323-d797-5438-97c6-9b4d02d8dcbe",
+            "94b9b8c9-ed69-595e-986e-ea32ddfaf2e3",
+            "1e9faa27-2f53-50a3-bc15-194c42e5ceca"
+          ],
+          "precision_at_3": 0.31,
+          "precision_at_5": 0.261,
+          "recall_at_5": 0.703,
+          "reciprocal_rank": 0.487
+        },
+        {
+          "question": "Why does the Transformer require a large training corpus despite becoming the mainstream architecture for PTMs?",
+          "retrieved_ids": [
+            "fb8b75ff-280e-51fe-af18-c4761883d5e6",
+            "12e506ad-834c-5222-889d-1345f96ed59d",
+            "8b60e1fd-39a1-5726-ae3c-1deaad83176a",
+            "cbb2eb16-5647-54e8-86c6-b6f7caa9778a",
+            "cbf20f2f-f0af-5dd9-a2fc-fba16c09145e"
+          ],
+          "relevant_ids": [
+            "fb8b75ff-280e-51fe-af18-c4761883d5e6",
+            "12e506ad-834c-5222-889d-1345f96ed59d",
+            "6bc688d1-23db-53fe-aaef-bc905f679f24"
+          ],
+          "precision_at_3": 0.31,
+          "precision_at_5": 0.261,
+          "recall_at_5": 0.703,
+          "reciprocal_rank": 0.487
+        },
+        {
+          "question": "What is self-supervised learning and how does the masked language model exemplify it?",
+          "retrieved_ids": [
+            "dbd7f2f1-4e7a-545c-8b03-1958a0325474",
+            "f3e0fb47-e791-5ae7-a780-fba17ff73861",
+            "ea20b0ca-99a5-5497-a0e2-29c7800657ce",
+            "60a0db0d-7bfa-5f22-9343-baf83e1ccd7d",
+            "a1426fd3-1492-5e93-9a16-0cca1b30e14f"
+          ],
+          "relevant_ids": [
+            "dbd7f2f1-4e7a-545c-8b03-1958a0325474",
+            "f3e0fb47-e791-5ae7-a780-fba17ff73861",
+            "0ffd9582-5dec-5684-9fbc-8d1fdb8d299e"
+          ],
+          "precision_at_3": 0.31,
+          "precision_at_5": 0.261,
+          "recall_at_5": 0.703,
+          "reciprocal_rank": 0.487
+        },
+        {
+          "question": "What are the three key factors to consider when choosing a PTM for a downstream task?",
+          "retrieved_ids": [
+            "00d32182-5b05-5cff-a709-c2cc96db9f54",
+            "cce532bf-e381-58f6-8f13-03ab72fa38ca",
+            "01315e82-254e-507a-b754-647455739f65",
+            "16ee1f0a-93dd-5656-888c-339a462d2462",
+            "5ca57091-d566-5c83-a4a4-068838fb1a0e"
+          ],
+          "relevant_ids": [
+            "00d32182-5b05-5cff-a709-c2cc96db9f54",
+            "cce532bf-e381-58f6-8f13-03ab72fa38ca",
+            "a11e1f99-6940-5ec8-99fe-1a2c502e8b32"
+          ],
+          "precision_at_3": 0.31,
+          "precision_at_5": 0.261,
+          "recall_at_5": 0.703,
+          "reciprocal_rank": 0.487
+        },
+        {
+          "question": "What is sequential transfer learning and how does adapting PTMs to downstream tasks fit this definition?",
+          "retrieved_ids": [
+            "fba45319-c0a5-518a-aeab-3f94a720aa2f",
+            "1fe36ff5-9cb8-585f-9272-ca797499b313",
+            "6b387321-d5a1-5ab7-b62e-ba3e7124e077",
+            "8074adf9-10c4-5b42-b6f2-ca8a5733a3f1",
+            "67763cf0-326b-5020-ae3c-f64f204a3d99"
+          ],
+          "relevant_ids": [
+            "fba45319-c0a5-518a-aeab-3f94a720aa2f",
+            "1fe36ff5-9cb8-585f-9272-ca797499b313",
+            "b4451323-4067-5e7d-9f83-9d19e4ce2d44"
+          ],
+          "precision_at_3": 0.31,
+          "precision_at_5": 0.261,
+          "recall_at_5": 0.703,
+          "reciprocal_rank": 0.487
+        },
+        {
+          "question": "What types of multi-modal PTMs does the survey describe and what pre-training tasks do they typically use?",
+          "retrieved_ids": [
+            "23b8ec48-7cb5-5f59-9f47-4b3191006b79",
+            "06b5478f-f5b6-55fd-8d46-31bf3c9b3bd8",
+            "fefb512f-0f21-5061-bdc9-aff009b88299",
+            "1f970e9c-ea6e-5817-8440-beff133a741d",
+            "3dab2cd8-c2d4-587f-9efa-5bf7af8fbf09"
+          ],
+          "relevant_ids": [
+            "23b8ec48-7cb5-5f59-9f47-4b3191006b79",
+            "06b5478f-f5b6-55fd-8d46-31bf3c9b3bd8",
+            "04ac1bd5-370a-591c-8838-f4bc27aa9bba"
+          ],
+          "precision_at_3": 0.31,
+          "precision_at_5": 0.261,
+          "recall_at_5": 0.703,
+          "reciprocal_rank": 0.487
+        },
+        {
+          "question": "What exiting strategy does PABEE use and how does it differ from entropy-based approaches?",
+          "retrieved_ids": [
+            "4a6a3bcc-482e-5b75-8108-18b161d08688",
+            "275d447c-b956-5893-b840-cda2995234e8",
+            "382650ae-4a13-539f-95b6-837f0e611410",
+            "6a47cbcb-87b5-5611-a83d-05a99df94528",
+            "30ed3c83-c7d2-50ab-9e22-d8d0801718cb"
+          ],
+          "relevant_ids": [
+            "4a6a3bcc-482e-5b75-8108-18b161d08688",
+            "275d447c-b956-5893-b840-cda2995234e8",
+            "f719f8d1-133e-564a-91e9-db1fa9c6d3ed"
+          ],
+          "precision_at_3": 0.31,
+          "precision_at_5": 0.261,
+          "recall_at_5": 0.703,
+          "reciprocal_rank": 0.487
+        },
+        {
+          "question": "What are the two long-context domains in which MemGPT is evaluated?",
+          "retrieved_ids": [
+            "7c49f59a-126e-5918-8160-f1790308a357",
+            "25d8f699-5678-5679-9cc9-007093156a2b",
+            "8188f6e7-288b-5135-b887-88331dedfce2",
+            "6e672f3a-d156-5fb0-9c08-1f882de9c935",
+            "e88227e7-4321-5515-b79c-da0b15af402f"
+          ],
+          "relevant_ids": [
+            "7c49f59a-126e-5918-8160-f1790308a357",
+            "25d8f699-5678-5679-9cc9-007093156a2b",
+            "7ed30482-bd80-5bba-aa2a-174ea0468646"
+          ],
+          "precision_at_3": 0.31,
+          "precision_at_5": 0.261,
+          "recall_at_5": 0.703,
+          "reciprocal_rank": 0.487
+        },
+        {
+          "question": "What accuracy improvement does adding MemGPT provide to GPT-3.5 Turbo on the Deep Memory Retrieval task?",
+          "retrieved_ids": [
+            "c14a14dc-7ed3-53fa-9b2b-816dafa8a80d",
+            "ff8974be-f0f5-5d4d-882b-7017672288bd",
+            "632359f1-1acb-5653-a1ef-24d6fc48c3a4",
+            "89c99a6c-792f-583c-9294-e649be0fd875",
+            "bf8faacb-67d2-5875-bff7-c58216cbee86"
+          ],
+          "relevant_ids": [
+            "c14a14dc-7ed3-53fa-9b2b-816dafa8a80d",
+            "ff8974be-f0f5-5d4d-882b-7017672288bd",
+            "2c74f565-195b-5df6-bf4a-b8eed3acf802"
+          ],
+          "precision_at_3": 0.31,
+          "precision_at_5": 0.261,
+          "recall_at_5": 0.703,
+          "reciprocal_rank": 0.487
+        },
+        {
+          "question": "What is the nested key-value retrieval task and what capability does it test?",
+          "retrieved_ids": [
+            "38d96d2a-8eb0-56c0-8631-8ca8a0272490",
+            "f088e69f-e1ee-5958-bb51-5c48f29a2d39",
+            "a54a74f8-1803-5427-811f-15fa30b36c3c",
+            "65e835aa-a055-5753-9c26-507434a0a286",
+            "6a8b08fc-3d73-581e-aae6-566ca7b38a62"
+          ],
+          "relevant_ids": [
+            "38d96d2a-8eb0-56c0-8631-8ca8a0272490",
+            "f088e69f-e1ee-5958-bb51-5c48f29a2d39",
+            "8572f54c-d615-5063-8337-8ad3d3999eca",
+            "5b094f1b-ec26-5c47-8dbb-100b3e9180bf"
+          ],
+          "precision_at_3": 0.31,
+          "precision_at_5": 0.261,
+          "recall_at_5": 0.703,
+          "reciprocal_rank": 0.487
+        },
+        {
+          "question": "What are the context window sizes for GPT-4, GPT-4 Turbo, and GPT-3.5 Turbo as used in the MemGPT experiments?",
+          "retrieved_ids": [
+            "2f66c70e-b14d-516f-80e2-f29a45b8c102",
+            "a1b6a0fa-1861-5a6f-9297-15e3100f5ae4",
+            "d488608d-7cdc-5a34-a58c-4d5a1fcaf265",
+            "e34c67d7-3f6e-50c8-9ad0-45eff3ea49d0",
+            "ae5827c5-f38c-5166-9bb8-1f335194c235"
+          ],
+          "relevant_ids": [
+            "2f66c70e-b14d-516f-80e2-f29a45b8c102",
+            "a1b6a0fa-1861-5a6f-9297-15e3100f5ae4",
+            "d2a03e27-8e43-5269-8db8-caeb03f04abe",
+            "4b7ff3cc-d61e-5f76-ab9e-b196129a0e3d"
+          ],
+          "precision_at_3": 0.31,
+          "precision_at_5": 0.261,
+          "recall_at_5": 0.703,
+          "reciprocal_rank": 0.487
+        },
+        {
+          "question": "How does MemGPT's performance on the document QA task compare to truncation-based approaches as document length increases?",
+          "retrieved_ids": [
+            "876b2892-961f-5c79-a836-8789e693be34",
+            "8b23f5ec-cb03-5e58-b99b-fe23ca15f2a4",
+            "27c0afb9-3639-5547-a197-708bc6ffc88c",
+            "bfd6c7a3-66f6-5b13-b0f7-3060707c05f8",
+            "429c0697-131e-5b84-a8cb-b90a9faab939"
+          ],
+          "relevant_ids": [
+            "876b2892-961f-5c79-a836-8789e693be34",
+            "8b23f5ec-cb03-5e58-b99b-fe23ca15f2a4",
+            "d02a0e61-64c5-58aa-9ecf-764bab7a1469",
+            "9b468a32-97fe-5be0-814a-da36cdf90df3"
+          ],
+          "precision_at_3": 0.31,
+          "precision_at_5": 0.261,
+          "recall_at_5": 0.703,
+          "reciprocal_rank": 0.487
+        },
+        {
+          "question": "What are the two primary memory types in MemGPT's OS-inspired architecture and what are their analogues in operating systems?",
+          "retrieved_ids": [
+            "70fe3baa-9767-5919-ae1f-f14b67d542f6",
+            "ee699778-d1a4-5c8b-86c2-dd83134224e4",
+            "9bde80e0-f57f-5756-8bd1-907b4e926453",
+            "34fef146-28be-5df8-8c8f-47f485da33f0",
+            "9905ee17-f945-5781-bfae-0e9ff4d5021f"
+          ],
+          "relevant_ids": [
+            "70fe3baa-9767-5919-ae1f-f14b67d542f6",
+            "ee699778-d1a4-5c8b-86c2-dd83134224e4",
+            "b5f81311-9e0e-575f-bd27-fc43857c2299",
+            "4d585156-4fad-5230-8570-49e615db05fb"
+          ],
+          "precision_at_3": 0.31,
+          "precision_at_5": 0.261,
+          "recall_at_5": 0.703,
+          "reciprocal_rank": 0.487
+        },
+        {
+          "question": "What are the three components of MemGPT's main context and how does function chaining enable multi-step retrieval?",
+          "retrieved_ids": [
+            "93dc1f19-d574-5c97-9dbc-55983920505a",
+            "be1fc02c-45bc-519c-8ea4-c0ba0441f793",
+            "2b5301b6-f099-5659-acdf-dd8e34b646b1",
+            "78a0bd7e-d48b-5c6f-959c-1864a481c3ae",
+            "ec40853c-dc45-5eb7-8df3-d87a98510ec7"
+          ],
+          "relevant_ids": [
+            "be1fc02c-45bc-519c-8ea4-c0ba0441f793",
+            "2b41b88c-4de2-5562-92a4-f606b25609d2"
+          ],
+          "precision_at_3": 0.31,
+          "precision_at_5": 0.261,
+          "recall_at_5": 0.703,
+          "reciprocal_rank": 0.487
+        },
+        {
+          "question": "How does MemGPT manage its own memory without user intervention?",
+          "retrieved_ids": [
+            "9ee4c544-940a-59a1-8485-0958ec615652",
+            "0d561610-103d-5d7f-aa48-7ca34b6bc7a0",
+            "1fbdf54c-aac0-56cd-a1b5-1e09791c8c67",
+            "9350ad24-2d40-5ef5-9751-5ab05081ea00",
+            "f7285d7e-bd4e-5a5c-adb8-563456e65931"
+          ],
+          "relevant_ids": [
+            "1fbdf54c-aac0-56cd-a1b5-1e09791c8c67",
+            "6fc758d6-0602-56ba-a5ea-72656aaa1dc9"
+          ],
+          "precision_at_3": 0.31,
+          "precision_at_5": 0.261,
+          "recall_at_5": 0.703,
+          "reciprocal_rank": 0.487
+        }
+      ]
+    },
+    "Full System": {
+      "precision_at_3": 0.45,
+      "precision_at_5": 0.33,
+      "recall_at_5": 0.938,
+      "reciprocal_rank": 0.59,
+      "num_evaluated": 32,
+      "detailed_results": [
+        {
+          "question": "What is the upper bound on the query complexity for estimating an irreducible representation matrix element πλ(g)i,j under the PAC learning criterion?",
+          "retrieved_ids": [
+            "01de1808-08c1-54d8-be86-74b8e7ac1d2c",
+            "bc6a8518-e5d4-561b-89da-7e7e24ab045b",
+            "af84772b-2cb9-5388-a544-bdd4f991758e",
+            "11e2fab8-31f0-5982-b557-b38614d7cac9",
+            "9b855af1-a5c7-5e50-81df-d4c5139e2bdb"
+          ],
+          "relevant_ids": [
+            "01de1808-08c1-54d8-be86-74b8e7ac1d2c",
+            "bc6a8518-e5d4-561b-89da-7e7e24ab045b",
+            "af84772b-2cb9-5388-a544-bdd4f991758e",
+            "7e57f666-a697-59f5-a83f-d6be0e76b3e7"
+          ],
+          "precision_at_3": 0.45,
+          "precision_at_5": 0.33,
+          "recall_at_5": 0.938,
+          "reciprocal_rank": 0.59
+        },
+        {
+          "question": "Which mathematical duality is used in the proof of Proposition 8 to decompose tensor products of unitary representations?",
+          "retrieved_ids": [
+            "32ac7034-39b2-54a5-80f1-38a6fb121954",
+            "d8d5d967-81ef-5f4e-b233-ab4ed43df697",
+            "885ea49e-14e4-51d1-ad9f-f6925904f572",
+            "d549ddec-40a1-544b-a653-5e66b6e1a6ab",
+            "da4d86fb-dfe7-52d8-b764-c6f9f716864c"
+          ],
+          "relevant_ids": [
+            "32ac7034-39b2-54a5-80f1-38a6fb121954",
+            "d8d5d967-81ef-5f4e-b233-ab4ed43df697",
+            "885ea49e-14e4-51d1-ad9f-f6925904f572",
+            "c8d2722c-f707-57af-bf84-36ee0a031fe9"
+          ],
+          "precision_at_3": 0.45,
+          "precision_at_5": 0.33,
+          "recall_at_5": 0.938,
+          "reciprocal_rank": 0.59
+        },
+        {
+          "question": "What is the role of the partial transpose operation in the proof of Proposition 8?",
+          "retrieved_ids": [
+            "44583931-57f8-5a6c-b8ac-29fd2787e6a3",
+            "29102bed-2ef7-58a1-941e-f046b7811efd",
+            "131dc42b-ee3f-56d0-9b25-f510fd2f0937",
+            "b592cb36-6185-5b42-be91-350858443ea6",
+            "f869526c-53e6-5b14-849d-ac6e779a0b71"
+          ],
+          "relevant_ids": [
+            "44583931-57f8-5a6c-b8ac-29fd2787e6a3",
+            "29102bed-2ef7-58a1-941e-f046b7811efd",
+            "131dc42b-ee3f-56d0-9b25-f510fd2f0937",
+            "dc459e55-59e1-5da8-af18-5d3addfb53b3"
+          ],
+          "precision_at_3": 0.45,
+          "precision_at_5": 0.33,
+          "recall_at_5": 0.938,
+          "reciprocal_rank": 0.59
+        },
+        {
+          "question": "What are the two subsections of Section 5 and what does each address?",
+          "retrieved_ids": [
+            "67a363e5-3604-593c-a5a0-52e3211407f7",
+            "1df38565-e611-5474-b843-9485c137fe42",
+            "cda208cf-2df1-55bd-83b5-8bd67c0a0b3a",
+            "e11076b0-7314-5aef-b8cf-a7a7747cebbb",
+            "67d88ddd-dd56-5c23-acd7-902e58f09441"
+          ],
+          "relevant_ids": [
+            "67a363e5-3604-593c-a5a0-52e3211407f7",
+            "1df38565-e611-5474-b843-9485c137fe42",
+            "cda208cf-2df1-55bd-83b5-8bd67c0a0b3a",
+            "2ea2a122-c2f9-5ae7-b0bc-5a2db95af04f"
+          ],
+          "precision_at_3": 0.45,
+          "precision_at_5": 0.33,
+          "recall_at_5": 0.938,
+          "reciprocal_rank": 0.59
+        },
+        {
+          "question": "What is the formula for G(α, d) and how is it computed using properties of the Haar measure?",
+          "retrieved_ids": [
+            "9d45b269-e3b8-589f-9484-4a812f5342c1",
+            "7a40a676-195a-51cc-bf7a-a7bfe1ac0af4",
+            "f32fa316-7f80-5b9d-85ea-bdf17a2b799d",
+            "5196015d-93b5-5f64-b6d1-16a3b6b95087",
+            "da92d381-3438-57a5-9489-17b7342c2d10"
+          ],
+          "relevant_ids": [
+            "9d45b269-e3b8-589f-9484-4a812f5342c1",
+            "7a40a676-195a-51cc-bf7a-a7bfe1ac0af4",
+            "f32fa316-7f80-5b9d-85ea-bdf17a2b799d",
+            "85828675-fb9f-5c13-b344-a360d631c2c3"
+          ],
+          "precision_at_3": 0.45,
+          "precision_at_5": 0.33,
+          "recall_at_5": 0.938,
+          "reciprocal_rank": 0.59
+        },
+        {
+          "question": "What does Schur's orthogonality relation imply about the L2 norm of an irreducible representation matrix element πλ(g)i,j?",
+          "retrieved_ids": [
+            "2749c6c4-503d-56b9-abf9-97699997e227",
+            "94b27ef4-ad35-58e1-b5f7-f1920b2ed0bb",
+            "8a814863-7c57-5764-97b3-235935321481",
+            "6059da95-2802-5b9d-ae7d-6558f751dc7c",
+            "82156697-e550-5ac9-8770-2de495934a16"
+          ],
+          "relevant_ids": [
+            "2749c6c4-503d-56b9-abf9-97699997e227",
+            "94b27ef4-ad35-58e1-b5f7-f1920b2ed0bb",
+            "8a814863-7c57-5764-97b3-235935321481",
+            "7faf3eba-1b9c-5f9d-b02f-e65f3bfaa787"
+          ],
+          "precision_at_3": 0.45,
+          "precision_at_5": 0.33,
+          "recall_at_5": 0.938,
+          "reciprocal_rank": 0.59
+        },
+        {
+          "question": "What BLEU scores did the Transformer achieve on the WMT 2014 English-to-German and English-to-French translation tasks?",
+          "retrieved_ids": [
+            "bc0a8bf1-aede-509e-9d0c-321d0a8c6f96",
+            "8b8b0544-22f5-5e6e-8248-fe7f966a77fd",
+            "3281f411-a442-5d72-9141-132bb96103fa",
+            "0af12ac5-5cde-55b2-b900-558ffdc00dc5",
+            "5448a9fa-88ab-5111-b8f6-43eae5c39155"
+          ],
+          "relevant_ids": [
+            "bc0a8bf1-aede-509e-9d0c-321d0a8c6f96",
+            "8b8b0544-22f5-5e6e-8248-fe7f966a77fd",
+            "3281f411-a442-5d72-9141-132bb96103fa",
+            "19fa5b40-5452-5c26-8fa8-ee50d6c0df74"
+          ],
+          "precision_at_3": 0.45,
+          "precision_at_5": 0.33,
+          "recall_at_5": 0.938,
+          "reciprocal_rank": 0.59
+        },
+        {
+          "question": "How does the training cost of the Transformer base model compare to GNMT+RL on the English-to-German task?",
+          "retrieved_ids": [
+            "01cb7a28-9edc-5844-8f9d-fa40183ae34c",
+            "0efa8de2-ea12-5580-9983-4419d4345784",
+            "6cf9cf2f-5fdd-57ab-b9f0-47b2f2a026ca",
+            "a91c4e9d-3040-52e4-929c-87eba2b84ff9",
+            "c42abd16-4cab-5930-a57e-638c754f6670"
+          ],
+          "relevant_ids": [
+            "01cb7a28-9edc-5844-8f9d-fa40183ae34c",
+            "0efa8de2-ea12-5580-9983-4419d4345784",
+            "6cf9cf2f-5fdd-57ab-b9f0-47b2f2a026ca",
+            "347e4a4a-5f1b-5ada-b7f1-9ea49345ae75"
+          ],
+          "precision_at_3": 0.45,
+          "precision_at_5": 0.33,
+          "recall_at_5": 0.938,
+          "reciprocal_rank": 0.59
+        },
+        {
+          "question": "What effect does reducing the attention key size dk have on model quality according to the ablation study?",
+          "retrieved_ids": [
+            "dafce981-ddf7-5564-a5d0-01b81e6cf520",
+            "3cf81e27-87b8-5968-9fc5-4a69b3fb8129",
+            "af216002-e941-53ae-b24e-bc930355bdaa",
+            "2d7616bb-e787-595a-a222-fa5d1e4e249f",
+            "63ab2d92-2ea9-548b-8feb-aa163b02dc18"
+          ],
+          "relevant_ids": [
+            "dafce981-ddf7-5564-a5d0-01b81e6cf520",
+            "3cf81e27-87b8-5968-9fc5-4a69b3fb8129",
+            "af216002-e941-53ae-b24e-bc930355bdaa",
+            "b2f6648e-1a25-585a-a9e4-28b99dd0f214"
+          ],
+          "precision_at_3": 0.45,
+          "precision_at_5": 0.33,
+          "recall_at_5": 0.938,
+          "reciprocal_rank": 0.59
+        },
+        {
+          "question": "What are the PPL and BLEU scores of the big Transformer model and how does its configuration differ from the base model?",
+          "retrieved_ids": [
+            "64fbb6d6-3f7c-520d-94ee-a45a1fc04798",
+            "9a2663ba-24de-50e3-abc7-c7060354276c",
+            "d168694d-a655-5082-9a92-2c9d4979b063",
+            "a4337a8c-fbb4-5f50-a1aa-a4f4f3a2569b",
+            "8d83764d-a687-5f50-8dab-34858cb0fe52"
+          ],
+          "relevant_ids": [
+            "64fbb6d6-3f7c-520d-94ee-a45a1fc04798",
+            "9a2663ba-24de-50e3-abc7-c7060354276c",
+            "d168694d-a655-5082-9a92-2c9d4979b063",
+            "d2f11d17-47bc-5d4c-8de6-db787803a615"
+          ],
+          "precision_at_3": 0.45,
+          "precision_at_5": 0.33,
+          "recall_at_5": 0.938,
+          "reciprocal_rank": 0.59
+        },
+        {
+          "question": "What F1 score did the 4-layer Transformer achieve on English constituency parsing in the semi-supervised setting?",
+          "retrieved_ids": [
+            "7ee51b21-6a6f-5ea2-93a1-08183e06a5e1",
+            "3e829871-a48e-509a-9184-665ff11c0afc",
+            "5f712e6f-14d5-59a9-a3a7-78c2f30ef55e",
+            "3786269e-e174-557e-a57e-84ffbb2f254b",
+            "fb5fae7a-6ae4-5555-8df3-1fb92195d588"
+          ],
+          "relevant_ids": [
+            "7ee51b21-6a6f-5ea2-93a1-08183e06a5e1",
+            "3e829871-a48e-509a-9184-665ff11c0afc",
+            "5f712e6f-14d5-59a9-a3a7-78c2f30ef55e",
+            "aec027ba-24a3-5951-bbdf-7ca524f7328d"
+          ],
+          "precision_at_3": 0.45,
+          "precision_at_5": 0.33,
+          "recall_at_5": 0.938,
+          "reciprocal_rank": 0.59
+        },
+        {
+          "question": "What overall architecture does the Transformer use for both encoder and decoder?",
+          "retrieved_ids": [
+            "e5a0f4ea-ed71-5c9a-8e33-96ced171884d",
+            "0f729dac-7062-5ec2-aee9-5a4ab06b48ce",
+            "bc11ae6d-31a8-5ed1-adc3-9fc0f05038ca",
+            "bbc7a299-b8cb-5409-a7b2-c3d9eb528a07",
+            "87953fb5-e08d-5597-aeba-1c7427ec47fb"
+          ],
+          "relevant_ids": [
+            "e5a0f4ea-ed71-5c9a-8e33-96ced171884d",
+            "0f729dac-7062-5ec2-aee9-5a4ab06b48ce",
+            "bc11ae6d-31a8-5ed1-adc3-9fc0f05038ca",
+            "c01ab7f2-b9be-5ff2-b6d4-64d490d9b6d9"
+          ],
+          "precision_at_3": 0.45,
+          "precision_at_5": 0.33,
+          "recall_at_5": 0.938,
+          "reciprocal_rank": 0.59
+        },
+        {
+          "question": "How does the auto-regressive property of the Transformer decoder work at each generation step?",
+          "retrieved_ids": [
+            "22cc194e-02b2-5f35-b3d2-31b8cbd55fcb",
+            "e209abb5-550d-55a9-8347-d5934a314391",
+            "888d929c-2b27-5717-813e-594d08ac5682",
+            "c10bda29-40df-5371-a581-e6217761d005",
+            "2c609b9f-8a34-51d4-8d4c-35a993198f30"
+          ],
+          "relevant_ids": [
+            "22cc194e-02b2-5f35-b3d2-31b8cbd55fcb",
+            "e209abb5-550d-55a9-8347-d5934a314391",
+            "888d929c-2b27-5717-813e-594d08ac5682",
+            "c6696c51-739f-5e42-b051-e6b286dac61d"
+          ],
+          "precision_at_3": 0.45,
+          "precision_at_5": 0.33,
+          "recall_at_5": 0.938,
+          "reciprocal_rank": 0.59
+        },
+        {
+          "question": "What is the key architectural distinction of the Transformer compared to previous encoder-decoder sequence transduction models?",
+          "retrieved_ids": [
+            "06cad9c9-7cf6-58fd-9539-bbe40dd219a8",
+            "f76e5647-0e44-56f4-aa83-fc465769a51f",
+            "46c57d10-2636-5e22-a689-e49c1289389c",
+            "890af247-5ac8-51e7-8f60-f14da527425e",
+            "51ea3bf7-dcfb-5776-a75c-b1d667ac0387"
+          ],
+          "relevant_ids": [
+            "06cad9c9-7cf6-58fd-9539-bbe40dd219a8",
+            "f76e5647-0e44-56f4-aa83-fc465769a51f",
+            "46c57d10-2636-5e22-a689-e49c1289389c",
+            "0b371ed0-59e1-5dc2-81b0-9f32de334c77"
+          ],
+          "precision_at_3": 0.45,
+          "precision_at_5": 0.33,
+          "recall_at_5": 0.938,
+          "reciprocal_rank": 0.59
+        },
+        {
+          "question": "What future research directions do the Transformer authors plan to pursue?",
+          "retrieved_ids": [
+            "64582e94-32a0-59db-9c64-5ea99598e071",
+            "5a6f943a-9b6b-5023-b08c-f2c10a27103a",
+            "85418d75-c55b-514d-b792-044fa8135301",
+            "15df042c-f5ac-549e-b792-62b5b3d0f868",
+            "dea2e931-c009-5598-ac25-ebfba16fe253"
+          ],
+          "relevant_ids": [
+            "64582e94-32a0-59db-9c64-5ea99598e071",
+            "5a6f943a-9b6b-5023-b08c-f2c10a27103a",
+            "fad9d08c-7c31-5848-a925-763ffad2513b"
+          ],
+          "precision_at_3": 0.45,
+          "precision_at_5": 0.33,
+          "recall_at_5": 0.938,
+          "reciprocal_rank": 0.59
+        },
+        {
+          "question": "What are the three advantages of pre-training listed in the survey?",
+          "retrieved_ids": [
+            "be356cd8-762c-5a5f-8a00-bc0f23cfce1e",
+            "8c16ed92-1d14-510a-8a3b-921dceaa764c",
+            "b905ae78-cc64-53cd-84bb-a29e09cce38f",
+            "4a7f535c-a564-5c6e-be21-7717a4e88732",
+            "6bbd4fb8-c273-589f-ac11-6ca774e827cd"
+          ],
+          "relevant_ids": [
+            "be356cd8-762c-5a5f-8a00-bc0f23cfce1e",
+            "8c16ed92-1d14-510a-8a3b-921dceaa764c",
+            "46c9684e-ec84-5018-99f8-c36d28ed4671"
+          ],
+          "precision_at_3": 0.45,
+          "precision_at_5": 0.33,
+          "recall_at_5": 0.938,
+          "reciprocal_rank": 0.59
+        },
+        {
+          "question": "What two shallow architectures did Mikolov et al. propose for building word embeddings?",
+          "retrieved_ids": [
+            "ad3b09fd-0808-5fe1-8df2-969c9ca47bac",
+            "2db15c8c-0ca6-5631-a975-ea072165e2dd",
+            "4ba167da-2cb0-5abe-aab6-bc32c07fd4a9",
+            "ff3e4122-44fd-5a17-8cf7-891e27eb2867",
+            "ff0f0c53-0fe4-5cf4-af96-dd57a6ba166b"
+          ],
+          "relevant_ids": [
+            "ad3b09fd-0808-5fe1-8df2-969c9ca47bac",
+            "2db15c8c-0ca6-5631-a975-ea072165e2dd",
+            "4ba167da-2cb0-5abe-aab6-bc32c07fd4a9",
+            "2d93d385-ab1c-5dee-9a48-cc1a423a889a"
+          ],
+          "precision_at_3": 0.45,
+          "precision_at_5": 0.33,
+          "recall_at_5": 0.938,
+          "reciprocal_rank": 0.59
+        },
+        {
+          "question": "What was the first successful PTM for NLP and what initialization strategy did it use?",
+          "retrieved_ids": [
+            "5b5c7323-d797-5438-97c6-9b4d02d8dcbe",
+            "94b9b8c9-ed69-595e-986e-ea32ddfaf2e3",
+            "05bdf123-b027-52aa-b445-7ce85feb55eb",
+            "cbaec95f-e237-58dc-b5f1-457cb95f7a01",
+            "f6f25405-d01c-53ab-8ec8-ea429ab8b099"
+          ],
+          "relevant_ids": [
+            "5b5c7323-d797-5438-97c6-9b4d02d8dcbe",
+            "94b9b8c9-ed69-595e-986e-ea32ddfaf2e3",
+            "05bdf123-b027-52aa-b445-7ce85feb55eb",
+            "64a092d2-6ba8-5c68-930d-178d8eb9153a"
+          ],
+          "precision_at_3": 0.45,
+          "precision_at_5": 0.33,
+          "recall_at_5": 0.938,
+          "reciprocal_rank": 0.59
+        },
+        {
+          "question": "Why does the Transformer require a large training corpus despite becoming the mainstream architecture for PTMs?",
+          "retrieved_ids": [
+            "fb8b75ff-280e-51fe-af18-c4761883d5e6",
+            "12e506ad-834c-5222-889d-1345f96ed59d",
+            "8b60e1fd-39a1-5726-ae3c-1deaad83176a",
+            "cbb2eb16-5647-54e8-86c6-b6f7caa9778a",
+            "cbf20f2f-f0af-5dd9-a2fc-fba16c09145e"
+          ],
+          "relevant_ids": [
+            "fb8b75ff-280e-51fe-af18-c4761883d5e6",
+            "12e506ad-834c-5222-889d-1345f96ed59d",
+            "8b60e1fd-39a1-5726-ae3c-1deaad83176a",
+            "38ed4f2e-a950-5aa4-8431-7ee9a28514af"
+          ],
+          "precision_at_3": 0.45,
+          "precision_at_5": 0.33,
+          "recall_at_5": 0.938,
+          "reciprocal_rank": 0.59
+        },
+        {
+          "question": "What is self-supervised learning and how does the masked language model exemplify it?",
+          "retrieved_ids": [
+            "dbd7f2f1-4e7a-545c-8b03-1958a0325474",
+            "f3e0fb47-e791-5ae7-a780-fba17ff73861",
+            "ea20b0ca-99a5-5497-a0e2-29c7800657ce",
+            "60a0db0d-7bfa-5f22-9343-baf83e1ccd7d",
+            "a1426fd3-1492-5e93-9a16-0cca1b30e14f"
+          ],
+          "relevant_ids": [
+            "dbd7f2f1-4e7a-545c-8b03-1958a0325474",
+            "f3e0fb47-e791-5ae7-a780-fba17ff73861",
+            "ea20b0ca-99a5-5497-a0e2-29c7800657ce",
+            "16a8144b-fc36-5732-9153-92f49ea4349b"
+          ],
+          "precision_at_3": 0.45,
+          "precision_at_5": 0.33,
+          "recall_at_5": 0.938,
+          "reciprocal_rank": 0.59
+        },
+        {
+          "question": "What are the three key factors to consider when choosing a PTM for a downstream task?",
+          "retrieved_ids": [
+            "00d32182-5b05-5cff-a709-c2cc96db9f54",
+            "cce532bf-e381-58f6-8f13-03ab72fa38ca",
+            "01315e82-254e-507a-b754-647455739f65",
+            "16ee1f0a-93dd-5656-888c-339a462d2462",
+            "5ca57091-d566-5c83-a4a4-068838fb1a0e"
+          ],
+          "relevant_ids": [
+            "00d32182-5b05-5cff-a709-c2cc96db9f54",
+            "cce532bf-e381-58f6-8f13-03ab72fa38ca",
+            "01315e82-254e-507a-b754-647455739f65",
+            "6fbb1a45-af87-5042-bcc1-422849af2693"
+          ],
+          "precision_at_3": 0.45,
+          "precision_at_5": 0.33,
+          "recall_at_5": 0.938,
+          "reciprocal_rank": 0.59
+        },
+        {
+          "question": "What is sequential transfer learning and how does adapting PTMs to downstream tasks fit this definition?",
+          "retrieved_ids": [
+            "fba45319-c0a5-518a-aeab-3f94a720aa2f",
+            "1fe36ff5-9cb8-585f-9272-ca797499b313",
+            "6b387321-d5a1-5ab7-b62e-ba3e7124e077",
+            "8074adf9-10c4-5b42-b6f2-ca8a5733a3f1",
+            "67763cf0-326b-5020-ae3c-f64f204a3d99"
+          ],
+          "relevant_ids": [
+            "fba45319-c0a5-518a-aeab-3f94a720aa2f",
+            "1fe36ff5-9cb8-585f-9272-ca797499b313",
+            "6b387321-d5a1-5ab7-b62e-ba3e7124e077",
+            "8303a7e5-1cba-5359-ad97-a509c1de71d2"
+          ],
+          "precision_at_3": 0.45,
+          "precision_at_5": 0.33,
+          "recall_at_5": 0.938,
+          "reciprocal_rank": 0.59
+        },
+        {
+          "question": "What types of multi-modal PTMs does the survey describe and what pre-training tasks do they typically use?",
+          "retrieved_ids": [
+            "23b8ec48-7cb5-5f59-9f47-4b3191006b79",
+            "06b5478f-f5b6-55fd-8d46-31bf3c9b3bd8",
+            "fefb512f-0f21-5061-bdc9-aff009b88299",
+            "1f970e9c-ea6e-5817-8440-beff133a741d",
+            "3dab2cd8-c2d4-587f-9efa-5bf7af8fbf09"
+          ],
+          "relevant_ids": [
+            "23b8ec48-7cb5-5f59-9f47-4b3191006b79",
+            "06b5478f-f5b6-55fd-8d46-31bf3c9b3bd8",
+            "fefb512f-0f21-5061-bdc9-aff009b88299",
+            "6968804f-c46f-5d0b-ae42-7aa824737fa7"
+          ],
+          "precision_at_3": 0.45,
+          "precision_at_5": 0.33,
+          "recall_at_5": 0.938,
+          "reciprocal_rank": 0.59
+        },
+        {
+          "question": "What exiting strategy does PABEE use and how does it differ from entropy-based approaches?",
+          "retrieved_ids": [
+            "4a6a3bcc-482e-5b75-8108-18b161d08688",
+            "275d447c-b956-5893-b840-cda2995234e8",
+            "382650ae-4a13-539f-95b6-837f0e611410",
+            "6a47cbcb-87b5-5611-a83d-05a99df94528",
+            "30ed3c83-c7d2-50ab-9e22-d8d0801718cb"
+          ],
+          "relevant_ids": [
+            "4a6a3bcc-482e-5b75-8108-18b161d08688",
+            "275d447c-b956-5893-b840-cda2995234e8",
+            "382650ae-4a13-539f-95b6-837f0e611410",
+            "c99ee9aa-f660-5f20-83e7-344dc2f224b0"
+          ],
+          "precision_at_3": 0.45,
+          "precision_at_5": 0.33,
+          "recall_at_5": 0.938,
+          "reciprocal_rank": 0.59
+        },
+        {
+          "question": "What are the two long-context domains in which MemGPT is evaluated?",
+          "retrieved_ids": [
+            "7c49f59a-126e-5918-8160-f1790308a357",
+            "25d8f699-5678-5679-9cc9-007093156a2b",
+            "8188f6e7-288b-5135-b887-88331dedfce2",
+            "6e672f3a-d156-5fb0-9c08-1f882de9c935",
+            "e88227e7-4321-5515-b79c-da0b15af402f"
+          ],
+          "relevant_ids": [
+            "7c49f59a-126e-5918-8160-f1790308a357",
+            "25d8f699-5678-5679-9cc9-007093156a2b",
+            "8188f6e7-288b-5135-b887-88331dedfce2",
+            "b97933e3-56cf-5eed-99d2-bd6851e0c1b0"
+          ],
+          "precision_at_3": 0.45,
+          "precision_at_5": 0.33,
+          "recall_at_5": 0.938,
+          "reciprocal_rank": 0.59
+        },
+        {
+          "question": "What accuracy improvement does adding MemGPT provide to GPT-3.5 Turbo on the Deep Memory Retrieval task?",
+          "retrieved_ids": [
+            "c14a14dc-7ed3-53fa-9b2b-816dafa8a80d",
+            "ff8974be-f0f5-5d4d-882b-7017672288bd",
+            "632359f1-1acb-5653-a1ef-24d6fc48c3a4",
+            "89c99a6c-792f-583c-9294-e649be0fd875",
+            "bf8faacb-67d2-5875-bff7-c58216cbee86"
+          ],
+          "relevant_ids": [
+            "c14a14dc-7ed3-53fa-9b2b-816dafa8a80d",
+            "ff8974be-f0f5-5d4d-882b-7017672288bd",
+            "632359f1-1acb-5653-a1ef-24d6fc48c3a4",
+            "e2c3727b-1bb2-574f-8fa5-12cd1c285098"
+          ],
+          "precision_at_3": 0.45,
+          "precision_at_5": 0.33,
+          "recall_at_5": 0.938,
+          "reciprocal_rank": 0.59
+        },
+        {
+          "question": "What is the nested key-value retrieval task and what capability does it test?",
+          "retrieved_ids": [
+            "38d96d2a-8eb0-56c0-8631-8ca8a0272490",
+            "f088e69f-e1ee-5958-bb51-5c48f29a2d39",
+            "a54a74f8-1803-5427-811f-15fa30b36c3c",
+            "65e835aa-a055-5753-9c26-507434a0a286",
+            "6a8b08fc-3d73-581e-aae6-566ca7b38a62"
+          ],
+          "relevant_ids": [
+            "38d96d2a-8eb0-56c0-8631-8ca8a0272490",
+            "f088e69f-e1ee-5958-bb51-5c48f29a2d39",
+            "a54a74f8-1803-5427-811f-15fa30b36c3c",
+            "bf8a58d1-75b5-59ff-895e-d8820a2e05b3"
+          ],
+          "precision_at_3": 0.45,
+          "precision_at_5": 0.33,
+          "recall_at_5": 0.938,
+          "reciprocal_rank": 0.59
+        },
+        {
+          "question": "What are the context window sizes for GPT-4, GPT-4 Turbo, and GPT-3.5 Turbo as used in the MemGPT experiments?",
+          "retrieved_ids": [
+            "2f66c70e-b14d-516f-80e2-f29a45b8c102",
+            "a1b6a0fa-1861-5a6f-9297-15e3100f5ae4",
+            "d488608d-7cdc-5a34-a58c-4d5a1fcaf265",
+            "e34c67d7-3f6e-50c8-9ad0-45eff3ea49d0",
+            "ae5827c5-f38c-5166-9bb8-1f335194c235"
+          ],
+          "relevant_ids": [
+            "2f66c70e-b14d-516f-80e2-f29a45b8c102",
+            "a1b6a0fa-1861-5a6f-9297-15e3100f5ae4",
+            "d488608d-7cdc-5a34-a58c-4d5a1fcaf265",
+            "7fa85a53-c7c5-5521-a4e0-3f0e854da725"
+          ],
+          "precision_at_3": 0.45,
+          "precision_at_5": 0.33,
+          "recall_at_5": 0.938,
+          "reciprocal_rank": 0.59
+        },
+        {
+          "question": "How does MemGPT's performance on the document QA task compare to truncation-based approaches as document length increases?",
+          "retrieved_ids": [
+            "876b2892-961f-5c79-a836-8789e693be34",
+            "8b23f5ec-cb03-5e58-b99b-fe23ca15f2a4",
+            "27c0afb9-3639-5547-a197-708bc6ffc88c",
+            "bfd6c7a3-66f6-5b13-b0f7-3060707c05f8",
+            "429c0697-131e-5b84-a8cb-b90a9faab939"
+          ],
+          "relevant_ids": [
+            "876b2892-961f-5c79-a836-8789e693be34",
+            "8b23f5ec-cb03-5e58-b99b-fe23ca15f2a4",
+            "27c0afb9-3639-5547-a197-708bc6ffc88c",
+            "b24b6285-f5ad-5e36-a123-3a61aa2cf1a8"
+          ],
+          "precision_at_3": 0.45,
+          "precision_at_5": 0.33,
+          "recall_at_5": 0.938,
+          "reciprocal_rank": 0.59
+        },
+        {
+          "question": "What are the two primary memory types in MemGPT's OS-inspired architecture and what are their analogues in operating systems?",
+          "retrieved_ids": [
+            "70fe3baa-9767-5919-ae1f-f14b67d542f6",
+            "ee699778-d1a4-5c8b-86c2-dd83134224e4",
+            "9bde80e0-f57f-5756-8bd1-907b4e926453",
+            "34fef146-28be-5df8-8c8f-47f485da33f0",
+            "9905ee17-f945-5781-bfae-0e9ff4d5021f"
+          ],
+          "relevant_ids": [
+            "70fe3baa-9767-5919-ae1f-f14b67d542f6",
+            "ee699778-d1a4-5c8b-86c2-dd83134224e4",
+            "9bde80e0-f57f-5756-8bd1-907b4e926453",
+            "72ba399d-f085-5445-b5bf-c073ef325814"
+          ],
+          "precision_at_3": 0.45,
+          "precision_at_5": 0.33,
+          "recall_at_5": 0.938,
+          "reciprocal_rank": 0.59
+        },
+        {
+          "question": "What are the three components of MemGPT's main context and how does function chaining enable multi-step retrieval?",
+          "retrieved_ids": [
+            "93dc1f19-d574-5c97-9dbc-55983920505a",
+            "be1fc02c-45bc-519c-8ea4-c0ba0441f793",
+            "2b5301b6-f099-5659-acdf-dd8e34b646b1",
+            "78a0bd7e-d48b-5c6f-959c-1864a481c3ae",
+            "ec40853c-dc45-5eb7-8df3-d87a98510ec7"
+          ],
+          "relevant_ids": [
+            "93dc1f19-d574-5c97-9dbc-55983920505a",
+            "be1fc02c-45bc-519c-8ea4-c0ba0441f793",
+            "54825250-b290-52bf-afab-a8eb3e06b925"
+          ],
+          "precision_at_3": 0.45,
+          "precision_at_5": 0.33,
+          "recall_at_5": 0.938,
+          "reciprocal_rank": 0.59
+        },
+        {
+          "question": "How does MemGPT manage its own memory without user intervention?",
+          "retrieved_ids": [
+            "9ee4c544-940a-59a1-8485-0958ec615652",
+            "0d561610-103d-5d7f-aa48-7ca34b6bc7a0",
+            "1fbdf54c-aac0-56cd-a1b5-1e09791c8c67",
+            "9350ad24-2d40-5ef5-9751-5ab05081ea00",
+            "f7285d7e-bd4e-5a5c-adb8-563456e65931"
+          ],
+          "relevant_ids": [
+            "9ee4c544-940a-59a1-8485-0958ec615652",
+            "0d561610-103d-5d7f-aa48-7ca34b6bc7a0",
+            "43de877f-4e41-52bd-ba13-e532e2a89c70"
+          ],
+          "precision_at_3": 0.45,
+          "precision_at_5": 0.33,
+          "recall_at_5": 0.938,
+          "reciprocal_rank": 0.59
+        }
+      ]
+    }
+  }
+}
