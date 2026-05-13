@@ -134,6 +134,55 @@ def test_min_relevance_threshold_reads_from_env(monkeypatch: pytest.MonkeyPatch)
     assert root_config.MIN_RELEVANCE_THRESHOLD == pytest.approx(0.35)
 
 
+def test_default_scoped_fallback_and_qa_top_k(monkeypatch: pytest.MonkeyPatch) -> None:
+    """SCOPED_TOP_K, FALLBACK_TOP_K, and QA_TOP_K should use updated defaults."""
+    import config as root_config
+
+    monkeypatch.delenv("SCOPED_TOP_K", raising=False)
+    monkeypatch.delenv("FALLBACK_TOP_K", raising=False)
+    monkeypatch.delenv("QA_TOP_K", raising=False)
+    importlib.reload(root_config)
+
+    assert root_config.SCOPED_TOP_K == 15
+    assert root_config.FALLBACK_TOP_K == 8
+    assert root_config.QA_TOP_K == 6
+
+
+def test_adaptive_threshold_scales_for_low_scores() -> None:
+    """Adaptive threshold should scale down when rerank scores are uniformly low."""
+    from backend.rag import graph as rag_graph
+
+    assert rag_graph._adaptive_threshold([], base=0.35) == pytest.approx(0.35)
+    assert rag_graph._adaptive_threshold([0.29, 0.12], base=0.35) == pytest.approx(0.232)
+    assert rag_graph._adaptive_threshold([0.31, 0.45], base=0.35) == pytest.approx(0.35)
+
+
+def test_dedupe_near_identical_chunks_relaxed_threshold() -> None:
+    """Default Jaccard threshold should dedupe near-identical chunks more aggressively."""
+    from backend.rag import graph as rag_graph
+
+    chunk_a = {"content": "a b c d e f g h i j"}
+    chunk_b = {"content": "a b c d e f g h x y"}
+    deduped = rag_graph._dedupe_near_identical_chunks([chunk_a, chunk_b])
+
+    assert len(deduped) == 1
+
+
+def test_filter_unlabeled_sections_keeps_majority() -> None:
+    """Unlabeled sections should be dropped only when they are a minority."""
+    from backend.rag import graph as rag_graph
+
+    labeled = {"content": "a", "metadata": {"section_title": "Intro"}}
+    unlabeled = {"content": "b", "metadata": {"section_title": "Unlabeled Section"}}
+
+    kept = rag_graph._filter_unlabeled_sections([labeled, unlabeled])
+    assert len(kept) == 1
+    assert kept[0]["metadata"]["section_title"] == "Intro"
+
+    majority = rag_graph._filter_unlabeled_sections([unlabeled, unlabeled, labeled])
+    assert len(majority) == 3
+
+
 def test_query_trace_payload_includes_chunk_previews(monkeypatch: pytest.MonkeyPatch) -> None:
     """LangSmith trace payload should include candidate and returned chunk previews."""
     pipeline_module = import_module("backend.rag.retrieval.pipeline")

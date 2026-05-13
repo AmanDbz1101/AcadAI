@@ -428,6 +428,7 @@ def _map_section_texts_from_nearest_headings(
     unresolved_blocks: list[dict] = []
 
     current_section_id: Optional[str] = None
+    last_assigned_section_id: Optional[str] = None
 
     for block in ordered_blocks:
         text = _normalize_text(block.get("text") or "")
@@ -442,6 +443,8 @@ def _map_section_texts_from_nearest_headings(
             )
             if resolved_id:
                 current_section_id = resolved_id
+            else:
+                current_section_id = None
             continue
 
         if current_section_id and current_section_id in sections_by_id:
@@ -452,6 +455,23 @@ def _map_section_texts_from_nearest_headings(
                     "section_id": current_section_id,
                     "section_title": str(
                         sections_by_id[current_section_id].get("title") or ""
+                    ),
+                }
+            )
+            last_assigned_section_id = current_section_id
+            continue
+
+        if _word_count(text) < 50:
+            continue
+
+        if last_assigned_section_id and last_assigned_section_id in sections_by_id:
+            buckets.setdefault(last_assigned_section_id, []).append(text)
+            assignments.append(
+                {
+                    "text": text,
+                    "section_id": last_assigned_section_id,
+                    "section_title": str(
+                        sections_by_id[last_assigned_section_id].get("title") or ""
                     ),
                 }
             )
@@ -490,6 +510,9 @@ def _map_unresolved_blocks_from_element_tags(
     for block in unresolved_blocks:
         text = _normalize_text(block.get("text") or "")
         if not text:
+            continue
+
+        if _word_count(text) < 50:
             continue
 
         resolved_id = _resolve_section_for_block(block, sections_by_id, sections_by_title)

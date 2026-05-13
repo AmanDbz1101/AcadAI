@@ -88,6 +88,7 @@ class ChatMessageRequest(BaseModel):
 class PaperChatRequest(BaseModel):
     messages: List[ChatMessageRequest]
     allowed_sections: Optional[List[str]] = None
+    pinned_sections: Optional[List[str]] = None  # set only when user explicitly selects in UI
 
 
 def _b64url_encode(raw: bytes) -> str:
@@ -1638,6 +1639,7 @@ def chat_with_paper(
     state = {
         "messages": history,
         "allowed_sections": payload.allowed_sections or [],
+        "pinned_sections": payload.pinned_sections or None,
         "document_id": str(paper.get("document_uuid") or ""),
     }
     result = qa_graph.invoke(state)
@@ -1646,7 +1648,26 @@ def chat_with_paper(
         raise HTTPException(status_code=500, detail="Chat graph returned no response")
 
     assistant_message = str(result_messages[-1].content or "").strip()
-    return {"paper": paper, "assistant_message": assistant_message}
+    retrieved_chunks = result.get("retrieved_chunks") or []
+    sources: list[dict[str, Any]] = []
+    for chunk in retrieved_chunks:
+        content = str(chunk.get("content") or "").strip()
+        metadata = chunk.get("metadata") or {}
+        normalized_content = " ".join(content.split())
+        sources.append(
+            {
+                "section_title": metadata.get("section_title"),
+                "page": metadata.get("page_start"),
+                "content_preview": normalized_content[:120],
+            }
+        )
+
+    return {
+        "paper": paper,
+        "assistant_message": assistant_message,
+        "sources": sources,
+        "scoped": bool(payload.allowed_sections or payload.pinned_sections),
+    }
 
 
 @app.post("/api/papers/{paper_id}/questions/{question_id}/generate")

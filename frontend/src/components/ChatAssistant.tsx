@@ -2,10 +2,19 @@ import { useState, useRef, useEffect, useMemo } from 'react'
 import { Maximize2, Minimize2, Send } from 'lucide-react'
 import type { PaperSection } from '@/types/api'
 import { chatWithPaper } from '@/lib/api'
+import { MarkdownMessage } from '@/components/MarkdownMessage'
+import { SourceSections } from '@/components/SourceSections'
+
+interface ChatSource {
+  section_title: string
+  section_id?: string
+  page?: number
+}
 
 interface Message {
   role: 'user' | 'assistant'
   content: string
+  sources?: ChatSource[]
 }
 
 const initialMessages: Message[] = []
@@ -13,14 +22,17 @@ const initialMessages: Message[] = []
 interface ChatAssistantProps {
   paperId: number | null
   sections: PaperSection[]
+  onSourceClick?: (source: ChatSource) => void
+  activeSection?: string | null
 }
 
-const ChatAssistant = ({ paperId, sections }: ChatAssistantProps) => {
+const ChatAssistant = ({ paperId, sections, onSourceClick, activeSection }: ChatAssistantProps) => {
   const [messages, setMessages] = useState<Message[]>(initialMessages)
   const [input, setInput] = useState('')
   const [isTyping, setIsTyping] = useState(false)
   const [isFullscreen, setIsFullscreen] = useState(false)
   const [selectedSections, setSelectedSections] = useState<string[]>([])
+  const [autoSelectedSection, setAutoSelectedSection] = useState<string | null>(null)
   const scrollRef = useRef<HTMLDivElement>(null)
 
   const sectionNames = useMemo(
@@ -65,6 +77,17 @@ const ChatAssistant = ({ paperId, sections }: ChatAssistantProps) => {
     setSelectedSections([])
   }, [paperId])
 
+  useEffect(() => {
+    if (!activeSection) return
+
+    const matchedSection = sections.find((section) => section.id === activeSection)
+    const sectionTitle = (matchedSection?.title || '').trim()
+    if (!sectionTitle) return
+
+    setAutoSelectedSection(sectionTitle)
+    setSelectedSections([sectionTitle])
+  }, [activeSection, sections])
+
   const toggleSection = (sectionName: string) => {
     setSelectedSections((prev) =>
       prev.includes(sectionName)
@@ -91,7 +114,8 @@ const ChatAssistant = ({ paperId, sections }: ChatAssistantProps) => {
 
       const assistantMessage: Message = {
         role: 'assistant',
-        content: response.assistant_message || 'No response received.',
+        content: response.message || response.assistant_message || 'No response received.',
+        sources: response.sources?.filter((source) => source.section_title) || [],
       }
       setMessages((prev) => [...prev, assistantMessage])
     } catch (error) {
@@ -173,7 +197,10 @@ const ChatAssistant = ({ paperId, sections }: ChatAssistantProps) => {
                 }
               `}
                 >
-                  {msg.content}
+                  <MarkdownMessage content={msg.content} role={msg.role} />
+                  {msg.role === 'assistant' ? (
+                    <SourceSections sections={msg.sources || []} onSectionClick={onSourceClick} />
+                  ) : null}
                 </div>
               </div>
             ))}
@@ -211,6 +238,7 @@ const ChatAssistant = ({ paperId, sections }: ChatAssistantProps) => {
           <div className="flex flex-wrap gap-2">
             {sectionNames.map((sectionName) => {
               const isSelected = selectedSections.includes(sectionName)
+              const isAutoSelected = autoSelectedSection === sectionName && isSelected
               return (
                 <button
                   key={sectionName}
@@ -222,6 +250,9 @@ const ChatAssistant = ({ paperId, sections }: ChatAssistantProps) => {
                       : 'border-border/70 bg-panel/70 text-text-secondary hover:text-foreground hover:border-accent/40'
                   }`}
                 >
+                    {isAutoSelected ? (
+                      <span className="w-1.5 h-1.5 rounded-full bg-blue-400" />
+                    ) : null}
                   {sectionName}
                 </button>
               )

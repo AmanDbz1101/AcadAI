@@ -71,6 +71,13 @@ export interface PaperChatPayload {
 export interface PaperChatResponse {
   paper: PaperSummary
   assistant_message: string
+  message?: string
+  sources?: Array<{
+    section_title: string
+    page?: number
+    content_preview?: string
+  }>
+  scoped?: boolean
 }
 
 export interface GenerateTechnicalTermDefinitionPayload {

@@ -2,10 +2,10 @@ from langchain_core.messages import AIMessage, SystemMessage, trim_messages
 from langchain_groq import ChatGroq
 try:
     from .state import ChatState
-    from .retriever import retrieve
+    from .retriever import retrieve_with_metadata
 except ImportError:
     from state import ChatState
-    from retriever import retrieve
+    from retriever import retrieve_with_metadata
 
 # --- LLM ------------------------------------------------------------
 llm = ChatGroq(
@@ -40,13 +40,45 @@ def chat_node(state: ChatState) -> dict:
     last_message = state["messages"][-1]
     query = last_message.content
 
+    pinned = state.get("pinned_sections") or None
+    allowed_sections = state.get("allowed_sections") or []
+    section_scope = pinned if pinned is not None else allowed_sections or None
+
     # 2. Retrieve relevant chunks (same pipeline as main RAG retrieval)
-    chunks = retrieve(
+    retrieved_chunks = retrieve_with_metadata(
         query,
         document_id=state.get("document_id"),
-        allowed_sections=state.get("allowed_sections") or None,
+        allowed_sections=section_scope,
+        pinned_sections=pinned,
     )
-    context = "\n\n---\n\n".join(chunks) if chunks else "No relevant chunks found."
+    if pinned is not None:
+        filtered_chunks = [
+            chunk
+            for chunk in retrieved_chunks
+            if (chunk.get("metadata") or {}).get("section_title") in pinned
+        ]
+
+        if not filtered_chunks:
+            section_names = ", ".join(pinned)
+            message = (
+                "The selected section(s) -- "
+                f"{section_names} -- do not contain "
+                "information relevant to your question. "
+                "Try selecting a different section or ask without a section filter."
+            )
+            return {
+                "messages": [AIMessage(content=message)],
+                "retrieved_chunks": [],
+                "answer": message,
+                "sources": [],
+                "scoped": True,
+                "found_in_scope": False,
+            }
+
+        retrieved_chunks = filtered_chunks
+    chunk_texts = [str(chunk.get("content") or "").strip() for chunk in retrieved_chunks]
+    chunk_texts = [text for text in chunk_texts if text]
+    context = "\n\n---\n\n".join(chunk_texts) if chunk_texts else "No relevant chunks found."
 
     # 3. Trim conversation history to last N messages
     trimmed = trim_messages(
@@ -67,4 +99,7 @@ def chat_node(state: ChatState) -> dict:
     # 5. Call Groq
     response = llm.invoke(messages_to_send)
 
-    return {"messages": [AIMessage(content=response.content)]}
+    return {
+        "messages": [AIMessage(content=response.content)],
+        "retrieved_chunks": retrieved_chunks,
+    }
