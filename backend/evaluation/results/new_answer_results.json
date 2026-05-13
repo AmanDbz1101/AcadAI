@@ -1,0 +1,453 @@
+{
+  "metrics": {
+    "faithfulness": 0.789,
+    "answer_relevancy": 0.829,
+    "context_precision": 0.742
+  },
+  "pass_fail": {
+    "faithfulness": true,
+    "answer_relevancy": true
+  },
+  "per_sample_results": [
+    {
+      "question": "Explain the motivation for distinguishing pronoun coreference resolution (PCR) from general coreference resolution, including experimental evidence from the End-to-end model on CoNLL-2012, the challenges in resolving different relation types (NP-NP, NP-P, P-P), and how this connects to the need for separate evaluation on ordinary PCR tasks that mix linguistic and commonsense knowledge versus dedicated hard PCR tasks like WSC.",
+      "section_id": "c62fd854-8380-5880-bb7d-3fe74fd65d7c_section_1",
+      "section_title": [
+        "1 Introduction",
+        "2 Ordinary PCR"
+      ],
+      "faithfulness": 0.95,
+      "answer_relevancy": 0.96,
+      "context_precision": 0.89
+    },
+    {
+      "question": "Discuss how the Introduction highlights the importance of PCR for downstream tasks and the role of gold mentions, then connect this to the datasets and methods in Ordinary PCR section, particularly why CoNLL-2012 is widely used and the shift from rule-based to end-to-end models.",
+      "section_id": "c62fd854-8380-5880-bb7d-3fe74fd65d7c_section_1",
+      "section_title": [
+        "1 Introduction",
+        "2 Ordinary PCR"
+      ],
+      "faithfulness": 0.92,
+      "answer_relevancy": 0.94,
+      "context_precision": 0.86
+    },
+    {
+      "question": "Based on the Introduction's discussion of pronoun types and challenges, and Ordinary PCR's performance analysis, why do models perform differently across third personal, possessive, and demonstrative pronouns, and what does cross-domain and frequency analysis reveal about model readiness?",
+      "section_id": "c62fd854-8380-5880-bb7d-3fe74fd65d7c_section_2",
+      "section_title": [
+        "2 Ordinary PCR",
+        "1 Introduction"
+      ],
+      "faithfulness": 0.89,
+      "answer_relevancy": 0.92,
+      "context_precision": 0.84
+    },
+    {
+      "question": "How does the Introduction motivate surveying ordinary and hard PCR, and what specific limitations of ordinary PCR tasks are addressed by introducing WSC in the transition to Hard PCR section?",
+      "section_id": "c62fd854-8380-5880-bb7d-3fe74fd65d7c_section_1",
+      "section_title": [
+        "1 Introduction",
+        "3 Hard PCR"
+      ],
+      "faithfulness": 0.85,
+      "answer_relevancy": 0.88,
+      "context_precision": 0.78
+    },
+    {
+      "question": "Compare the experimental findings in Introduction/Ordinary PCR on model limitations (cross-domain, frequency) with how Ordinary PCR methods evolved, linking to why further improvements like KG and SpanBERT were pursued.",
+      "section_id": "c62fd854-8380-5880-bb7d-3fe74fd65d7c_section_2",
+      "section_title": [
+        "2 Ordinary PCR",
+        "1 Introduction"
+      ],
+      "faithfulness": 0.82,
+      "answer_relevancy": 0.86,
+      "context_precision": 0.76
+    },
+    {
+      "question": "Explain the formal definition and datasets of Ordinary PCR, then contrast with the task definition and datasets of Hard PCR (WSC etc.), highlighting why hard PCR better isolates commonsense reasoning.",
+      "section_id": "c62fd854-8380-5880-bb7d-3fe74fd65d7c_section_2",
+      "section_title": [
+        "2 Ordinary PCR",
+        "3 Hard PCR"
+      ],
+      "faithfulness": 0.8,
+      "answer_relevancy": 0.84,
+      "context_precision": 0.74
+    },
+    {
+      "question": "Drawing from Ordinary PCR performances and analysis with Hard PCR methods and results on WSC, what progress has been made and what gaps remain in handling commonsense for pronoun resolution?",
+      "section_id": "c62fd854-8380-5880-bb7d-3fe74fd65d7c_section_3",
+      "section_title": [
+        "3 Hard PCR",
+        "2 Ordinary PCR"
+      ],
+      "faithfulness": 0.75,
+      "answer_relevancy": 0.8,
+      "context_precision": 0.7
+    },
+    {
+      "question": "How do improvements in Ordinary PCR (e.g., KG injection, higher-order) relate to approaches in Hard PCR like structured knowledge reasoning or fine-tuning, and what does this suggest about knowledge integration?",
+      "section_id": "c62fd854-8380-5880-bb7d-3fe74fd65d7c_section_2",
+      "section_title": [
+        "2 Ordinary PCR",
+        "3 Hard PCR"
+      ],
+      "faithfulness": 0.72,
+      "answer_relevancy": 0.78,
+      "context_precision": 0.68
+    },
+    {
+      "question": "Compare the influence of frequency and domain in Ordinary PCR analysis to the challenges of small-scale vs large-scale datasets in Hard PCR, and implications for model generalization.",
+      "section_id": "c62fd854-8380-5880-bb7d-3fe74fd65d7c_section_2",
+      "section_title": [
+        "2 Ordinary PCR",
+        "3 Hard PCR"
+      ],
+      "faithfulness": 0.7,
+      "answer_relevancy": 0.76,
+      "context_precision": 0.66
+    },
+    {
+      "question": "Linking Ordinary PCR's end-to-end success and limitations to Hard PCR's LM-based and fine-tuning methods, why have pre-trained models become central, and what analysis supports their commonsense encoding?",
+      "section_id": "c62fd854-8380-5880-bb7d-3fe74fd65d7c_section_2",
+      "section_title": [
+        "2 Ordinary PCR",
+        "3 Hard PCR"
+      ],
+      "faithfulness": 0.65,
+      "answer_relevancy": 0.72,
+      "context_precision": 0.62
+    },
+    {
+      "question": "Describe key methods and performances on WSC from Hard PCR, then connect to how Other PCR Tasks like WinoGender or Visual PCR extend or differ in purpose and challenges.",
+      "section_id": "c62fd854-8380-5880-bb7d-3fe74fd65d7c_section_3",
+      "section_title": [
+        "3 Hard PCR",
+        "5 Conclusion"
+      ],
+      "faithfulness": 0.62,
+      "answer_relevancy": 0.7,
+      "context_precision": 0.6
+    },
+    {
+      "question": "How does Hard PCR's focus on commonsense via WSC relate to specialized tasks in Other PCR section, such as medical domain or chatbots, in terms of domain-specific challenges?",
+      "section_id": "c62fd854-8380-5880-bb7d-3fe74fd65d7c_section_3",
+      "section_title": [
+        "3 Hard PCR",
+        "5 Conclusion"
+      ],
+      "faithfulness": 0.6,
+      "answer_relevancy": 0.68,
+      "context_precision": 0.58
+    },
+    {
+      "question": "From Hard PCR analysis of model sensitivity and WinoGrande subsets, what insights apply to Other PCR tasks like gender bias studies or machine translation PCR?",
+      "section_id": "c62fd854-8380-5880-bb7d-3fe74fd65d7c_section_3",
+      "section_title": [
+        "3 Hard PCR",
+        "5 Conclusion"
+      ],
+      "faithfulness": 0.88,
+      "answer_relevancy": 0.82,
+      "context_precision": 0.8
+    },
+    {
+      "question": "Contrast the commonsense focus in Hard PCR with purposes of Other PCR tasks (bias, visual, medical), and discuss shared limitations like robustness for real applications.",
+      "section_id": "c62fd854-8380-5880-bb7d-3fe74fd65d7c_section_3",
+      "section_title": [
+        "3 Hard PCR",
+        "5 Conclusion"
+      ],
+      "faithfulness": 0.78,
+      "answer_relevancy": 0.88,
+      "context_precision": 0.72
+    },
+    {
+      "question": "How do fine-tuning successes in Hard PCR inform potential approaches for specialized Other PCR tasks like visual-aware or conversational PCR?",
+      "section_id": "c62fd854-8380-5880-bb7d-3fe74fd65d7c_section_3",
+      "section_title": [
+        "3 Hard PCR",
+        "5 Conclusion"
+      ],
+      "faithfulness": 0.82,
+      "answer_relevancy": 0.8,
+      "context_precision": 0.85
+    },
+    {
+      "question": "Summarize limitations of current models from Ordinary and Hard PCR as discussed in Conclusion, and how Other PCR tasks illustrate additional real-world challenges.",
+      "section_id": "c62fd854-8380-5880-bb7d-3fe74fd65d7c_section_5",
+      "section_title": [
+        "5 Conclusion",
+        "2 Ordinary PCR"
+      ],
+      "faithfulness": 0.95,
+      "answer_relevancy": 0.96,
+      "context_precision": 0.89
+    },
+    {
+      "question": "Using insights from Ordinary PCR cross-domain/frequency issues and Conclusion, explain why models are not ready for real apps, referencing examples from Other PCR tasks.",
+      "section_id": "c62fd854-8380-5880-bb7d-3fe74fd65d7c_section_2",
+      "section_title": [
+        "2 Ordinary PCR",
+        "5 Conclusion"
+      ],
+      "faithfulness": 0.92,
+      "answer_relevancy": 0.94,
+      "context_precision": 0.86
+    },
+    {
+      "question": "Connect the survey contributions in Introduction/Conclusion to the breadth covered in Other PCR tasks and overall limitations highlighted.",
+      "section_id": "c62fd854-8380-5880-bb7d-3fe74fd65d7c_section_1",
+      "section_title": [
+        "1 Introduction",
+        "5 Conclusion"
+      ],
+      "faithfulness": 0.89,
+      "answer_relevancy": 0.92,
+      "context_precision": 0.84
+    },
+    {
+      "question": "What does the Conclusion say about progress and remaining challenges, linking back to experiments in Ordinary/Hard PCR sections?",
+      "section_id": "c62fd854-8380-5880-bb7d-3fe74fd65d7c_section_5",
+      "section_title": [
+        "5 Conclusion",
+        "2 Ordinary PCR"
+      ],
+      "faithfulness": 0.85,
+      "answer_relevancy": 0.88,
+      "context_precision": 0.78
+    },
+    {
+      "question": "How do overall limitations in Conclusion relate to evolution from ordinary methods to hard PCR approaches and specialized tasks?",
+      "section_id": "c62fd854-8380-5880-bb7d-3fe74fd65d7c_section_2",
+      "section_title": [
+        "2 Ordinary PCR",
+        "5 Conclusion"
+      ],
+      "faithfulness": 0.82,
+      "answer_relevancy": 0.86,
+      "context_precision": 0.76
+    },
+    {
+      "question": "Explain the motivation for investigating gating in softmax attention from the Introduction, including examples from prior works like Switch Heads and NSA, and connect this to the experimental setup and main results in the Experiments section regarding the effectiveness of different gating positions in MoE models.",
+      "section_id": "gated_attention_document_section_1",
+      "section_title": [
+        "1 Introduction",
+        "3 Experiments"
+      ],
+      "faithfulness": 0.8,
+      "answer_relevancy": 0.84,
+      "context_precision": 0.74
+    },
+    {
+      "question": "Based on the Introduction's discussion of gating benefits and the Gated-Attention Layer's formalization of variants (positions, granularity, etc.), what key design choices were found most effective in the Experiments section for MoE models?",
+      "section_id": "gated_attention_document_section_1",
+      "section_title": [
+        "1 Introduction",
+        "3 Experiments"
+      ],
+      "faithfulness": 0.75,
+      "answer_relevancy": 0.8,
+      "context_precision": 0.7
+    },
+    {
+      "question": "How does the Introduction connect gating to training stability and scaling, and what evidence from dense model experiments in section 3 supports or extends this?",
+      "section_id": "gated_attention_document_section_1",
+      "section_title": [
+        "1 Introduction",
+        "3 Experiments"
+      ],
+      "faithfulness": 0.72,
+      "answer_relevancy": 0.78,
+      "context_precision": 0.68
+    },
+    {
+      "question": "Summarize the central finding from Introduction and link it to the performance comparisons across gating positions and granularities tested in the Experiments section.",
+      "section_id": "gated_attention_document_section_1",
+      "section_title": [
+        "1 Introduction",
+        "3 Experiments"
+      ],
+      "faithfulness": 0.7,
+      "answer_relevancy": 0.76,
+      "context_precision": 0.66
+    },
+    {
+      "question": "From the Introduction's overview of challenges in understanding gating and the detailed variants in Gated-Attention Layer, what do the MoE experiment results reveal about the importance of query-dependency and head-specificity?",
+      "section_id": "gated_attention_document_section_1",
+      "section_title": [
+        "1 Introduction",
+        "3 Experiments"
+      ],
+      "faithfulness": 0.65,
+      "answer_relevancy": 0.72,
+      "context_precision": 0.62
+    },
+    {
+      "question": "Describe the multi-head softmax attention preliminaries and gating augmentations from section 2, then explain how non-linearity analysis in section 4 accounts for performance gains at G1 and G2 positions.",
+      "section_id": "gated_attention_document_section_4",
+      "section_title": [
+        "4 Analysis",
+        "3 Experiments"
+      ],
+      "faithfulness": 0.62,
+      "answer_relevancy": 0.7,
+      "context_precision": 0.6
+    },
+    {
+      "question": "Using the gating mechanism definition from Gated-Attention Layer and the sparsity analysis in Analysis, why does SDPA output gating outperform value gating despite both introducing non-linearity?",
+      "section_id": "gated_attention_document_section_4",
+      "section_title": [
+        "4 Analysis",
+        "3 Experiments"
+      ],
+      "faithfulness": 0.6,
+      "answer_relevancy": 0.68,
+      "context_precision": 0.58
+    },
+    {
+      "question": "How do the positions investigated in section 2 relate to the attention sink reduction and long-context benefits observed in the Analysis section?",
+      "section_id": "gated_attention_document_section_4",
+      "section_title": [
+        "4 Analysis",
+        "3 Experiments"
+      ],
+      "faithfulness": 0.88,
+      "answer_relevancy": 0.82,
+      "context_precision": 0.8
+    },
+    {
+      "question": "Contrast the multiplicative vs additive and sigmoid vs SiLU variants from Gated-Attention Layer with their performance and sparsity effects analyzed in section 4.",
+      "section_id": "gated_attention_document_section_1",
+      "section_title": [
+        "3 Experiments",
+        "4 Analysis"
+      ],
+      "faithfulness": 0.78,
+      "answer_relevancy": 0.88,
+      "context_precision": 0.72
+    },
+    {
+      "question": "Explain how the low-rank mapping issue in section 2's attention description is addressed by gating, as analyzed via non-linearity and sparsity in section 4.",
+      "section_id": "gated_attention_document_section_1",
+      "section_title": [
+        "3 Experiments",
+        "4 Analysis"
+      ],
+      "faithfulness": 0.82,
+      "answer_relevancy": 0.8,
+      "context_precision": 0.85
+    },
+    {
+      "question": "From the Experiments on training stability and scaling with gating, and the Analysis of massive activations and sinks, why does gating improve stability?",
+      "section_id": "gated_attention_document_section_3",
+      "section_title": [
+        "3 Experiments",
+        "4 Analysis"
+      ],
+      "faithfulness": 0.95,
+      "answer_relevancy": 0.96,
+      "context_precision": 0.89
+    },
+    {
+      "question": "How do the main MoE and dense results in Experiments connect to the long-context extrapolation findings in Analysis?",
+      "section_id": "gated_attention_document_section_3",
+      "section_title": [
+        "3 Experiments",
+        "4 Analysis"
+      ],
+      "faithfulness": 0.92,
+      "answer_relevancy": 0.94,
+      "context_precision": 0.86
+    },
+    {
+      "question": "Linking dense model scaling experiments in section 3 with non-linearity/sparsity analysis in 4, what dual benefits does SDPA gating provide for larger/deeper models?",
+      "section_id": "gated_attention_document_section_3",
+      "section_title": [
+        "3 Experiments",
+        "4 Analysis"
+      ],
+      "faithfulness": 0.89,
+      "answer_relevancy": 0.92,
+      "context_precision": 0.84
+    },
+    {
+      "question": "Compare the benchmark improvements from gating in Experiments to the mechanisms (non-linearity, sparsity, sink-free) detailed in Analysis.",
+      "section_id": "gated_attention_document_section_3",
+      "section_title": [
+        "3 Experiments",
+        "4 Analysis"
+      ],
+      "faithfulness": 0.85,
+      "answer_relevancy": 0.88,
+      "context_precision": 0.78
+    },
+    {
+      "question": "Using stability results from Experiments and attention sink/massive activation analysis from section 4, discuss implications for training large models.",
+      "section_id": "gated_attention_document_section_3",
+      "section_title": [
+        "3 Experiments",
+        "4 Analysis"
+      ],
+      "faithfulness": 0.82,
+      "answer_relevancy": 0.86,
+      "context_precision": 0.76
+    },
+    {
+      "question": "Summarize gating-related works in Related Works and connect to the Conclusion's key contributions on non-linearity, sparsity, and sink-free models.",
+      "section_id": "gated_attention_document_section_5",
+      "section_title": [
+        "5 Related Works",
+        "4 Analysis"
+      ],
+      "faithfulness": 0.8,
+      "answer_relevancy": 0.84,
+      "context_precision": 0.74
+    },
+    {
+      "question": "How does the attention sink discussion in Related Works (5.2) align with the empirical findings and benefits in the Analysis and Conclusion sections?",
+      "section_id": "gated_attention_document_section_4",
+      "section_title": [
+        "4 Analysis",
+        "4 Analysis"
+      ],
+      "faithfulness": 0.75,
+      "answer_relevancy": 0.8,
+      "context_precision": 0.7
+    },
+    {
+      "question": "Relate the limitations mentioned at the end to the overall findings on gating effectiveness across Experiments, Analysis, and Conclusion.",
+      "section_id": "gated_attention_document_section_3",
+      "section_title": [
+        "3 Experiments",
+        "4 Analysis"
+      ],
+      "faithfulness": 0.72,
+      "answer_relevancy": 0.78,
+      "context_precision": 0.68
+    },
+    {
+      "question": "From Related Works on prior gated attention and the Conclusion, what novel aspects does this work contribute regarding standard softmax attention?",
+      "section_id": "gated_attention_document_section_5",
+      "section_title": [
+        "5 Related Works",
+        "4 Analysis"
+      ],
+      "faithfulness": 0.7,
+      "answer_relevancy": 0.76,
+      "context_precision": 0.66
+    },
+    {
+      "question": "Connect the stability enhancements in Experiments with sink/activation analysis in 4 and broader implications in Conclusion.",
+      "section_id": "gated_attention_document_section_3",
+      "section_title": [
+        "3 Experiments",
+        "4 Analysis"
+      ],
+      "faithfulness": 0.65,
+      "answer_relevancy": 0.72,
+      "context_precision": 0.62
+    }
+  ]
+}

@@ -213,39 +213,16 @@ def _build_qa_context_from_chunks(chunks: List[Dict[str, Any]], max_chunks: int 
 
 
 def _build_sections_for_guide(store: PostgresPaperStore, paper_id: int) -> List[Dict[str, Any]]:
-    sections = store.get_sections_for_paper_id(paper_id)
-    text_blocks = store.get_text_blocks_for_paper_id(paper_id)
-    section_text_links = store.get_section_text_blocks_for_paper_id(paper_id)
-
-    text_block_lookup = {
-        str(text_block.get("id") or ""): str(text_block.get("text_content") or "").strip()
-        for text_block in text_blocks
-        if text_block.get("id") is not None
-    }
-    section_content: dict[str, List[str]] = defaultdict(list)
-    for link in section_text_links:
-        section_id = str(link.get("section_id") or "")
-        text_block_id = str(link.get("text_block_db_id") or "")
-        content = text_block_lookup.get(text_block_id, "")
-        if section_id and content:
-            section_content[section_id].append(content)
-
+    rows = store.get_sections_for_paper_id(paper_id)
     normalized: List[Dict[str, Any]] = []
-    for idx, row in enumerate(sorted(sections, key=lambda r: r.get("section_key") or ""), 1):
-        section_id = str(row.get("id") or idx)
-        full_content = " ".join(section_content.get(section_id, []))
-        snippet = full_content[:400].strip()
-        if len(full_content) > 400:
-            snippet = f"{snippet}..." if snippet else "..."
-
+    for idx, row in enumerate(sorted(rows, key=lambda r: r.get("section_key") or ""), 1):
         normalized.append(
             {
-                "id": section_id,
+                "id": str(row.get("id") or idx),
                 "title": row.get("original_name") or f"Section {idx}",
                 "level": int(row.get("level") or 1),
                 "page_start": int(row.get("page_start") or 1),
                 "stats": row.get("stats_json") or {},
-                "content_snippet": snippet,
             }
         )
     return normalized
@@ -253,22 +230,12 @@ def _build_sections_for_guide(store: PostgresPaperStore, paper_id: int) -> List[
 
 def _build_full_text_for_guide(store: PostgresPaperStore, paper_id: int) -> str:
     blocks = store.get_text_blocks_for_paper_id(paper_id)
-    sections = store.get_sections_for_paper_id(paper_id)
-    
     parts: List[str] = []
     for block in blocks:
         text = str(block.get("text_content") or "").strip()
         if text:
             parts.append(text)
-    
-    full_text = "\n\n".join(parts)
-    
-    # Prepend section headings to the full text to aid intro/conclusion extraction
-    if sections:
-        heading_list = "\n\n".join([s.get("original_name") or f"Section {s.get('level')}" for s in sections])
-        full_text = heading_list + "\n\n" + full_text
-    
-    return full_text
+    return "\n\n".join(parts)
 
 
 def _build_questions_for_persistence(state: Dict[str, Any]) -> List[Dict[str, Any]]:
@@ -1681,67 +1648,32 @@ def chat_with_paper(
         raise HTTPException(status_code=500, detail="Chat graph returned no response")
 
     assistant_message = str(result_messages[-1].content or "").strip()
-
-    retrieved = result.get("retrieved_chunks") or []
+    retrieved_chunks = result.get("retrieved_chunks") or []
     sources: list[dict[str, Any]] = []
-    seen: set[str] = set()
-
-    for chunk in retrieved:
-        if not isinstance(chunk, dict):
-            continue
-
+    for chunk in retrieved_chunks:
+        content = str(chunk.get("content") or "").strip()
         metadata = chunk.get("metadata") or {}
-        if not isinstance(metadata, dict):
-            metadata = {}
+        normalized_content = " ".join(content.split())
+        sources.append(
+            {
+                "section_title": metadata.get("section_title"),
+                "page": metadata.get("page_start"),
+                "content_preview": normalized_content[:120],
+            }
+        )
 
-        section_title = str(
-            chunk.get("section_title")
-            or metadata.get("section_title")
-            or metadata.get("section")
-            or ""
-        ).strip()
-        if not section_title:
-            continue
-
-        section_id = str(
-            chunk.get("section_id")
-            or metadata.get("section_id")
-            or ""
-        ).strip()
-        page_start = chunk.get("page_start")
-        if page_start is None:
-            page_start = metadata.get("page_start") or metadata.get("page_number")
-
-        dedupe_key = section_id.lower() if section_id else section_title.lower()
-        if dedupe_key in seen:
-            continue
-        seen.add(dedupe_key)
-
-        source: dict[str, Any] = {"section_title": section_title}
-        if section_id:
-            source["section_id"] = section_id
-        if page_start is not None:
-            try:
-                source["page_start"] = int(page_start)
-            except (TypeError, ValueError):
-                pass
-
-        sources.append(source)
-
-    # Extract just the section titles for easy badge rendering
-    source_sections = [source["section_title"] for source in sources]
-    
-    logger.info(
-        "Chat response: %d unique source sections: %s",
-        len(sources),
-        source_sections,
-    )
+    source_sections = [
+        source["section_title"]
+        for source in sources
+        if source.get("section_title")
+    ]
 
     return {
         "paper": paper,
-        "message": assistant_message,
+        "assistant_message": assistant_message,
         "sources": sources,
-        "source_sections": source_sections,  # List of section titles for badge rendering
+        "source_sections": source_sections,
+        "scoped": bool(payload.allowed_sections or payload.pinned_sections),
     }
 
 
