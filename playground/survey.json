@@ -1,0 +1,230 @@
+{
+  "document_id": "c62fd854-8380-5880-bb7d-3fe74fd65d7c",
+  "paper_title": "A BRIEF SURVEY AND COMPARATIVE STUDY OF RECENT DEVELOPMENT OF PRONOUN COREFERENCE RESOLUTION",
+  "questions": [
+    {
+      "id": 1,
+      "section_title": "1 Introduction",
+      "question": "Explain the motivation for distinguishing pronoun coreference resolution (PCR) from general coreference resolution, including experimental evidence from the End-to-end model on CoNLL-2012, the challenges in resolving different relation types (NP-NP, NP-P, P-P), and how this connects to the need for separate evaluation on ordinary PCR tasks that mix linguistic and commonsense knowledge versus dedicated hard PCR tasks like WSC.",
+      "reference_answer": "The survey distinguishes PCR from general coreference because PCR focuses primarily on coreference relation prediction rather than mention detection, with pronouns having weak semantic meaning posing unique NLU challenges. Experiments with the End-to-end model on CoNLL-2012 show that without gold mentions, performance is strong on P-P (F1 0.754) but weaker on NP-NP (0.690) and NP-P (0.667); with gold mentions, NP-NP improves significantly to 0.768 while NP-P remains challenging at 0.707. Resolving pronouns to noun phrases is consistently the hardest. Ordinary PCR requires both linguistic (e.g., plurality) and commonsense knowledge simultaneously, so it does not isolate commonsense understanding, motivating WSC (hard PCR) where linguistic cues are removed to test commonsense specifically. This highlights limitations in current models for real applications.",
+      "relevant_chunk_ids": [
+        "f87fdaf6-6569-5ec1-8c3c-baaa5b533e01",
+        "5e934d2e-aafa-5ed8-8301-47b3eed26318",
+        "ef8c03d5-e0e9-5dc0-9a0a-84f697465332",
+        "5cba0513-5e97-5002-bf12-636818292019"
+      ]
+    },
+    {
+      "id": 2,
+      "section_title": "1 Introduction and 2 Ordinary PCR",
+      "question": "Discuss how the Introduction highlights the importance of PCR for downstream tasks and the role of gold mentions, then connect this to the datasets and methods in Ordinary PCR section, particularly why CoNLL-2012 is widely used and the shift from rule-based to end-to-end models.",
+      "reference_answer": "The Introduction notes PCR is crucial for machine translation, summarization, and dialog systems due to pronouns weak semantics. Experiments show gold mentions greatly aid relation prediction, especially NP-NP. In Ordinary PCR, datasets like CoNLL-2012 (large-scale, multilingual, with train/dev/test splits and official scorer) became standard benchmarks, convertible to PCR. Early methods used rules/features (e.g., gender, number) or statistical/RL approaches; the end-to-end model revolutionized this by using BiLSTM + attention without manual rules, proving deep models capture context effectively, leading to further improvements like higher-order inference and KG injection.",
+      "relevant_chunk_ids": [
+        "6a3bd22d-f0c4-520d-bff6-85f9ddc0178e",
+        "a8321e91-330d-57b5-bd28-7a1951262cb1",
+        "ec1909da-e6ab-563c-a9a8-68407b3ff348"
+      ]
+    },
+    {
+      "id": 3,
+      "section_title": "2 Ordinary PCR",
+      "question": "Based on the Introduction's discussion of pronoun types and challenges, and Ordinary PCR's performance analysis, why do models perform differently across third personal, possessive, and demonstrative pronouns, and what does cross-domain and frequency analysis reveal about model readiness?",
+      "reference_answer": "Introduction focuses on third personal, possessive, and demonstrative pronouns. In Ordinary PCR Table 2, models excel on third personal and possessive but poorly on demonstrative due to dataset imbalance (fewer demonstratives). Cross-domain experiments (CoNLL to i2b2 medical) show drastic drops (e.g., End-to-end from 72.1 to 20.0 F1), with KG helping slightly. Frequency split shows better performance on frequent objects; KG aids infrequent ones, SpanBERT frequent ones. This indicates models are not robust for real apps with rare or out-of-domain cases.",
+      "relevant_chunk_ids": [
+        "16a5c6fa-6bf7-5728-9e91-6e3990ac546b",
+        "8c24403f-02e2-57bf-922f-b36aeb576e95",
+        "d3999dfc-5166-53ff-b0ae-9c50bf396e6d"
+      ]
+    },
+    {
+      "id": 4,
+      "section_title": "1 Introduction and 3 Hard PCR",
+      "question": "How does the Introduction motivate surveying ordinary and hard PCR, and what specific limitations of ordinary PCR tasks are addressed by introducing WSC in the transition to Hard PCR section?",
+      "reference_answer": "Introduction motivates survey due to PCR's importance and challenges, noting progress but gaps (e.g., SOTA struggles on infrequent objects). Ordinary PCR mixes linguistic and commonsense inference, so performance does not isolate commonsense. Hard PCR (WSC) removes linguistic features (gender, plurality) via expert design with paired examples differing minimally but reversing answers, requiring pure commonsense (e.g., fish/worm hungry/tasty example), to better test model understanding.",
+      "relevant_chunk_ids": [
+        "ef8c03d5-e0e9-5dc0-9a0a-84f697465332",
+        "5cba0513-5e97-5002-bf12-636818292019",
+        "83d74f89-f113-546e-8a57-431df2947049"
+      ]
+    },
+    {
+      "id": 5,
+      "section_title": "2 Ordinary PCR",
+      "question": "Compare the experimental findings in Introduction/Ordinary PCR on model limitations (cross-domain, frequency) with how Ordinary PCR methods evolved, linking to why further improvements like KG and SpanBERT were pursued.",
+      "reference_answer": "Introduction and Ordinary PCR experiments reveal models good on standard sets but poor cross-domain (news to medical) and on infrequent objects. Evolution: rules/features limited coverage; end-to-end succeeded via context encoding but had pair-wise limits (addressed by higher-order), data reliance (addressed by KG injection), and representation (SpanBERT boost). KG helps infrequent/rare pronouns via external coverage; SpanBERT fits training data better for frequent cases.",
+      "relevant_chunk_ids": [
+        "ec1909da-e6ab-563c-a9a8-68407b3ff348",
+        "e5074e88-6051-5b75-91cd-96e06c4288be",
+        "715c0ee8-7094-55eb-b867-f9423c243ea3"
+      ]
+    },
+    {
+      "id": 6,
+      "section_title": "2 Ordinary PCR and 3 Hard PCR",
+      "question": "Explain the formal definition and datasets of Ordinary PCR, then contrast with the task definition and datasets of Hard PCR (WSC etc.), highlighting why hard PCR better isolates commonsense reasoning.",
+      "reference_answer": "Ordinary PCR: Given text D with pronoun p, identify correct antecedent mentions C from candidates S (all spans if no gold). Datasets: MUC, ACE, CoNLL (large benchmark), WikiCoref, Crowd-sourced. Hard PCR (WSC): Sentence with pronoun p and two candidates n1/n2; choose correct one. Linguistic cues removed; paired minimal changes reverse answers. Datasets: WSC (small eval), DPR, WinoGrande (large, filtered), KnowRef. Hard PCR isolates commonsense as ordinary mixes both knowledge types.",
+      "relevant_chunk_ids": [
+        "d3999dfc-5166-53ff-b0ae-9c50bf396e6d",
+        "97dbc3d1-8bc9-5fc1-874f-ad4c9a67e87d",
+        "27e6f357-04ad-5258-be67-8b458ed5e211",
+        "965090da-983e-5f44-be4d-01474220f045"
+      ]
+    },
+    {
+      "id": 7,
+      "section_title": "3 Hard PCR",
+      "question": "Drawing from Ordinary PCR performances and analysis with Hard PCR methods and results on WSC, what progress has been made and what gaps remain in handling commonsense for pronoun resolution?",
+      "reference_answer": "Ordinary PCR saw gains from end-to-end (F1 around 72+), KG, SpanBERT, but struggles cross-domain/infrequent. Hard PCR: Structured KG solves around one-third WSC (limited coverage); LMs like GPT-2 around 70%; fine-tuning RoBERTa + WinoGrande reaches 90% (near human). Gaps: sensitivity to hyperparameters, implicit vs explicit knowledge, WinoGrande still challenging (51% for prior SOTA). Models encode some commonsense but lack robustness.",
+      "relevant_chunk_ids": [
+        "83d74f89-f113-546e-8a57-431df2947049",
+        "2d1c67d5-a9ce-514e-aef4-c19aeccd2e4a",
+        "736bfecf-d4ca-5590-98b7-54bcf9cd6bfc"
+      ]
+    },
+    {
+      "id": 8,
+      "section_title": "2 Ordinary PCR and 3 Hard PCR",
+      "question": "How do improvements in Ordinary PCR (e.g., KG injection, higher-order) relate to approaches in Hard PCR like structured knowledge reasoning or fine-tuning, and what does this suggest about knowledge integration?",
+      "reference_answer": "Ordinary PCR improvements include structured KG (triples/features) for better coverage on rare cases and higher-order for clusters. Hard PCR uses structured KG (ConceptNet, ASER, search) for explainable but low-coverage solutions, or implicit in LMs/fine-tuning on WinoGrande/DPR. This suggests a hybrid is needed: explicit for rare/infrequent cases and implicit for broad commonsense, but integration remains challenging for robust performance.",
+      "relevant_chunk_ids": [
+        "715c0ee8-7094-55eb-b867-f9423c243ea3",
+        "c7e04168-38fc-52f8-84e2-d22f3ee2bc83",
+        "cabff7c0-dad5-5cee-ba66-97d2bdd6f0eb"
+      ]
+    },
+    {
+      "id": 9,
+      "section_title": "2 Ordinary PCR and 3 Hard PCR",
+      "question": "Compare the influence of frequency and domain in Ordinary PCR analysis to the challenges of small-scale vs large-scale datasets in Hard PCR, and implications for model generalization.",
+      "reference_answer": "Ordinary PCR performs better on frequent objects due to training exposure; KG helps infrequent cases; cross-domain transfer (CoNLL vs i2b2) is weak. Hard PCR has WSC as small evaluation data, DPR as larger but simpler, and WinoGrande as large and filtered for challenge. Fine-tuning on large relevant data helps, but sensitivity remains. Overall, models overfit training distributions and still need stronger generalization across frequency and domain shifts.",
+      "relevant_chunk_ids": [
+        "27e6f357-04ad-5258-be67-8b458ed5e211",
+        "965090da-983e-5f44-be4d-01474220f045",
+        "68eb646b-93c9-56de-b38e-b41ac9b4165b"
+      ]
+    },
+    {
+      "id": 10,
+      "section_title": "2 Ordinary PCR and 3 Hard PCR",
+      "question": "Linking Ordinary PCR's end-to-end success and limitations to Hard PCR's LM-based and fine-tuning methods, why have pre-trained models become central, and what analysis supports their commonsense encoding?",
+      "reference_answer": "End-to-end methods in Ordinary PCR showed deep models can capture contextual cues without hand-written rules. Hard PCR then showed LM-based methods and fine-tuning on DPR/WinoGrande deliver state-of-the-art performance. Analyses indicate stronger model capacity and larger relevant data improve outcomes, while selected subsets can further boost training. This supports that pre-trained models encode useful implicit commonsense that scales with data and model size.",
+      "relevant_chunk_ids": [
+        "736bfecf-d4ca-5590-98b7-54bcf9cd6bfc",
+        "807c8b42-6f9d-54c0-ad9a-42ef6f61ebfc",
+        "eda5f1e8-58dd-5799-b1af-7cb43ba87106"
+      ]
+    },
+    {
+      "id": 11,
+      "section_title": "3 Hard PCR and 4 Other PCR Tasks",
+      "question": "Describe key methods and performances on WSC from Hard PCR, then connect to how Other PCR Tasks like WinoGender or Visual PCR extend or differ in purpose and challenges.",
+      "reference_answer": "For WSC, structured KG methods offer interpretability but limited coverage, while LM-based and fine-tuned methods perform best, with RoBERTa + WinoGrande approaching 90%. Other tasks broaden focus: WinoGender probes and mitigates occupational gender bias, while Visual-PCR adds multimodal grounding in dialogue settings, including unresolved references not present in text alone. These tasks target practical limitations beyond pure text commonsense benchmarks.",
+      "relevant_chunk_ids": [
+        "cabff7c0-dad5-5cee-ba66-97d2bdd6f0eb",
+        "29a1aa0f-1d95-546a-a21a-f074f328ac15",
+        "0aed13f7-9875-5e99-a80b-3f70115fe3bd",
+        "27840f34-c076-5fda-82bf-0b61092e5d70"
+      ]
+    },
+    {
+      "id": 12,
+      "section_title": "3 Hard PCR and 4 Other PCR Tasks",
+      "question": "How does Hard PCR's focus on commonsense via WSC relate to specialized tasks in Other PCR section, such as medical domain or chatbots, in terms of domain-specific challenges?",
+      "reference_answer": "Hard PCR isolates commonsense by design. Other PCR tasks introduce additional constraints: medical datasets require domain knowledge, chatbot conversations introduce informal and multi-party context, and visual tasks require grounding text references in images. Together these show that passing WSC is not enough; robust systems must also handle domain shift, dialogue complexity, and multimodal evidence.",
+      "relevant_chunk_ids": [
+        "68eb646b-93c9-56de-b38e-b41ac9b4165b",
+        "b80adbde-760d-5441-a1c3-04056103c010",
+        "310e00be-27be-5165-854f-0766543a894a"
+      ]
+    },
+    {
+      "id": 13,
+      "section_title": "3 Hard PCR and 4 Other PCR Tasks",
+      "question": "From Hard PCR analysis of model sensitivity and WinoGrande subsets, what insights apply to Other PCR tasks like gender bias studies or machine translation PCR?",
+      "reference_answer": "Hard PCR analysis shows model outcomes can be sensitive to training setup and data composition. The same lesson applies to WinoGender and machine-translation-oriented PCR tasks: careful data curation, balanced templates, and robust training protocols are needed to avoid biased or brittle behavior. This helps maintain performance when task objectives shift from pure commonsense to fairness or translation utility.",
+      "relevant_chunk_ids": [
+        "eda5f1e8-58dd-5799-b1af-7cb43ba87106",
+        "45790b84-f08c-568b-be79-6c1bd6d68b55",
+        "37945276-b269-5c0a-880d-61dda88bc71b"
+      ]
+    },
+    {
+      "id": 14,
+      "section_title": "3 Hard PCR and 4 Other PCR Tasks",
+      "question": "Contrast the commonsense focus in Hard PCR with purposes of Other PCR tasks (bias, visual, medical), and discuss shared limitations like robustness for real applications.",
+      "reference_answer": "Hard PCR is designed to isolate commonsense reasoning under reduced linguistic cues. Other PCR tasks emphasize different practical targets, including fairness (WinoGender), multimodal grounding (Visual-PCR), and specialized domain expertise (medical PCR). Despite different goals, all expose similar weaknesses: domain fragility, sensitivity to data distribution, and limited reliability in real-world deployments.",
+      "relevant_chunk_ids": [
+        "0aed13f7-9875-5e99-a80b-3f70115fe3bd",
+        "27840f34-c076-5fda-82bf-0b61092e5d70",
+        "227de942-e450-5a2e-9b6f-e5883693c457"
+      ]
+    },
+    {
+      "id": 15,
+      "section_title": "3 Hard PCR and 4 Other PCR Tasks",
+      "question": "How do fine-tuning successes in Hard PCR inform potential approaches for specialized Other PCR tasks like visual-aware or conversational PCR?",
+      "reference_answer": "Hard PCR results suggest that strong pre-trained backbones plus large task-relevant fine-tuning sets can substantially improve performance. The same strategy can transfer to visual-aware and conversational PCR by training on multimodal dialogue corpora with explicit coreference supervision. This approach can improve handling of informal language, omitted antecedents, and context-heavy interactions.",
+      "relevant_chunk_ids": [
+        "310e00be-27be-5165-854f-0766543a894a",
+        "44e5c67e-8a92-545d-913b-ba159987aed3",
+        "614be032-45db-52ed-9b89-ccfd8e99b246"
+      ]
+    },
+    {
+      "id": 16,
+      "section_title": "5 Conclusion",
+      "question": "Summarize limitations of current models from Ordinary and Hard PCR as discussed in Conclusion, and how Other PCR tasks illustrate additional real-world challenges.",
+      "reference_answer": "The conclusion notes that benchmark progress is substantial but the problem remains unsolved for deployment. Ordinary PCR still struggles with cross-domain transfer and infrequent entities, while Hard PCR can achieve high benchmark accuracy yet remains sensitive and inconsistent. Other task settings, including medical, conversational, bias-sensitive, and visual contexts, add further complexity that current systems only partially address.",
+      "relevant_chunk_ids": [
+        "37945276-b269-5c0a-880d-61dda88bc71b",
+        "36e429aa-83d5-5fdb-b202-e08fb140a787",
+        "ad19da30-0b9e-564d-a133-a257d9a584b6",
+        "f3216bf8-f94f-55f9-a960-2c07312c5607"
+      ]
+    },
+    {
+      "id": 17,
+      "section_title": "2 Ordinary PCR, 4 Other PCR Tasks, and 5 Conclusion",
+      "question": "Using insights from Ordinary PCR cross-domain/frequency issues and Conclusion, explain why models are not ready for real apps, referencing examples from Other PCR tasks.",
+      "reference_answer": "Model performance drops under domain transfer and sparse-entity conditions indicate weak robustness outside benchmark distributions. The conclusion reinforces this by highlighting deployment gaps despite strong headline scores. Other PCR tasks show concrete failure modes in domain adaptation, multimodal grounding, and fairness, confirming that practical readiness requires broader robustness than current systems provide.",
+      "relevant_chunk_ids": [
+        "227de942-e450-5a2e-9b6f-e5883693c457",
+        "8715edec-87f3-509e-9628-739023818ca0",
+        "c6554eae-56d0-5885-8f38-92f843bf0028"
+      ]
+    },
+    {
+      "id": 18,
+      "section_title": "1 Introduction, 4 Other PCR Tasks, and 5 Conclusion",
+      "question": "Connect the survey contributions in Introduction/Conclusion to the breadth covered in Other PCR tasks and overall limitations highlighted.",
+      "reference_answer": "The survey contributes a structured review of datasets, methods, and analyses across ordinary and hard PCR, while also discussing limitations. The Other PCR section demonstrates that pronoun resolution spans bias analysis, domain applications, and multimodal scenarios. Together with the conclusion, this breadth emphasizes that current progress is meaningful but incomplete for broad real-world use.",
+      "relevant_chunk_ids": [
+        "614be032-45db-52ed-9b89-ccfd8e99b246",
+        "0fea8ed3-3ce6-5a69-872c-a52b9fd5ff67",
+        "cd5dad35-281a-531f-8ff4-acd369985114"
+      ]
+    },
+    {
+      "id": 19,
+      "section_title": "5 Conclusion",
+      "question": "What does the Conclusion say about progress and remaining challenges, linking back to experiments in Ordinary/Hard PCR sections?",
+      "reference_answer": "The conclusion reports major benchmark gains from modern models, but states that real-world robustness remains limited. This aligns with earlier evidence: ordinary PCR errors increase in cross-domain and low-frequency settings, and hard PCR performance can be unstable across training conditions and datasets. The result is clear progress without full practical reliability.",
+      "relevant_chunk_ids": [
+        "ad19da30-0b9e-564d-a133-a257d9a584b6",
+        "f3216bf8-f94f-55f9-a960-2c07312c5607",
+        "9d0686dc-a23d-5431-8dfa-f130e827b607"
+      ]
+    },
+    {
+      "id": 20,
+      "section_title": "2 Ordinary PCR, 3 Hard PCR, 4 Other PCR Tasks, and 5 Conclusion",
+      "question": "How do overall limitations in Conclusion relate to evolution from ordinary methods to hard PCR approaches and specialized tasks?",
+      "reference_answer": "The conclusion frames a common theme: methods evolved from rules to deep contextual models, then to explicit and implicit commonsense strategies, yet robustness gaps remain. Ordinary and hard PCR advances improved benchmark quality, while specialized tasks exposed new constraints in bias, domain adaptation, and multimodal reasoning. Future progress depends on integrating these strengths into consistently reliable systems.",
+      "relevant_chunk_ids": [
+        "c6554eae-56d0-5885-8f38-92f843bf0028",
+        "1ee35f06-0fc2-517c-94fd-e20c49ca5dfe",
+        "e7a075b3-39e6-5f79-a53a-334251545c8d"
+      ]
+    }
+  ]
+}

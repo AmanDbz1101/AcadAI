@@ -2,7 +2,6 @@ import { useState, useRef, useCallback, useEffect, type FormEvent } from 'react'
 import PaperNavigation from '@/components/PaperNavigation'
 import PaperViewer, { PaperViewerHandle } from '@/components/PaperViewer'
 import AIToolsPanel from '@/components/AIToolsPanel'
-import ChatAssistant from '@/components/ChatAssistant'
 import EmptyStateUpload from '@/components/EmptyStateUpload'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import {
@@ -50,6 +49,7 @@ const IndexContent = () => {
   const [uploadTransitioning, setUploadTransitioning] = useState(false)
   const [uploadedFileName, setUploadedFileName] = useState<string>('')
   const [selectedPdfTerms, setSelectedPdfTerms] = useState<string[]>([])
+  const [activeToolsView, setActiveToolsView] = useState<'insight-extractor' | 'research-qa'>('research-qa')
   const viewerRef = useRef<PaperViewerHandle>(null)
 
   // Resize functionality
@@ -298,6 +298,8 @@ const IndexContent = () => {
   const handlePdfTermSelect = useCallback((term: string) => {
     const normalized = term.trim()
     if (!normalized) return
+
+    setActiveToolsView('insight-extractor')
 
     setSelectedPdfTerms((prev) => {
       const withoutExisting = prev.filter(
@@ -611,17 +613,11 @@ const IndexContent = () => {
             technicalTerms={technicalTerms}
             selectedPdfTerms={selectedPdfTerms}
             tables={tables}
+            activeTool={activeToolsView}
+            onToolChange={setActiveToolsView}
+            onSourceClick={handleChatSourceClick}
+            activeSection={activeSection}
           />
-        </div>
-        <div className="border-t border-accent/15 bg-gradient-to-b from-panel via-panel to-canvas/40 px-5 pt-4 pb-0">
-          <div className="h-[32vh] min-h-[210px] max-h-[320px] flex flex-col">
-            <ChatAssistant
-              paperId={effectivePaperId}
-              sections={sections}
-              onSourceClick={handleChatSourceClick}
-              activeSection={activeSection}
-            />
-          </div>
         </div>
       </div>
     </div>

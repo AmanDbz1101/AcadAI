@@ -117,7 +117,9 @@ const ChatAssistant = ({ paperId, sections, onSourceClick, activeSection }: Chat
         role: 'assistant',
         content: response.message || response.assistant_message || 'No response received.',
         sources: response.sources?.filter((source) => source.section_title) || [],
-        source_sections: response.source_sections || [],
+        source_sections:
+          response.source_sections?.filter(Boolean) ||
+          response.sources?.map((source) => source.section_title).filter(Boolean) || [],
       }
       setMessages((prev) => [...prev, assistantMessage])
     } catch (error) {

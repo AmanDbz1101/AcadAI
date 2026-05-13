@@ -15,6 +15,7 @@ from rag.retrieval.config import (
     QDRANT_URL,
     QDRANT_API_KEY,
     QDRANT_COLLECTION_NAME,
+    QDRANT_TIMEOUT,
     DENSE_VECTOR_SIZE,
     DENSE_VECTOR_NAME,
     SPARSE_VECTOR_NAME,
@@ -62,10 +63,14 @@ class QdrantStoreManager:
         from qdrant_client import QdrantClient  # type: ignore
 
         if self.url and self.api_key:
-            self._client = QdrantClient(url=self.url, api_key=self.api_key)
+            self._client = QdrantClient(
+                url=self.url,
+                api_key=self.api_key,
+                timeout=QDRANT_TIMEOUT,
+            )
             logger.info("QdrantStoreManager: connected to cloud at %s", self.url)
         elif self.url:
-            self._client = QdrantClient(url=self.url)
+            self._client = QdrantClient(url=self.url, timeout=QDRANT_TIMEOUT)
             logger.info("QdrantStoreManager: connected (no API key) at %s", self.url)
         else:
             # Fall back to local in-memory for development

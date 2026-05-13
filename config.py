@@ -59,6 +59,7 @@ if not _is_set(GROQ_API_KEY):
 QDRANT_URL = os.getenv("QDRANT_URL")
 QDRANT_API_KEY = os.getenv("QDRANT_API_KEY")
 QDRANT_COLLECTION_NAME = os.getenv("QDRANT_COLLECTION_NAME", "research_papers")
+QDRANT_TIMEOUT = int(os.getenv("QDRANT_TIMEOUT", 30))
 QDRANT_EMBEDDING_MODEL = os.getenv(
     "QDRANT_EMBEDDING_MODEL",
     "sentence-transformers/all-MiniLM-L6-v2"
@@ -130,4 +131,5 @@ print(f"  - Max File Size: {MAX_FILE_SIZE_MB} MB")
 print(f"  - Groq API Configured: {_is_set(GROQ_API_KEY)}")
 print(f"  - Qdrant Configured: {_is_set(QDRANT_URL) and _is_set(QDRANT_API_KEY)}")
 print(f"  - Qdrant Collection: {QDRANT_COLLECTION_NAME}")
+print(f"  - Qdrant Timeout: {QDRANT_TIMEOUT}s")
 print(f"  - LangSmith Tracing: {'Enabled' if LANGCHAIN_TRACING_V2 else 'Disabled'}")

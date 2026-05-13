@@ -1662,10 +1662,17 @@ def chat_with_paper(
             }
         )
 
+    source_sections = [
+        source["section_title"]
+        for source in sources
+        if source.get("section_title")
+    ]
+
     return {
         "paper": paper,
         "assistant_message": assistant_message,
         "sources": sources,
+        "source_sections": source_sections,
         "scoped": bool(payload.allowed_sections or payload.pinned_sections),
     }
 

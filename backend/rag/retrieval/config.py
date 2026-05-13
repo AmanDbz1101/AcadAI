@@ -20,11 +20,13 @@ try:
         QDRANT_URL,
         QDRANT_API_KEY,
         QDRANT_COLLECTION_NAME,
+        QDRANT_TIMEOUT,
     )
 except ImportError:
     QDRANT_URL = os.getenv("QDRANT_URL")
     QDRANT_API_KEY = os.getenv("QDRANT_API_KEY")
     QDRANT_COLLECTION_NAME = os.getenv("QDRANT_COLLECTION_NAME", "research_papers")
+    QDRANT_TIMEOUT = int(os.getenv("QDRANT_TIMEOUT", 30))
 
 # ── Model cache (persistent, offline-capable) ───────────────────────────────
 MODEL_CACHE_DIR: Path = Path(os.getenv("MODEL_CACHE_DIR", str(_ROOT / "models")))
