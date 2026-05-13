@@ -276,10 +276,16 @@ class Indexer:
                 chunk_uuid = str(
                     uuid.uuid5(uuid.NAMESPACE_DNS, f"{chunks[i].document_id}:{i}")
                 )
+                payload = chunks[i].to_payload()
+                logger.debug(
+                    "Chunk payload section_path: %s section_title: %s",
+                    payload.get("section_path"),
+                    payload.get("section_title"),
+                )
                 points.append(
                     PointStruct(
                         id=chunk_uuid,
-                        payload=chunks[i].to_payload(),
+                        payload=payload,
                         vector={
                             DENSE_VECTOR_NAME: dense_vecs[i].tolist(),
                             SPARSE_VECTOR_NAME: {

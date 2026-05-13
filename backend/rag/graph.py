@@ -67,6 +67,7 @@ from rag.retrieval.config import (
     RERANKER_TOP_N,
     QA_TOP_K,
     MAX_GUIDE_QUESTIONS,
+    MAX_PARALLEL_QUESTIONS,
 )
 
 # ---------------------------------------------------------------------------
@@ -575,6 +576,49 @@ def _normalize_guide_steps(
     return guide_json
 
 
+def _check_section_coverage(
+    guide_json: dict[str, Any],
+    paper_sections: list[dict[str, Any]],
+    paper_id: int,
+) -> None:
+    """Log guide coverage against the paper's extracted section list."""
+    guide_sections: set[str] = set()
+    for _, _, step in _iter_guide_steps(guide_json):
+        raw_sections = step.get("section_to_read") or []
+        if not isinstance(raw_sections, list):
+            continue
+        for section in raw_sections:
+            if not isinstance(section, str):
+                continue
+            normalized = _normalize_section_name(section)
+            if normalized:
+                guide_sections.add(normalized)
+
+    paper_section_titles = {
+        _normalize_section_name(str(section.get("title") or ""))
+        for section in paper_sections
+        if isinstance(section, dict)
+        and section.get("title")
+        and not _is_reference_heading(section.get("title"))
+    }
+    paper_section_titles.discard("")
+
+    uncovered = sorted(paper_section_titles - guide_sections)
+    covered_count = len(paper_section_titles) - len(uncovered)
+    coverage_pct = (covered_count / max(len(paper_section_titles), 1)) * 100.0
+
+    logger.info(
+        "Guide coverage for paper_id=%s: %.0f%% (%d/%d sections)",
+        paper_id,
+        coverage_pct,
+        covered_count,
+        len(paper_section_titles),
+    )
+
+    if uncovered:
+        logger.warning("Guide missing sections for paper_id=%s: %s", paper_id, uncovered)
+
+
 
 
 def _is_intentional_revisit_step(step: dict[str, Any]) -> bool:
@@ -775,17 +819,25 @@ def _extract_intro_conclusion_context(
         full_text=full_text,
         section_headings=headings,
         keywords=("introduction",),
+        max_chars=3500,
     )
     conclusion = _extract_section_text_from_full_text(
         full_text=full_text,
         section_headings=headings,
         keywords=("conclusion", "conclusions", "summary", "future work"),
+        max_chars=3000,
     )
 
     if not introduction:
         introduction = "Not available in extracted full text."
     if not conclusion:
         conclusion = "Not available in extracted full text."
+
+    logger.info(
+        "Guide context: intro=%d chars, conclusion=%d chars",
+        len(introduction),
+        len(conclusion),
+    )
 
     return introduction, conclusion
 
@@ -1004,8 +1056,49 @@ def _dedupe_results(results: list[Any]) -> list[Any]:
 def _dedupe_near_identical_chunks(
     chunks: list[Any],
     similarity_threshold: float = 0.7,
+    dedup_by_section: bool = True,
 ) -> list[Any]:
-    """Deduplicate near-identical chunks using token-overlap Jaccard similarity."""
+    """
+    Deduplicate near-identical chunks using token-overlap Jaccard similarity.
+    
+    Parameters
+    ----------
+    chunks : list[Any]
+        List of RetrievalResult-like objects to deduplicate.
+    similarity_threshold : float
+        Jaccard similarity threshold for marking chunks as duplicates (default 0.7).
+    dedup_by_section : bool
+        When True (default), first removes all but the highest-scoring chunk
+        per section_id to prevent parent-child (coarse-fine) redundancy.
+    
+    Returns
+    -------
+    list[Any]
+        Deduplicated chunk list.
+    
+    Notes
+    -----
+    Two-pass deduplication:
+    1. Section-based: Keep highest-scoring chunk per section_id
+       (prevents coarse + fine chunks from same section appearing together).
+    2. Content-based: Jaccard similarity > threshold marks true duplicates.
+    """
+    
+    # First pass: Section-based dedup (prevent hierarchical redundancy)
+    if dedup_by_section:
+        best_by_section: dict[str, Any] = {}
+        for chunk in chunks:
+            metadata = _result_metadata(chunk)
+            section_id = metadata.get("section_id")
+            
+            if section_id:
+                existing = best_by_section.get(section_id)
+                if existing is None or _result_score(chunk) > _result_score(existing):
+                    best_by_section[section_id] = chunk
+        
+        chunks = list(best_by_section.values())
+    
+    # Second pass: Content-based Jaccard dedup (remove true duplicates)
     deduped_chunks: list[Any] = []
     deduped_token_sets: list[set[str]] = []
 
@@ -1376,6 +1469,37 @@ def extraction_node(state: dict) -> dict:
         
         # Map extraction results to state
         metadata = result["metadata"]
+        existing_sections = state.get("sections") or []
+        section_snippets_by_id: dict[str, str] = {}
+        section_snippets_by_title: dict[str, str] = {}
+        for section in existing_sections:
+            if not isinstance(section, dict):
+                continue
+            snippet = str(section.get("content_snippet") or "").strip()
+            if not snippet:
+                continue
+            section_id = str(section.get("id") or "").strip()
+            if section_id:
+                section_snippets_by_id[section_id] = snippet
+            section_title = _normalize_section_name(
+                str(section.get("title") or section.get("original_name") or "")
+            )
+            if section_title:
+                section_snippets_by_title[section_title] = snippet
+
+        merged_sections: list[dict[str, Any]] = []
+        for idx, section in enumerate(metadata.get("sections", []) or [], 1):
+            if not isinstance(section, dict):
+                continue
+            merged_section = dict(section)
+            section_id = str(merged_section.get("id") or idx).strip()
+            section_title = _normalize_section_name(
+                str(merged_section.get("title") or merged_section.get("original_name") or "")
+            )
+            snippet = section_snippets_by_id.get(section_id) or section_snippets_by_title.get(section_title)
+            if snippet:
+                merged_section["content_snippet"] = snippet
+            merged_sections.append(merged_section)
         logger.info(f"Extraction node complete in {time.perf_counter() - _t:.2f}s")
         return {
             **state,
@@ -1383,7 +1507,7 @@ def extraction_node(state: dict) -> dict:
             "full_text": result["full_text"],
             "title": metadata.get("paper_title", ""),
             "abstract": metadata.get("abstract", ""),
-            "sections": metadata.get("sections", []),
+                    "sections": merged_sections or metadata.get("sections", []),
             "hierarchy": result["hierarchy"],
             "extraction_files": result.get("files", {}),
             "database": result.get("database", {}),
@@ -2064,6 +2188,7 @@ def _run_guide_node(
     sections = state.get("sections") or []
     full_text = state.get("full_text", "")
     document_id = state.get("document_id", "")
+    paper_id = int(state.get("db_paper_id") or state.get("paper_id") or 0)
 
     if not title or not abstract:
         return {
@@ -2075,6 +2200,12 @@ def _run_guide_node(
         num_figures = sum(s.get("stats", {}).get("figures", 0) for s in sections)
         num_tables = sum(s.get("stats", {}).get("tables", 0) for s in sections)
         visual_context = _extract_visual_context(document_id=document_id, sections=sections)
+        has_snippets = sum(1 for section in sections if isinstance(section, dict) and section.get("content_snippet"))
+        logger.info(
+            "Guide input: %d sections, %d with content snippets",
+            len(sections),
+            has_snippets,
+        )
 
         # Agent 1 guide: structured full guide generation (includes questions).
         planner_llm = ChatGroq(model="llama-3.3-70b-versatile", temperature=0.1)
@@ -2150,6 +2281,8 @@ def _run_guide_node(
                 guide_json=planner_json,
                 section_visual_map=visual_context["section_visual_map"],
             )
+
+        _check_section_coverage(planner_json, sections, paper_id)
 
         output_dir = Path("output")
         output_dir.mkdir(exist_ok=True)
