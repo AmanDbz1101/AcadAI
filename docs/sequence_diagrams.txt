@@ -1,0 +1,85 @@
+
+**4.5 Sequence Diagram — PDF Upload to Guide**
+
+```mermaid
+sequenceDiagram
+  actor user as Researcher
+  participant fe as React Frontend
+  participant api as FastAPI Backend
+  participant ext as Extraction Pipeline
+  participant graph as LangGraph Guide
+  participant db as PostgreSQL
+  participant qdrant as Qdrant
+  participant groq as Groq API
+
+  user->>fe: Upload PDF
+  fe->>api: POST /api/papers/upload
+  api->>db: create_pending_paper()
+  api->>db: link_user_to_paper()
+  api-->>fe: 200 OK {paper_id, status: pending}
+  Note right of api: Background task starts
+
+  fe->>api: GET /api/papers/{id}/progress (SSE)
+  api-->>fe: data: {current_phase: extracting}
+
+  api->>ext: extract_pdf()
+  Note right of ext: Phase 1a
+  ext->>ext: Docling converts PDF (~19s)
+  ext->>ext: Metadata extraction (~1.6s)
+  ext->>ext: Section hierarchy (~0.01s)
+  ext->>db: update_paper_from_extraction()
+
+  api->>graph: _generate_and_store_reading_guide()
+  Note right of graph: Phase 1b
+  graph->>graph: TF-IDF categorize (title + abstract)
+  graph->>groq: Guide generation prompt
+  groq-->>graph: Structured guide JSON
+  graph->>db: upsert_paper_guide()
+
+  api-->>fe: data: {phases_done: [guide]}
+  fe->>api: GET /api/papers/{id}/bundle
+  api->>db: get_paper_guide()
+  api-->>fe: {guide_status: ready, reading_guide: {...}}
+  fe-->>user: Display reading guide (~25s)
+
+  api->>qdrant: _index_paper_in_qdrant()
+  Note right of qdrant: Phase 2 background
+  qdrant-->>api: 142+ chunks indexed
+  api-->>fe: data: {qa_ready: true}
+  fe-->>user: QA bot activates (~99s)
+```
+
+---
+
+**4.5 Sequence Diagram — QA Question**
+
+```mermaid
+sequenceDiagram
+  actor user as Researcher
+  participant fe as React Frontend
+  participant api as FastAPI Backend
+  participant qabot as QA Bot LangGraph
+  participant qdrant as Qdrant
+  participant reranker as FlashRank Reranker
+  participant groq as Groq API
+
+  user->>fe: Type question in chat
+  fe->>api: POST /api/papers/{id}/chat
+
+  api->>qabot: invoke graph state
+  qabot->>qdrant: Hybrid search — BGE dense (384-dim) + BM25 sparse
+  qdrant-->>qabot: Top 20 results, RRF fused scores
+  qabot->>reranker: Rerank top 20 (ms-marco-MiniLM-L-12-v2)
+  reranker-->>qabot: Top 5 chunks with section_title, page_start
+  qabot->>groq: System prompt + context + conversation history (last 10)
+  groq-->>qabot: Structured markdown answer
+  qabot-->>api: {message, retrieved_chunks}
+
+  api->>api: Extract sources from retrieved_chunks
+  api-->>fe: {message, sources: [{section_title, page_start}]}
+  fe-->>user: Render markdown answer + clickable source boxes
+
+  user->>fe: Click source box
+  fe->>fe: handleChatSourceClick() — scrollToSection() or jumpToPage()
+  fe-->>user: PDF viewer jumps to source location
+```

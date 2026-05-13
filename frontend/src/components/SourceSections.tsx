@@ -1,82 +1,76 @@
-interface ChatSource {
-  section_name?: string
+interface SourceSection {
   section_title: string
   section_id?: string
-  page?: number
+  page_start?: number
 }
 
 interface SourceSectionsProps {
-  sections: ChatSource[]
-  onSectionClick?: (source: ChatSource) => void
+  sections: SourceSection[]
+  onSectionClick?: (section: SourceSection) => void
 }
 
-export const SourceSections = ({
-  sections,
-  onSectionClick,
-}: SourceSectionsProps) => {
-  if (!sections || sections.length === 0) {
-    return (
-      <div className="mt-3 pt-2 border-t border-border/40">
-        <p className="mb-2 font-ui text-[11px] tracking-[0.08em] uppercase text-text-secondary/70">
-          Used sections
-        </p>
-        <div className="rounded-md border border-emerald-500/30 bg-emerald-500/10 px-2.5 py-1.5">
-          <p className="font-ui text-[11px] text-emerald-700">
-            No section metadata returned for this answer.
-          </p>
-        </div>
-      </div>
-    )
-  }
+export function SourceSections({ sections, onSectionClick }: SourceSectionsProps) {
+  if (!sections || sections.length === 0) return null
 
-  const uniqueSections = Array.from(
-    new Map(
-      sections
-        .filter((s) => s.section_title || s.section_name)
-        .map((s) => [s.section_name || s.section_title, s]),
-    ).values(),
+  const unique = sections.filter(
+    (section, index, arr) =>
+      arr.findIndex((item) => item.section_title === section.section_title) === index,
   )
 
   return (
-    <div className="mt-3 pt-2 border-t border-border/40">
-      <p className="mb-2 font-ui text-[11px] tracking-[0.08em] uppercase text-text-secondary/70">
-        Used sections
+    <div className="mt-2 pt-2 border-t border-gray-100 dark:border-gray-700">
+      <p className="text-xs text-gray-400 dark:text-gray-500 mb-1 font-medium uppercase tracking-wide">
+        Sources
       </p>
       <div className="flex flex-wrap gap-1.5">
-        {uniqueSections.map((source, idx) => (
+        {unique.map((section, index) => (
           <button
-            key={idx}
+            key={index}
             type="button"
-            onClick={() => onSectionClick?.(source)}
-            className={`
-              inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full
-              bg-emerald-500/15 border border-emerald-500/40 hover:border-emerald-500/60
-              text-emerald-700 hover:text-emerald-600 hover:bg-emerald-500/20
-              font-ui text-[11px] font-medium transition-all duration-200
-              hover:shadow-sm hover:shadow-emerald-500/20
-              active:scale-95
-            `}
-            title={`Navigate to ${source.section_name || source.section_title}${source.page ? ` (page ${source.page})` : ''}`}
+            onClick={() => onSectionClick?.(section)}
+            className={`inline-flex items-center gap-1.5 px-2 py-1 rounded-md text-xs bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400 border border-gray-200 dark:border-gray-700 transition-all duration-150 ${
+              onSectionClick
+                ? 'cursor-pointer hover:bg-blue-50 hover:border-blue-300 hover:text-blue-600 dark:hover:bg-blue-950/40 dark:hover:border-blue-700 dark:hover:text-blue-400 active:scale-95'
+                : 'cursor-default'
+            }`}
+            title={
+              section.page_start
+                ? `Jump to ${section.section_title} (p.${section.page_start})`
+                : `Jump to ${section.section_title}`
+            }
           >
             <svg
-              className="w-3 h-3 flex-shrink-0"
+              className="w-3 h-3 opacity-60 flex-shrink-0"
               fill="none"
-              stroke="currentColor"
               viewBox="0 0 24 24"
+              stroke="currentColor"
+              strokeWidth={2}
             >
               <path
                 strokeLinecap="round"
                 strokeLinejoin="round"
-                strokeWidth={2}
-                d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"
+                d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
               />
             </svg>
-            <span>{source.section_name || source.section_title}</span>
-            {source.page && (
-              <span className="text-emerald-600/70 ml-0.5">
-                p{source.page}
-              </span>
-            )}
+            <span className="font-medium">{section.section_title}</span>
+            {section.page_start ? (
+              <span className="opacity-50 text-[10px]">p.{section.page_start}</span>
+            ) : null}
+            {onSectionClick ? (
+              <svg
+                className="w-2.5 h-2.5 opacity-40 flex-shrink-0"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+                strokeWidth={2.5}
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  d="M13.5 6H5.25A2.25 2.25 0 003 8.25v10.5A2.25 2.25 0 005.25 21h10.5A2.25 2.25 0 0018 18.75V10.5m-10.5 6L21 3m0 0h-5.25M21 3v5.25"
+                />
+              </svg>
+            ) : null}
           </button>
         ))}
       </div>

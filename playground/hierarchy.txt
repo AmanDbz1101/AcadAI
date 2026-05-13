@@ -28,4 +28,36 @@ References
         ├── 6.1.4. DOCUMENT ANALYSIS INSTRUCTIONS
         ├── 6.1.5. LLM JUDGE (DOCUMENT ANALYSIS)
         └── 6.1.6. K/V TASK INSTRUCTIONS
+SECTION HIERARCHY
+- MemGPT: Towards LLMs as Operating Systems
+- Abstract
+- 1. Introduction
+- 2. MemGPT (MemoryGPT)
+- 2.1. Main context ( prompt tokens )
+- 2.2. Queue Manager
+- LLM Finite Context Window (e.g. 8k tokens)
+- 2.3. Function executor (handling of completion tokens )
+- 2.4. Control flow and function chaining
+- 3. Experiments
+- 3.1. MemGPT for conversational agents
+- 3.1.1. DEEP MEMORY RETRIEVAL TASK (CONSISTENCY).
+- 3.1.2. CONVERSATION OPENER TASK (ENGAGEMENT).
+- 3.2. MemGPT for document analysis
+- 3.2.1. MULTI-DOCUMENT QUESTION-ANSWERING.
+- 3.2.2. NESTED KEY-VALUE RETRIEVAL (KV).
+- 4. Related Work
+- 5. Conclusion
+- References
+- 6. Appendix
+- 6.1. Prompts and instructions
+- 6.1.1. MEMGPT INSTRUCTIONS (DMR)
+- 6.1.2. LLM JUDGE (DMR / OPENER)
+- 6.1.3. SELF-INSTRUCT DMR DATASET GENERATION
+- 6.1.4. DOCUMENT ANALYSIS INSTRUCTIONS
+- Questions were provided to MemGPT with the following prompt:
+- For baselines, the following prompt along with a retrieved list of documents was provided:
+- 6.1.5. LLM JUDGE (DOCUMENT ANALYSIS)
+- 6.1.6. K/V TASK INSTRUCTIONS
+- The MemGPT agent was defined with the following persona, designed to encourage MemGPT to iteratively search:
+- Baselines were instructed with the following prompt:
 

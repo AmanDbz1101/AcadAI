@@ -1,184 +1,92 @@
-import { useMemo } from 'react'
+import ReactMarkdown from 'react-markdown'
+import remarkGfm from 'remark-gfm'
 
 interface MarkdownMessageProps {
   content: string
   role: 'user' | 'assistant'
 }
 
-export const MarkdownMessage = ({
-  content,
-  role = 'assistant',
-}: MarkdownMessageProps) => {
-  const parsedContent = useMemo(() => {
-    if (role === 'user') {
-      return <p className="whitespace-pre-wrap">{content}</p>
-    }
-
-    const unescapedContent = content.replace(/\\([*_`])/g, '$1')
-    const normalizedContent = normalizeListLikeContent(unescapedContent)
-    const lines = normalizedContent.split('\n')
-    const elements: JSX.Element[] = []
-    let currentList: string[] = []
-    let listType: 'ordered' | 'unordered' | null = null
-
-    const flushList = () => {
-      if (currentList.length > 0) {
-        const ListTag = listType === 'ordered' ? 'ol' : 'ul'
-        const key = `list-${elements.length}`
-
-        elements.push(
-          <ListTag
-            key={key}
-            className={`${
-              listType === 'ordered'
-                ? 'list-decimal pl-5 space-y-1'
-                : 'list-disc pl-5 space-y-1'
-            } my-2`}
-          >
-            {currentList.map((item, idx) => (
-              <li key={`item-${idx}`} className="text-[13px]">
-                {item}
-              </li>
-            ))}
-          </ListTag>,
-        )
-        currentList = []
-        listType = null
-      }
-    }
-
-    lines.forEach((line, idx) => {
-      const trimmed = line.trim()
-
-      // Detect ordered list (1., 2., 3., etc.)
-      const orderedMatch = trimmed.match(/^(\d+)\.\s+(.*)$/)
-      if (orderedMatch) {
-        if (listType !== 'ordered') {
-          flushList()
-          listType = 'ordered'
-        }
-        currentList.push(orderedMatch[2])
-        return
-      }
-
-      // Detect unordered list (-, *, •)
-      const unorderedMatch = trimmed.match(/^[-*•]\s+(.*)$/)
-      if (unorderedMatch) {
-        if (listType !== 'unordered') {
-          flushList()
-          listType = 'unordered'
-        }
-        currentList.push(unorderedMatch[1])
-        return
-      }
-
-      // Handle other content
-      flushList()
-
-      if (!trimmed) {
-        elements.push(<div key={`empty-${idx}`} className="h-2" />)
-        return
-      }
-
-      // Handle bold **text** and italic *text*
-      const formattedLine = formatInlineMarkdown(trimmed)
-
-      // Handle headers
-      const headerMatch = trimmed.match(/^(#+)\s+(.*)$/)
-      if (headerMatch) {
-        const level = headerMatch[1].length
-        const text = headerMatch[2]
-        const HeaderTag = `h${Math.min(level + 3, 6)}` as
-          | 'h4'
-          | 'h5'
-          | 'h6'
-        const headerClasses = `font-semibold my-2 ${
-          level === 1
-            ? 'text-[15px]'
-            : level === 2
-              ? 'text-[14px]'
-              : 'text-[13px]'
-        }`
-
-        elements.push(
-          <HeaderTag key={`header-${idx}`} className={headerClasses}>
-            {formattedLine}
-          </HeaderTag>,
-        )
-        return
-      }
-
-      elements.push(
-        <p key={`p-${idx}`} className="text-[13px] leading-relaxed">
-          {formattedLine}
-        </p>,
-      )
-    })
-
-    flushList()
-    return <div className="space-y-2">{elements}</div>
-  }, [content, role])
-
-  return <div className="markdown-content">{parsedContent}</div>
+function normalizeAssistantMarkdown(content: string): string {
+  return content.replace(/^>\s*[💡⚠️📚]\s*/gm, '> ')
 }
 
-function normalizeListLikeContent(raw: string): string {
-  if (!raw) return raw
-
-  // Convert inline numbered list patterns into newline-separated lines.
-  let normalized = raw.replace(/\s+(\d+\.\s+)/g, '\n$1')
-
-  // Convert inline bullet markers into newline-separated lines.
-  normalized = normalized.replace(/\s+([*-]\s+)/g, '\n$1')
-
-  return normalized
-}
-
-function formatInlineMarkdown(text: string): JSX.Element | string {
-  const parts: (JSX.Element | string)[] = []
-  let lastIndex = 0
-
-  // Match **bold**, __bold__, *italic*, and `code`
-  const regex = /\*\*(.+?)\*\*|__(.+?)__|\*(.+?)\*|`(.+?)`/g
-  let match
-
-  while ((match = regex.exec(text)) !== null) {
-    if (match.index > lastIndex) {
-      parts.push(text.slice(lastIndex, match.index))
-    }
-
-    if (match[1] || match[2]) {
-      // Bold
-      parts.push(
-        <strong key={`bold-${match.index}`} className="font-semibold">
-          {match[1] || match[2]}
-        </strong>,
-      )
-    } else if (match[3]) {
-      // Italic
-      parts.push(
-        <em key={`italic-${match.index}`} className="italic">
-          {match[3]}
-        </em>,
-      )
-    } else if (match[4]) {
-      // Code
-      parts.push(
-        <code
-          key={`code-${match.index}`}
-          className="bg-accent/10 px-1.5 py-0.5 rounded font-mono text-[12px]"
-        >
-          {match[4]}
-        </code>,
-      )
-    }
-
-    lastIndex = regex.lastIndex
+export function MarkdownMessage({ content, role }: MarkdownMessageProps) {
+  if (role === 'user') {
+    return (
+      <p className="text-sm whitespace-pre-wrap break-words">{content}</p>
+    )
   }
 
-  if (lastIndex < text.length) {
-    parts.push(text.slice(lastIndex))
-  }
+  const normalizedContent = normalizeAssistantMarkdown(content)
 
-  return parts.length > 0 ? <>{parts}</> : text
+  return (
+    <div className="markdown-body text-sm">
+      <ReactMarkdown
+        remarkPlugins={[remarkGfm]}
+        components={{
+          h1: ({ children }) => (
+            <h1 className="text-base font-bold mt-3 mb-1">{children}</h1>
+          ),
+          h2: ({ children }) => (
+            <h2 className="text-sm font-bold mt-3 mb-1">{children}</h2>
+          ),
+          h3: ({ children }) => (
+            <h3 className="text-sm font-semibold mt-2 mb-1 text-gray-700 dark:text-gray-300">
+              {children}
+            </h3>
+          ),
+          p: ({ children }) => (
+            <p className="mb-2 leading-relaxed">{children}</p>
+          ),
+          strong: ({ children }) => (
+            <strong className="font-semibold text-gray-900 dark:text-gray-100">
+              {children}
+            </strong>
+          ),
+          em: ({ children }) => (
+            <em className="italic text-gray-700 dark:text-gray-300">
+              {children}
+            </em>
+          ),
+          ul: ({ children }) => (
+            <ul className="list-disc list-inside space-y-1 mb-2 ml-2 text-sm">
+              {children}
+            </ul>
+          ),
+          ol: ({ children }) => (
+            <ol className="list-decimal list-inside space-y-1 mb-2 ml-2 text-sm">
+              {children}
+            </ol>
+          ),
+          li: ({ children }) => (
+            <li className="leading-relaxed">{children}</li>
+          ),
+          blockquote: ({ children }) => (
+            <blockquote className="border-l-2 border-blue-400 pl-3 py-1 my-2 bg-blue-50 dark:bg-blue-950/30 rounded-r text-xs text-gray-600 dark:text-gray-400 italic">
+              {children}
+            </blockquote>
+          ),
+          code: ({ children, className }) => {
+            const isBlock = className?.includes('language-')
+            if (isBlock) {
+              return (
+                <pre className="bg-gray-100 dark:bg-gray-800 rounded p-2 my-2 text-xs overflow-x-auto">
+                  <code>{children}</code>
+                </pre>
+              )
+            }
+
+            return (
+              <code className="bg-gray-100 dark:bg-gray-800 rounded px-1 py-0.5 text-xs font-mono">
+                {children}
+              </code>
+            )
+          },
+          hr: () => <hr className="border-gray-200 dark:border-gray-700 my-2" />,
+        }}
+      >
+        {normalizedContent}
+      </ReactMarkdown>
+    </div>
+  )
 }
