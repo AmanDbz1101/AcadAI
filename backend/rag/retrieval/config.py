@@ -51,6 +51,10 @@ CHUNK_SIZE: int = int(os.getenv("CHUNK_SIZE", COARSE_CHUNK_SIZE))
 CHUNK_OVERLAP: int = int(os.getenv("CHUNK_OVERLAP", COARSE_CHUNK_OVERLAP))
 CHUNK_MIN_CHARS: int = int(os.getenv("CHUNK_MIN_CHARS", 80)) # discard tiny chunks
 
+# Deduplication and thresholding
+JACCARD_DEDUP_THRESHOLD: float = float(os.getenv("JACCARD_DEDUP_THRESHOLD", "0.7"))
+MIN_RELEVANCE_THRESHOLD: float = float(os.getenv("MIN_RELEVANCE_THRESHOLD", "0.35"))
+
 # Optional LLM summarization for tables and figures during chunking
 # Set to False to disable Groq API calls during chunking and avoid 429 rate limits
 CHUNKER_GENERATE_SUMMARIES: bool = os.getenv("CHUNKER_GENERATE_SUMMARIES", "true").lower() == "true"
@@ -58,10 +62,10 @@ CHUNKER_GENERATE_SUMMARIES: bool = os.getenv("CHUNKER_GENERATE_SUMMARIES", "true
 # ── Retrieval ───────────────────────────────────────────────────────────────
 RETRIEVER_TOP_K: int = int(os.getenv("RETRIEVER_TOP_K", 20))  # candidates before rerank
 RRF_K: int = int(os.getenv("RRF_K", 60))
-SCOPED_TOP_K: int = int(os.getenv("SCOPED_TOP_K", 8))
-FALLBACK_TOP_K: int = int(os.getenv("FALLBACK_TOP_K", 4))
+SCOPED_TOP_K: int = int(os.getenv("SCOPED_TOP_K", 20))
+FALLBACK_TOP_K: int = int(os.getenv("FALLBACK_TOP_K", 8))
 RERANKER_TOP_N: int = int(os.getenv("RERANKER_TOP_N", 12))    # final results after rerank
-QA_TOP_K: int = int(os.getenv("QA_TOP_K", 4))
+QA_TOP_K: int = int(os.getenv("QA_TOP_K", 4))  # final chunks passed to LLM
 MAX_GUIDE_QUESTIONS: int = int(os.getenv("MAX_GUIDE_QUESTIONS", 6))
 MAX_REWRITE_QUERIES: int = int(os.getenv("MAX_REWRITE_QUERIES", 3))
 MAX_PARALLEL_QUESTIONS: int = int(os.getenv("MAX_PARALLEL_QUESTIONS", 6))

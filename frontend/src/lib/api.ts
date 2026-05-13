@@ -73,6 +73,7 @@ export interface PaperChatResponse {
   assistant_message: string
   message?: string
   sources?: Array<{
+    section_name?: string
     section_title: string
     page?: number
     content_preview?: string

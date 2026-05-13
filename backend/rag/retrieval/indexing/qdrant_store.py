@@ -289,11 +289,30 @@ class QdrantStoreManager:
         """Return a summary dict of the collection (points count, status, etc.)."""
         try:
             info = self.client.get_collection(self.collection_name)
+            points_count = None
+            vectors_count = None
+
+            # ``CollectionInfo`` changed shape across qdrant-client releases.
+            # Read fields defensively and fall back to an explicit count query.
+            if hasattr(info, "points_count"):
+                points_count = info.points_count
+            if hasattr(info, "vectors_count"):
+                vectors_count = info.vectors_count
+
+            if points_count is None:
+                try:
+                    points_count = self.client.count(
+                        collection_name=self.collection_name,
+                        exact=True,
+                    ).count
+                except Exception as count_exc:  # noqa: BLE001
+                    logger.debug("QdrantStoreManager: could not count points: %s", count_exc)
+
             return {
                 "name": self.collection_name,
                 "status": str(info.status),
-                "vectors_count": info.vectors_count,
-                "points_count": info.points_count,
+                "vectors_count": vectors_count,
+                "points_count": points_count,
             }
         except Exception as exc:  # noqa: BLE001
             return {"error": str(exc)}

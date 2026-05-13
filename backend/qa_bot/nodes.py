@@ -32,6 +32,15 @@ Keep answers focused, clear, and grounded.
 """
 
 
+def _normalize_section_label(value: str) -> str:
+    normalized = " ".join(str(value or "").strip().lower().split())
+    if normalized.endswith("ies") and len(normalized) > 4:
+        return normalized[:-3] + "y"
+    if normalized.endswith("s") and len(normalized) > 4:
+        return normalized[:-1]
+    return normalized
+
+
 def chat_node(state: ChatState) -> dict:
     """
     Single node: retrieve → build prompt → call LLM → return response.
@@ -52,10 +61,15 @@ def chat_node(state: ChatState) -> dict:
         pinned_sections=pinned,
     )
     if pinned is not None:
+        normalized_pinned = {_normalize_section_label(section) for section in pinned if section}
         filtered_chunks = [
             chunk
             for chunk in retrieved_chunks
-            if (chunk.get("metadata") or {}).get("section_title") in pinned
+            if _normalize_section_label(
+                (chunk.get("metadata") or {}).get("section_title")
+                or chunk.get("section_title")
+            )
+            in normalized_pinned
         ]
 
         if not filtered_chunks:
@@ -76,7 +90,10 @@ def chat_node(state: ChatState) -> dict:
             }
 
         retrieved_chunks = filtered_chunks
-    chunk_texts = [str(chunk.get("content") or "").strip() for chunk in retrieved_chunks]
+    # ── Cap to QA_TOP_K to prevent too-long contexts and ensure trace consistency
+    from rag.retrieval.config import QA_TOP_K
+    qa_chunks = retrieved_chunks[:QA_TOP_K]
+    chunk_texts = [str(chunk.get("content") or "").strip() for chunk in qa_chunks]
     chunk_texts = [text for text in chunk_texts if text]
     context = "\n\n---\n\n".join(chunk_texts) if chunk_texts else "No relevant chunks found."
 
@@ -99,7 +116,17 @@ def chat_node(state: ChatState) -> dict:
     # 5. Call Groq
     response = llm.invoke(messages_to_send)
 
+    # Log the final chunk count passed to LLM for diagnostics
+    import logging
+    logger = logging.getLogger(__name__)
+    logger.info(
+        "chat_node: %d chunks retrieved, %d passed to LLM (QA_TOP_K=%d)",
+        len(retrieved_chunks),
+        len(qa_chunks),
+        QA_TOP_K,
+    )
+
     return {
         "messages": [AIMessage(content=response.content)],
-        "retrieved_chunks": retrieved_chunks,
+        "retrieved_chunks": qa_chunks,  # Return only the capped list
     }

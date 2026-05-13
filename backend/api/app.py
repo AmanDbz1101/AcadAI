@@ -1653,11 +1653,21 @@ def chat_with_paper(
     for chunk in retrieved_chunks:
         content = str(chunk.get("content") or "").strip()
         metadata = chunk.get("metadata") or {}
+        section_title = metadata.get("section_title") or chunk.get("section_title")
+        section_id = metadata.get("section_id") or chunk.get("section_id")
+        page_start = (
+            metadata.get("page_start")
+            or chunk.get("page_start")
+            or metadata.get("page")
+            or chunk.get("page")
+        )
         normalized_content = " ".join(content.split())
         sources.append(
             {
-                "section_title": metadata.get("section_title"),
-                "page": metadata.get("page_start"),
+                "section_name": metadata.get("section_name") or section_title,
+                "section_title": section_title,
+                "section_id": section_id,
+                "page": page_start,
                 "content_preview": normalized_content[:120],
             }
         )

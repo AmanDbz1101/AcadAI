@@ -1,4 +1,5 @@
 interface ChatSource {
+  section_name?: string
   section_title: string
   section_id?: string
   page?: number
@@ -31,8 +32,8 @@ export const SourceSections = ({
   const uniqueSections = Array.from(
     new Map(
       sections
-        .filter((s) => s.section_title)
-        .map((s) => [s.section_title, s]),
+        .filter((s) => s.section_title || s.section_name)
+        .map((s) => [s.section_name || s.section_title, s]),
     ).values(),
   )
 
@@ -55,7 +56,7 @@ export const SourceSections = ({
               hover:shadow-sm hover:shadow-emerald-500/20
               active:scale-95
             `}
-            title={`Navigate to ${source.section_title}${source.page ? ` (page ${source.page})` : ''}`}
+            title={`Navigate to ${source.section_name || source.section_title}${source.page ? ` (page ${source.page})` : ''}`}
           >
             <svg
               className="w-3 h-3 flex-shrink-0"
@@ -70,7 +71,7 @@ export const SourceSections = ({
                 d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"
               />
             </svg>
-            <span>{source.section_title}</span>
+            <span>{source.section_name || source.section_title}</span>
             {source.page && (
               <span className="text-emerald-600/70 ml-0.5">
                 p{source.page}

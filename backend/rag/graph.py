@@ -825,12 +825,34 @@ def _resolve_section_paths(step_sections: list[str], document_id: str) -> list[s
     if not step_sections:
         return []
 
+    def _section_variants(section: str) -> list[str]:
+        cleaned = str(section or "").strip()
+        if not cleaned:
+            return []
+
+        variants = [cleaned]
+        lowered = cleaned.lower()
+
+        if lowered.endswith("ies") and len(cleaned) > 4:
+            variants.append(cleaned[:-3] + "y")
+        elif lowered.endswith("s") and len(cleaned) > 4:
+            variants.append(cleaned[:-1])
+        elif len(cleaned) > 4:
+            variants.append(cleaned + "s")
+
+        return list(dict.fromkeys([item for item in variants if item]))
+
+    expanded_sections: list[str] = []
+    for section in step_sections:
+        expanded_sections.extend(_section_variants(section))
+    expanded_sections = list(dict.fromkeys(expanded_sections))
+
     lookup = _load_section_lookup(document_id)
     if not lookup:
-        return list(dict.fromkeys(step_sections))
+        return expanded_sections
 
     resolved: list[str] = []
-    for section in step_sections:
+    for section in expanded_sections:
         norm = _normalize_section_name(section)
         if not norm:
             continue
@@ -844,7 +866,7 @@ def _resolve_section_paths(step_sections: list[str], document_id: str) -> list[s
                 resolved.extend(values)
 
     if not resolved:
-        return list(dict.fromkeys(step_sections))
+        return expanded_sections
 
     return list(dict.fromkeys(resolved))
 
@@ -942,6 +964,7 @@ def _trace_chat_chunk_preview(
         "retrieval_score": retrieval_score,
         "rerank_score": rerank_score,
         "section_id": metadata.get("section_id"),
+        "section_name": metadata.get("section_name") or metadata.get("section_title"),
         "section_title": metadata.get("section_title"),
         "content_type": metadata.get("content_type"),
         "chunk_level": metadata.get("chunk_level"),

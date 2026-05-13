@@ -133,6 +133,7 @@ def _trace_chunk_preview(result: Any, content_chars: int = _TRACE_CHUNK_TEXT_CHA
         "retrieval_score": retrieval_score,
         "rerank_score": rerank_score,
         "section_id": metadata.get("section_id"),
+        "section_name": metadata.get("section_name") or metadata.get("section_title"),
         "section_title": metadata.get("section_title"),
         "content_type": metadata.get("content_type"),
         "chunk_level": metadata.get("chunk_level"),

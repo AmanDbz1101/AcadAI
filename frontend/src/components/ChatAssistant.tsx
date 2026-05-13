@@ -6,6 +6,7 @@ import { MarkdownMessage } from '@/components/MarkdownMessage'
 import { SourceSections } from '@/components/SourceSections'
 
 interface ChatSource {
+  section_name?: string
   section_title: string
   section_id?: string
   page?: number
@@ -115,7 +116,8 @@ const ChatAssistant = ({ paperId, sections, onSourceClick, activeSection }: Chat
       const assistantMessage: Message = {
         role: 'assistant',
         content: response.message || response.assistant_message || 'No response received.',
-        sources: response.sources?.filter((source) => source.section_title) || [],
+        sources:
+          response.sources?.filter((source) => source.section_title || source.section_name) || [],
       }
       setMessages((prev) => [...prev, assistantMessage])
     } catch (error) {

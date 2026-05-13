@@ -14,7 +14,8 @@ export const MarkdownMessage = ({
       return <p className="whitespace-pre-wrap">{content}</p>
     }
 
-    const normalizedContent = normalizeListLikeContent(content)
+    const unescapedContent = content.replace(/\\([*_`])/g, '$1')
+    const normalizedContent = normalizeListLikeContent(unescapedContent)
     const lines = normalizedContent.split('\n')
     const elements: JSX.Element[] = []
     let currentList: string[] = []
@@ -137,8 +138,8 @@ function formatInlineMarkdown(text: string): JSX.Element | string {
   const parts: (JSX.Element | string)[] = []
   let lastIndex = 0
 
-  // Match **bold** and *italic* and `code`
-  const regex = /\*\*(.+?)\*\*|\*(.+?)\*|`(.+?)`/g
+  // Match **bold**, __bold__, *italic*, and `code`
+  const regex = /\*\*(.+?)\*\*|__(.+?)__|\*(.+?)\*|`(.+?)`/g
   let match
 
   while ((match = regex.exec(text)) !== null) {
@@ -146,28 +147,28 @@ function formatInlineMarkdown(text: string): JSX.Element | string {
       parts.push(text.slice(lastIndex, match.index))
     }
 
-    if (match[1]) {
+    if (match[1] || match[2]) {
       // Bold
       parts.push(
         <strong key={`bold-${match.index}`} className="font-semibold">
-          {match[1]}
+          {match[1] || match[2]}
         </strong>,
       )
-    } else if (match[2]) {
+    } else if (match[3]) {
       // Italic
       parts.push(
         <em key={`italic-${match.index}`} className="italic">
-          {match[2]}
+          {match[3]}
         </em>,
       )
-    } else if (match[3]) {
+    } else if (match[4]) {
       // Code
       parts.push(
         <code
           key={`code-${match.index}`}
           className="bg-accent/10 px-1.5 py-0.5 rounded font-mono text-[12px]"
         >
-          {match[3]}
+          {match[4]}
         </code>,
       )
     }
