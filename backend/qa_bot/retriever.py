@@ -16,7 +16,7 @@ def retrieve_with_metadata(
         question=query,
         step_sections=allowed_sections or [],
         document_id=(document_id or "").strip(),
-        pinned_sections=pinned_sections,
+        pinned_sections=allowed_sections or [],
     )
 
     results: list[Any] = []

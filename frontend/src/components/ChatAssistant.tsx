@@ -24,9 +24,10 @@ interface ChatAssistantProps {
   paperId: number | null
   sections: PaperSection[]
   onSourceClick?: (source: ChatSource) => void
+  activeSection?: string
 }
 
-const ChatAssistant = ({ paperId, sections, onSourceClick }: ChatAssistantProps) => {
+const ChatAssistant = ({ paperId, sections, onSourceClick, activeSection }: ChatAssistantProps) => {
   const [messages, setMessages] = useState<Message[]>(initialMessages)
   const [input, setInput] = useState('')
   const [isTyping, setIsTyping] = useState(false)

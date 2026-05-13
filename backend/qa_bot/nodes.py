@@ -151,7 +151,7 @@ def chat_node(state: ChatState) -> dict:
         if isinstance(section, str) and section.strip()
     ]
 
-    chunks = retrieve(
+    chunks = retrieve_with_metadata(
         query,
         document_id=state.get("document_id"),
         allowed_sections=allowed_sections or None,
