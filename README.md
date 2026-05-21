@@ -51,71 +51,145 @@ Frontend (TypeScript/React):
 Source of versions:
 
 - `requirements.txt`
-- `backend/requirements.txt`
-- `frontend/package.json`
 
-### High-level architecture summary
+# Research Paper Assistant
 
-System shape: layered monorepo with backend service + frontend app + extraction/analysis workers.
+Research Paper Assistant is an end-to-end research-document ingestion, extraction, retrieval, and analysis system. It accepts PDFs, extracts structured artifacts (metadata, sections, tables, figures, formulas), indexes content for retrieval, and provides a FastAPI read API plus a React frontend for browsing and interactive QA workflows.
 
-- Ingestion/analysis layer (Python): parse PDF, derive metadata/hierarchy, classify paper, retrieve answers
-- Persistence layer (PostgreSQL): two data-access styles coexist
-  - Legacy persistence schema used by frontend APIs: `papers`, `sections`, `text_blocks`, `tables_data`, `images`, link tables
-  - SQLAlchemy rich schema for document-oriented storage: `documents`, `sections`, `text_blocks`, `document_tables`, `document_figures`, `document_formulas`
-- API layer (FastAPI): read-only endpoints consumed by frontend
-- Presentation layer (React): list papers, navigate sections, render content and extracted artifacts
+This README is a practical, codebase-grounded orientation and points to evaluation artifacts and the metric definitions used across the project.
 
 ---
 
-## 2. Project Structure
+## 1. Quick Summary
 
-### Repository-level breakdown
+- Purpose: Ingest research PDFs, extract structured content, persist and index artifacts, and enable retrieval + QA workflows.
+- Primary components: extraction pipelines, retrieval/indexing, FastAPI read API, React frontend, and LangGraph-based analysis workflows.
+- Where to start: see the entry points and quick start below.
 
-```text
-ResearchAgent/
-├── backend/                        # Python backend (API + extraction + rag + db)
-├── frontend/                       # React/Vite UI
-├── tests/                          # Pytest suite for ingestion modules
-├── docs/                           # Design notes, quickstarts, implementation summaries
-├── input/                          # Extraction artifacts (*.json, *.txt) per document UUID
-├── output/                         # Retrieval/output artifacts (guides, indexes, sections)
-├── models/                         # Local model cache (embeddings/reranker)
-├── logs/                           # Runtime logs
-├── playground/                     # Experimental notebooks and exploratory scripts
-├── Technical term detector/        # Separate NLP subsystem for term detection/definition lookup
-├── config.py                       # Global config constants and env parsing
-├── requirements.txt                # Root Python dependencies
-├── full_requirement.txt            # Extended dependency listing
-├── pytest.ini                      # Test and coverage config
-├── download_models.py              # Pre-download retrieval models
-├── query_intro.py                  # DB query utility script example
-├── test_run.py                     # End-to-end pipeline smoke script
-├── PDTR_v2.md                      # Technical report / architecture context
-└── README.md                       # This document
+## 2. Key Features
+
+- Robust PDF ingestion (validation, OCR fallback, metadata extraction).
+- Section hierarchy extraction and rich artifact extraction (tables, figures, formulas).
+- Hybrid retrieval: sparse (BM25) + dense (embeddings) with reranking.
+- LangGraph workflows for categorization, guide generation, retrieve-and-QA.
+- Frontend UI for browsing papers and inspecting extracted artifacts.
+
+## 3. Quickstart
+
+Prerequisites: Python 3.10+, Node.js (for frontend), PostgreSQL (optional for persistence), Qdrant (optional for vector store).
+
+1. Create a virtual environment and install Python deps:
+
+```bash
+python3 -m venv .venv
+source .venv/bin/activate
+pip install -r requirements.txt
+pip install -r backend/requirements.txt
 ```
 
-### Backend breakdown
+2. (Optional) Set environment variables; example `.env` values:
 
-```text
-backend/
-├── run.py                          # Main Python/CLI pipeline entry (`PaperAnalysisPipeline`)
-├── api/
-│   └── app.py                      # FastAPI app + HTTP routes
-├── extraction/
-│   ├── extraction.py               # Orchestrator (`PDFExtractor`)
-│   ├── app/                        # PDF/OCR/metadata extractors and fallbacks
-│   │   ├── validation.py           # `PDFValidator`
-│   │   ├── pdf_loader.py           # `PDFLoader`
-│   │   ├── ocr.py                  # `OCRHandler`
-│   │   ├── metadata_extractor.py   # metadata extraction core
-│   │   ├── section_detector.py     # section detection helpers
-│   │   ├── groq_fallback.py        # LLM fallback helpers
-│   │   └── docling_rich_extractor.py # rich element extraction for DB ingestion
-│   ├── pipelines/
-│   │   ├── ingest_pipeline.py      # `IngestPipeline`
-│   │   ├── metadata_pipeline.py    # `MetadataExtractionPipeline`
-│   │   ├── section_hierarchy_pipeline.py # `SectionHierarchyPipeline`
-│   │   └── db_ingestion_pipeline.py # `DBIngestionPipeline`
+```
+GROQ_API_KEY=your_groq_key
+POSTGRES_DSN=postgresql://user:password@localhost:5432/research_agent
+VITE_API_BASE_URL=http://localhost:8000
+QDRANT_URL=http://localhost:6333
+```
+
+3. Start the backend API:
+
+```bash
+uvicorn backend.api.app:app --host 0.0.0.0 --port 8000 --reload
+```
+
+4. Start the frontend (in a separate terminal):
+
+```bash
+cd frontend
+npm install
+npm run dev
+```
+
+5. Run an extraction / analysis job (example):
+
+```bash
+python backend/run.py input/example.pdf --store-in-db
+```
+
+## 4. Project Layout (high level)
+
+- `backend/` — extraction, persistence, retrieval, LangGraph workflows, API
+- `frontend/` — React/Vite SPA for browsing and QA
+- `docs/` — design notes, evaluation reports, implementation summaries
+- `input/` — per-document extraction artifacts (JSON, text)
+- `output/` — retrieval artifacts, guides, indexes
+
+Refer to [backend/README.md](backend/README.md) and [docs/README.md](docs/README.md) for more detailed module-level docs.
+
+## 5. Metrics (what we measure and where)
+
+This repository tracks retrieval and generation metrics during evaluation. The following metrics are used across evaluation scripts and reports:
+
+- **Recall@K**: Fraction of relevant documents/sections present in the top-K results (commonly K=1,5,10).
+- **Precision@K**: Fraction of retrieved top-K items that are relevant.
+- **MRR (Mean Reciprocal Rank)**: Average reciprocal rank of the first relevant result.
+- **MAP (Mean Average Precision)**: Mean of average precision scores across queries.
+- **NDCG (Normalized Discounted Cumulative Gain)**: Weighted ranking metric that accounts for graded relevance.
+- **Exact Match (EM)**: For extractive QA tasks, proportion of predicted answers that exactly match ground truth.
+- **F1 (token-level)**: For QA/short-answer tasks, harmonic mean of precision and recall over token overlap.
+- **ROUGE-L / BLEU**: For summarization/generation evaluations (where applicable).
+
+Where results live:
+
+- Evaluation scripts and helpers: [backend/rag/retrieval/evaluation/README.md](backend/rag/retrieval/evaluation/README.md) and `backend/rag/retrieval/evaluation/`.
+- Historical/full reports and analysis: see [docs/RETRIEVAL_SYSTEM_FULL_REPORT_2026-03-29.md](docs/RETRIEVAL_SYSTEM_FULL_REPORT_2026-03-29.md) and other `docs/` artifacts.
+- Metric logs for runs (if LangSmith tracing is enabled) are available via LangSmith traces; local CSV/JSON outputs are written to `output/evaluation/` by the evaluation scripts.
+
+Notes on interpreting metrics:
+
+- Retrieval metrics (Recall@K, MRR, MAP) measure the quality of the candidate selection step (BM25 + dense retriever + reranker).
+- QA/generation metrics (EM, F1, ROUGE) measure downstream answer correctness and fluency.
+- Use dataset-specific relevance judgments and the evaluation configs in `backend/rag/retrieval/evaluation/` to reproduce numbers.
+
+If you want specific numeric results extracted into this README, point me to the evaluation output files (for example under `output/evaluation/` or in `docs/`) and I will paste the latest numbers here or summarize them.
+
+## 6. Running Evaluation
+
+1. Ensure evaluation dependencies and models are installed (`pip install -r backend/requirements.txt` and `python download_models.py` when needed).
+2. Prepare an evaluation dataset and relevance judgments under `input/eval/`.
+3. Run the retrieval evaluation script (example command, adjust flags per script):
+
+```bash
+python backend/rag/retrieval/evaluation/run_evaluation.py \
+  --dataset input/eval/dataset.jsonl \
+  --qrels input/eval/qrels.tsv \
+  --output output/evaluation/results.json
+```
+
+4. View metrics in `output/evaluation/results.json` or in `docs/` reports.
+
+## 7. Development and Testing
+
+- Run the unit test suite: `pytest` (see `pytest.ini` and `tests/`).
+- Linting/formatting: project follows standard Python styling; run `black` and `ruff` as preferred.
+
+## 8. Troubleshooting and Notes
+
+- Some docs in `docs/` are historical — prefer the runtime modules in `backend/` as the source of truth.
+- If you encounter model/API auth errors, verify `GROQ_API_KEY`, `LANGCHAIN` variables, and Qdrant credentials.
+
+## 9. Contributing and Roadmap
+
+- See `docs/REORGANIZATION_SUMMARY.md` and `docs/IMPLEMENTATION_SUMMARY.md` for planned refactors and open work.
+
+---
+
+If you'd like, I can:
+
+- Add the latest numeric evaluation values into the Metrics section (please indicate which run/file to use).
+- Expand the Quickstart with a minimal docker-compose to bring up Postgres + Qdrant + API + frontend.
+
+
 │   ├── models/
 │   │   ├── document.py             # `ValidatedDocument`, `PageContent`
 │   │   ├── metadata.py             # `ExtractedMetadata`, `ProcessedDocument`
