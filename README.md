@@ -1,16 +1,10 @@
+ # AcadAI: An AI-Powered Research Paper Assistant
 <div align="center">
-  # ResearchAgent — Research Paper Assistant
 
   [![Python](https://img.shields.io/badge/Python-3.10%2B-blue.svg)](https://www.python.org/)
   [![FastAPI](https://img.shields.io/badge/FastAPI-%3E=0.104.0-green.svg)](https://fastapi.tiangolo.com/)
   [![React](https://img.shields.io/badge/React-18.x-blue.svg)](https://reactjs.org/)
 </div>
-
----
-
-## 📌 What this project is
-
-ResearchAgent (a.k.a. Research Paper Assistant) is an end-to-end system for ingesting research PDFs, extracting structured artifacts (metadata, sections, tables, figures, formulas), persisting them to PostgreSQL, indexing for retrieval, and serving them via a FastAPI read API and a React frontend. It also provides LangGraph-based analysis workflows (categorization, guide generation, retrieve-and-QA) and a technical-term detection subsystem.
 
 ---
 
