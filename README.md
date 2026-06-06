@@ -1,82 +1,82 @@
-# ResearchAgent
+<div align="center">
+  # ResearchAgent — Research Paper Assistant
 
-ResearchAgent is a full-stack system for ingesting research PDFs, extracting structured artifacts, storing them in PostgreSQL, and serving/visualizing them through a FastAPI + React application. The repository also includes a LangGraph-based analysis workflow (categorization, guide generation, retrieve-and-QA) and a separate technical-term detection subsystem.
-
-This README is codebase-grounded and references concrete modules, classes, and functions currently in the repo.
-
----
-
-## 1. Project Overview
-
-### What this project does
-
-Core outcomes from a PDF:
-
-- Validates and loads PDFs (`PDFValidator`, `PDFLoader`, `IngestPipeline`)
-- Extracts metadata and structure (`MetadataExtractionPipeline`, `SectionHierarchyPipeline`)
-- Persists extracted content into PostgreSQL with deduplication (`PostgresPaperStore.persist_extraction`, `DocumentRepository.upsert_document`)
-- Exposes read APIs for paper browsing (`/api/papers`, `/api/papers/{paper_id}/bundle`)
-- Renders papers, sections, tables, and figures in the frontend (`Index`, `PaperViewer`, `InsightExtractor`)
-- Runs analysis workflows with LangGraph (`get_agent`, `retrieve_and_qa_node`, category guide nodes)
-
-Primary runtime pipelines:
-
-1. Extraction pipeline via `backend/extraction/extraction.py` (`PDFExtractor.extract`)
-2. Unified analysis pipeline via `backend/run.py` (`PaperAnalysisPipeline.run`) and `backend/rag/graph.py`
-3. Read API pipeline via `backend/api/app.py`
-
-### Tech stack and key dependencies
-
-Backend (Python):
-
-- FastAPI `>=0.104.0` and Uvicorn `>=0.24.0`
-- Pydantic `>=2.0.0`
-- Docling `>=2.0.0` + `docling-core>=2.0.0`
-- Groq client `>=0.9.0`
-- LangChain/LangGraph (`langchain-groq`, `langchain-core`, `langgraph`)
-- SQLAlchemy `>=2.0.0`
-- psycopg `>=3.1.x`
-- Retrieval stack: `qdrant-client>=1.7.0`, `rank-bm25>=0.2.2`, `flashrank>=0.2.0`, `sentence-transformers>=2.2.0`, `transformers>=4.36/4.37`
-
-Frontend (TypeScript/React):
-
-- React `^18.3.1`
-- Vite `^5.4.19`
-- React Router `^6.30.1`
-- TanStack Query `^5.83.0`
-- Tailwind CSS `^3.4.17`
-- Radix UI component primitives (`@radix-ui/*`)
-- Zod `^3.25.76`, React Hook Form `^7.61.1`
-
-Source of versions:
-
-- `requirements.txt`
-
-# Research Paper Assistant
-
-Research Paper Assistant is an end-to-end research-document ingestion, extraction, retrieval, and analysis system. It accepts PDFs, extracts structured artifacts (metadata, sections, tables, figures, formulas), indexes content for retrieval, and provides a FastAPI read API plus a React frontend for browsing and interactive QA workflows.
-
-This README is a practical, codebase-grounded orientation and points to evaluation artifacts and the metric definitions used across the project.
+  [![Python](https://img.shields.io/badge/Python-3.10%2B-blue.svg)](https://www.python.org/)
+  [![FastAPI](https://img.shields.io/badge/FastAPI-%3E=0.104.0-green.svg)](https://fastapi.tiangolo.com/)
+  [![React](https://img.shields.io/badge/React-18.x-blue.svg)](https://reactjs.org/)
+</div>
 
 ---
 
-## 1. Quick Summary
+## 📌 What this project is
 
-- Purpose: Ingest research PDFs, extract structured content, persist and index artifacts, and enable retrieval + QA workflows.
-- Primary components: extraction pipelines, retrieval/indexing, FastAPI read API, React frontend, and LangGraph-based analysis workflows.
-- Where to start: see the entry points and quick start below.
+ResearchAgent (a.k.a. Research Paper Assistant) is an end-to-end system for ingesting research PDFs, extracting structured artifacts (metadata, sections, tables, figures, formulas), persisting them to PostgreSQL, indexing for retrieval, and serving them via a FastAPI read API and a React frontend. It also provides LangGraph-based analysis workflows (categorization, guide generation, retrieve-and-QA) and a technical-term detection subsystem.
 
-## 2. Key Features
+---
 
-- Robust PDF ingestion (validation, OCR fallback, metadata extraction).
-- Section hierarchy extraction and rich artifact extraction (tables, figures, formulas).
-- Hybrid retrieval: sparse (BM25) + dense (embeddings) with reranking.
-- LangGraph workflows for categorization, guide generation, retrieve-and-QA.
-- Frontend UI for browsing papers and inspecting extracted artifacts.
+## 📋 Table of Contents
+- [Problem Statement](#-problem-statement)
+- [Solution & Features](#-solution--features)
+- [Architecture](#-architecture)
+- [Project Structure](#-project-structure)
+- [Setup & Quickstart](#-setup--quickstart)
+- [Usage](#-usage)
+- [Technology Stack](#-technology-stack)
+- [Developer Notes](#-developer-notes)
+- [Testing](#-testing)
+- [Contributing & License](#-contributing--license)
 
-## 3. Quickstart
+---
 
-Prerequisites: Python 3.10+, Node.js (for frontend), PostgreSQL (optional for persistence), Qdrant (optional for vector store).
+## 🎯 Problem Statement
+
+Despite the growing importance of research literacy, many students and early-stage researchers struggle to read and comprehend academic papers effectively. Traditional read-
+1ing methods and existing AI tools fail to guide beginners through complex language, dense technical content, and varied paper structures. Specific limitations include the absence of paper-type-aware reading guidance, global retrieval that returns chunks from irrelevant sections, inability to process tables and figures as semantically meaningful units, and no structured mechanism for section-specific comprehension assessment. These gaps highlight the need for an intelligent system that can classify papers, structure their content by type, and provide grounded, section-scoped question answering to support compre-
+hension.
+
+---
+
+## 💡 Solution & Features
+
+AcadAI addresses a genuine gap in the tooling available to students and researchers approaching unfamiliar academic literature. By combining paper type classification,
+content-type-aware chunking, and section-scoped retrieval, the system reduces the cognitive effort required to navigate a research paper and provides structured, grounded guid-
+ance at the point of reading. For undergraduate students undertaking a first literature review, or early-stage researchers entering a new sub-field, such a tool can substantially reduce the time required to identify key contributions and understand methodological choices. The system also demonstrates a replicable architectural pattern for building section-aware RAG applications over long  structured documents.
+
+---
+
+## 🏗️ Architecture
+
+- Presentation: React frontend (Vite)
+- API: FastAPI backend serving read bundles and orchestration endpoints
+- Extraction: modular pipelines (`IngestPipeline`, `MetadataExtractionPipeline`, `SectionHierarchyPipeline`)
+- Retrieval: hybrid stack using BM25 + embeddings (Qdrant optional) and reranking
+- Orchestration: LangGraph-based workflow graph (`backend/rag/graph.py`)
+
+See module-level docs in `backend/` and `docs/` for detailed descriptions.
+
+---
+
+## 📁 Project Structure (high level)
+
+```
+backend/    # extraction, persistence, retrieval, LangGraph, API
+frontend/   # React/Vite SPA
+docs/       # design notes, evaluation reports
+input/      # uploaded PDFs and extraction artifacts
+output/     # evaluation and retrieval artifacts
+```
+
+Key entry points:
+- Backend API: `backend/api/app.py` (`app = FastAPI(...)`)
+- Workflow CLI: `backend/run.py` (`PaperAnalysisPipeline`)
+- Extraction: `backend/extraction/extraction.py` (`PDFExtractor.extract`)
+- Frontend bootstrap: `frontend/src/main.tsx`
+
+---
+
+## ⚙️ Setup & Quickstart
+
+Prerequisites: Python 3.10+, Node.js (for frontend). Optional: PostgreSQL, Qdrant.
 
 1. Create a virtual environment and install Python deps:
 
@@ -87,7 +87,7 @@ pip install -r requirements.txt
 pip install -r backend/requirements.txt
 ```
 
-2. (Optional) Set environment variables; example `.env` values:
+2. Example environment variables (create `.env`):
 
 ```
 GROQ_API_KEY=your_groq_key
@@ -102,7 +102,7 @@ QDRANT_URL=http://localhost:6333
 uvicorn backend.api.app:app --host 0.0.0.0 --port 8000 --reload
 ```
 
-4. Start the frontend (in a separate terminal):
+4. Start the frontend (separate terminal):
 
 ```bash
 cd frontend
@@ -110,268 +110,73 @@ npm install
 npm run dev
 ```
 
-5. Run an extraction / analysis job (example):
+5. Run an extraction example:
 
 ```bash
 python backend/run.py input/example.pdf --store-in-db
 ```
 
-## 4. Project Layout (high level)
+---
 
-- `backend/` — extraction, persistence, retrieval, LangGraph workflows, API
-- `frontend/` — React/Vite SPA for browsing and QA
-- `docs/` — design notes, evaluation reports, implementation summaries
-- `input/` — per-document extraction artifacts (JSON, text)
-- `output/` — retrieval artifacts, guides, indexes
+## ▶️ Usage
 
-Refer to [backend/README.md](backend/README.md) and [docs/README.md](docs/README.md) for more detailed module-level docs.
+Typical flow:
+1. Ingest a PDF (CLI or API)
+2. Run extraction pipeline to produce structured artifacts
+3. Persist artifacts to Postgres (optional)
+4. Use frontend to browse papers and run QA
+5. Run evaluation scripts in `backend/rag/retrieval/evaluation/` for metrics
 
-## 5. Metrics (what we measure and where)
+API highlights:
+- `GET /health` — service health
+- `GET /api/papers` — list papers
+- `GET /api/papers/{paper_id}/bundle` — get paper bundle for frontend
 
-This repository tracks retrieval and generation metrics during evaluation. The following metrics are used across evaluation scripts and reports:
+---
 
-- **Recall@K**: Fraction of relevant documents/sections present in the top-K results (commonly K=1,5,10).
-- **Precision@K**: Fraction of retrieved top-K items that are relevant.
-- **MRR (Mean Reciprocal Rank)**: Average reciprocal rank of the first relevant result.
-- **MAP (Mean Average Precision)**: Mean of average precision scores across queries.
-- **NDCG (Normalized Discounted Cumulative Gain)**: Weighted ranking metric that accounts for graded relevance.
-- **Exact Match (EM)**: For extractive QA tasks, proportion of predicted answers that exactly match ground truth.
-- **F1 (token-level)**: For QA/short-answer tasks, harmonic mean of precision and recall over token overlap.
-- **ROUGE-L / BLEU**: For summarization/generation evaluations (where applicable).
+## 🧰 Technology Stack
 
-Where results live:
+- Backend: FastAPI, Uvicorn, Pydantic, SQLAlchemy
+- Retrieval & LLMs: Groq, LangChain/LangGraph, HuggingFace embeddings, Qdrant (optional)
+- Extraction: docling / docling-core, PyMuPDF
+- Frontend: React, Vite, TanStack Query
 
-- Evaluation scripts and helpers: [backend/rag/retrieval/evaluation/README.md](backend/rag/retrieval/evaluation/README.md) and `backend/rag/retrieval/evaluation/`.
-- Historical/full reports and analysis: see [docs/RETRIEVAL_SYSTEM_FULL_REPORT_2026-03-29.md](docs/RETRIEVAL_SYSTEM_FULL_REPORT_2026-03-29.md) and other `docs/` artifacts.
-- Metric logs for runs (if LangSmith tracing is enabled) are available via LangSmith traces; local CSV/JSON outputs are written to `output/evaluation/` by the evaluation scripts.
+See `requirements.txt` and `backend/requirements.txt` for concrete versions.
 
-Notes on interpreting metrics:
+---
 
-- Retrieval metrics (Recall@K, MRR, MAP) measure the quality of the candidate selection step (BM25 + dense retriever + reranker).
-- QA/generation metrics (EM, F1, ROUGE) measure downstream answer correctness and fluency.
-- Use dataset-specific relevance judgments and the evaluation configs in `backend/rag/retrieval/evaluation/` to reproduce numbers.
+## 🛠️ Developer Notes
 
-If you want specific numeric results extracted into this README, point me to the evaluation output files (for example under `output/evaluation/` or in `docs/`) and I will paste the latest numbers here or summarize them.
+- Important modules: `backend/extraction/*`, `backend/rag/*`, `backend/api/*`, `backend/database/*`.
+- Environment variables control DB, model keys, and retrieval behavior (`POSTGRES_DSN`, `GROQ_API_KEY`, `QDRANT_URL`, etc.).
+- For retrieval evaluation, place datasets under `input/eval/` and run the evaluation script.
 
-## 6. Running Evaluation
+If you want numeric evaluation outputs added to this README, point me to the run results under `output/evaluation/` or `docs/` and I will insert them.
 
-1. Ensure evaluation dependencies and models are installed (`pip install -r backend/requirements.txt` and `python download_models.py` when needed).
-2. Prepare an evaluation dataset and relevance judgments under `input/eval/`.
-3. Run the retrieval evaluation script (example command, adjust flags per script):
+---
+
+## ✅ Testing
+
+Run unit tests with `pytest`:
 
 ```bash
-python backend/rag/retrieval/evaluation/run_evaluation.py \
-  --dataset input/eval/dataset.jsonl \
-  --qrels input/eval/qrels.tsv \
-  --output output/evaluation/results.json
+pytest
+pytest tests/test_validation.py -v
+pytest --cov=backend --cov-report=term-missing
 ```
-
-4. View metrics in `output/evaluation/results.json` or in `docs/` reports.
-
-## 7. Development and Testing
-
-- Run the unit test suite: `pytest` (see `pytest.ini` and `tests/`).
-- Linting/formatting: project follows standard Python styling; run `black` and `ruff` as preferred.
-
-## 8. Troubleshooting and Notes
-
-- Some docs in `docs/` are historical — prefer the runtime modules in `backend/` as the source of truth.
-- If you encounter model/API auth errors, verify `GROQ_API_KEY`, `LANGCHAIN` variables, and Qdrant credentials.
-
-## 9. Contributing and Roadmap
-
-- See `docs/REORGANIZATION_SUMMARY.md` and `docs/IMPLEMENTATION_SUMMARY.md` for planned refactors and open work.
 
 ---
 
-If you'd like, I can:
+## 🤝 Contributing & License
 
-- Add the latest numeric evaluation values into the Metrics section (please indicate which run/file to use).
-- Expand the Quickstart with a minimal docker-compose to bring up Postgres + Qdrant + API + frontend.
-
-
-│   ├── models/
-│   │   ├── document.py             # `ValidatedDocument`, `PageContent`
-│   │   ├── metadata.py             # `ExtractedMetadata`, `ProcessedDocument`
-│   │   └── section_hierarchy.py    # `SectionHierarchy`, `SectionNode`
-│   └── persistence/
-│       ├── postgres_store.py       # Legacy persistence and API-facing queries
-│       └── query_paper.py          # Query helper script
-├── rag/
-│   ├── graph.py                    # LangGraph nodes and routing (`build_graph`, `get_agent`)
-│   ├── states.py                   # `AgentState`, `RetrievalResult`
-│   ├── prompts.py                  # Prompt templates
-│   ├── guide_models.py             # Structured guide schemas
-│   └── retrieval/
-│       ├── pipeline.py             # `RetrievalPipeline`
-│       ├── config.py               # Retrieval env config
-│       ├── chunking/               # Chunk generation models/splitters
-│       ├── embeddings/             # Dense and sparse encoders
-│       ├── indexing/               # Qdrant indexing/store abstractions
-│       ├── search/                 # Hybrid retriever + reranker
-│       └── evaluation/             # Retrieval evaluation notes
-├── database/
-│   ├── models.py                   # SQLAlchemy schema
-│   ├── connection.py               # `DatabaseConnection`
-│   └── repository.py               # `DocumentRepository`
-└── examples/
-    └── simple_workflow.py          # Sample runs for extraction/QA/summary
-```
-
-### Frontend breakdown
-
-```text
-frontend/
-├── src/
-│   ├── main.tsx                    # React bootstrap
-│   ├── App.tsx                     # Router + QueryClientProvider
-│   ├── pages/
-│   │   ├── Index.tsx               # 3-panel app composition + data fetching
-│   │   └── NotFound.tsx            # Fallback route
-│   ├── components/
-│   │   ├── PaperNavigation.tsx     # left panel (paper select + section nav)
-│   │   ├── PaperViewer.tsx         # center panel (paper/section rendering)
-│   │   ├── AIToolsPanel.tsx        # right panel container
-│   │   ├── InsightExtractor.tsx    # figure/table/formula cards
-│   │   └── ChatAssistant.tsx       # UI-only mock assistant
-│   ├── lib/api.ts                  # fetch wrappers (`getPapers`, `getPaperBundle`)
-│   └── types/api.ts                # API contracts
-├── package.json                    # scripts + deps
-└── vite.config.ts                  # dev server, aliases, plugin config
-```
-
-### Entry points
-
-- Backend API server: `backend/api/app.py` (`app = FastAPI(...)`)
-- Backend workflow CLI: `backend/run.py` (`main()`, `PaperAnalysisPipeline`)
-- Extraction-only script: `backend/extraction/extraction.py` (`extract_pdf`, `PDFExtractor.extract`)
-- Frontend SPA bootstrap: `frontend/src/main.tsx`
-- Utility entry scripts: `download_models.py`, `test_run.py`, `query_intro.py`
+Contributions welcome — see `docs/REORGANIZATION_SUMMARY.md` and `docs/IMPLEMENTATION_SUMMARY.md` for roadmap items. The project is MIT-licensed (see LICENSE file if present).
 
 ---
 
-## 3. Architecture and Design Patterns
+If you'd like, I can also:
+- Add a concise `docker-compose` for Postgres + Qdrant + API + frontend
+- Insert the latest evaluation numbers from a specified run file
 
-### Architectural pattern
-
-Primarily layered architecture with orchestrated pipelines:
-
-- Presentation layer: React components and route composition
-- API layer: FastAPI endpoints in `backend/api/app.py`
-- Application orchestration layer:
-  - `PaperAnalysisPipeline` (workflow orchestrator)
-  - LangGraph node graph in `backend/rag/graph.py`
-  - Extraction pipeline orchestration in `backend/extraction/extraction.py`
-- Domain/data layer:
-  - Pydantic domain models in `backend/extraction/models/*`, `backend/rag/states.py`
-  - SQLAlchemy ORM models in `backend/database/models.py`
-- Infrastructure layer:
-  - PostgreSQL via SQLAlchemy ORM (psycopg driver)
-  - Qdrant retrieval index
-  - Groq API integration
-
-### Key design patterns identified
-
-- Pipeline pattern:
-  - `IngestPipeline.process` -> `MetadataExtractionPipeline.process` -> `SectionHierarchyPipeline.process_from_processed_document`
-- Orchestrator pattern:
-  - `PDFExtractor.extract` and `PaperAnalysisPipeline.run` compose subsystems and control branching
-- State machine/workflow graph:
-  - LangGraph `StateGraph(dict)` in `build_graph()` with conditional route `route_after_categorizer`
-- Repository pattern:
-  - `DocumentRepository` encapsulates SQLAlchemy CRUD operations
-- Singleton/lazy initialization:
-  - `_agent` in `rag/graph.py`, `_retrieval_pipeline` in `rag/graph.py`, `_default_connection` in `database/connection.py`
-- Adapter-like conversion builders:
-  - `_build_section_record`, `_build_text_block_record`, etc. in `DBIngestionPipeline`
-
-### Separation of concerns across modules
-
-- `backend/api/*`: transport and response shaping only
-- `backend/extraction/*`: ingest/extract/structure/persist document artifacts
-- `backend/rag/*`: classification, guide generation, retrieval, QA, summarization
-- `backend/database/*`: persistence contract and schema for SQLAlchemy path
-- `frontend/src/lib/api.ts`: network boundary; UI components remain fetch-agnostic
-
----
-
-## 4. Data Flow
-
-### Data ingress
-
-- PDF input from filesystem path:
-  - CLI arg `pdf_path` in `backend/run.py`
-  - Function arg in `PDFExtractor.extract(pdf_path, ...)`
-- API query parameters and path params:
-  - `GET /api/papers?limit=...`
-  - `GET /api/papers/{paper_id}/bundle`
-- Environment config via `os.getenv` in:
-  - `config.py`
-  - `backend/api/app.py` (`_resolve_postgres_dsn`)
-  - `backend/database/connection.py` (`_build_database_url`)
-
-### Internal data movement
-
-Extraction path:
-
-1. `IngestPipeline.process` validates, loads, optionally OCRs PDF -> `ValidatedDocument`
-2. `MetadataExtractionPipeline.process` -> `ProcessedDocument`
-3. `SectionHierarchyPipeline.process_from_processed_document` -> hierarchy model
-4. `PDFExtractor.extract` writes artifact files and optionally persists through `PostgresPaperStore.persist_extraction`
-
-LangGraph path:
-
-1. `extraction_node` runs `PDFExtractor.extract` and maps result into workflow state
-2. `categorizer_node` uses Groq model (`llama-3.1-8b-instant`) for category/confidence
-3. Route decision in `route_after_categorizer`
-4. Optional guide node (`applied_guide_node` | `theoretical_guide_node` | `survey_guide_node`)
-5. `retrieve_and_qa_node`:
-   - `RetrievalPipeline.index(...)` (if hierarchy file available)
-   - scoped + fallback retrieval via `RetrievalPipeline.query(...)`
-   - reranking via `rerank_results`
-   - answer generation with Groq model (`llama-3.3-70b-versatile`)
-
-API read path:
-
-1. Frontend `getPapers()` -> `GET /api/papers`
-2. Frontend `getPaperBundle(paperId)` -> `GET /api/papers/{id}/bundle`
-3. `get_paper_bundle` queries store methods:
-   - `get_paper_by_id`
-   - `get_sections_for_paper_id`
-   - `get_text_blocks_for_paper_id`
-   - `get_tables_for_paper_id`
-   - `get_images_for_paper_id`
-   - `get_section_text_blocks_for_paper_id`
-4. API composes normalized section content and returns bundle JSON
-
-### Data egress
-
-- Files written:
-  - `input/{doc_id}_metadata.json`
-  - `input/{doc_id}_hierarchy.json`
-  - `input/{doc_id}_fulltext.txt`
-  - `input/{doc_id}_complete.json`
-  - `output/{document_id}_guide.json`
-  - retrieval artifacts in `output/` (e.g., BM25 pickles, section lookup JSON)
-- Database writes:
-  - Legacy schema via `PostgresPaperStore.persist_extraction`
-  - SQLAlchemy schema via `DBIngestionPipeline` + `DocumentRepository`
-- HTTP responses:
-  - FastAPI JSON payloads for health, list, bundle
-
-### Step-by-step trace of the critical user flow
-
-Flow: extract a paper, then view it in the UI.
-
-1. User runs extraction (CLI):
-   - `python backend/run.py input/paper.pdf --store-in-db`
-2. `PaperAnalysisPipeline.run` invokes graph (`self._graph.invoke(initial_state)`)
-3. `extraction_node` runs `PDFExtractor.extract` and writes artifacts
-4. If DB configured, persistence stores paper and linked sections/text/tables/images
-5. User starts API server (`uvicorn backend.api.app:app ...`)
-6. Frontend loads (`frontend/src/pages/Index.tsx`)
-7. `useQuery(['papers'])` calls `getPapers` and displays paper selector
-8. Selecting a paper triggers `useQuery(['paper-bundle', paperId])`
 9. `PaperViewer` renders section content and tracks visible section via `IntersectionObserver`
 10. `InsightExtractor` renders tables/images from API bundle
 
